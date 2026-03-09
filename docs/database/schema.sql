@@ -1,70 +1,99 @@
-CREATE TABLE "users" (
-  "id" integer PRIMARY KEY,
-  "email" varchar,
-  "password" varchar,
-  "created_at" timestamp
+-- ---------------------------------------------------
+-- Odoo Module Builder - Schema para Symfony / MySQL
+-- ---------------------------------------------------
+
+DROP DATABASE IF EXISTS omb;
+CREATE DATABASE omb;
+USE omb;
+
+-- -----------------------------
+-- Tabla users
+-- -----------------------------
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE "modules" (
-  "id" integer PRIMARY KEY,
-  "name" varchar,
-  "technical_name" varchar,
-  "description" text,
-  "version" varchar,
-  "author" varchar,
-  "user_id" integer,
-  "created_at" timestamp
+-- -----------------------------
+-- Tabla modules
+-- -----------------------------
+DROP TABLE IF EXISTS modules;
+CREATE TABLE modules (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  version VARCHAR(255),
+  author VARCHAR(255),
+  user_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "models" (
-  "id" integer PRIMARY KEY,
-  "name" varchar,
-  "technical_name" varchar,
-  "module_id" integer
+-- -----------------------------
+-- Tabla models
+-- -----------------------------
+DROP TABLE IF EXISTS models;
+CREATE TABLE models (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  module_id INT,
+  CONSTRAINT fk_models_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "fields" (
-  "id" integer PRIMARY KEY,
-  "name" varchar,
-  "technical_name" varchar,
-  "type" varchar,
-  "required" boolean,
-  "relation_model" varchar,
-  "model_id" integer
+-- -----------------------------
+-- Tabla fields
+-- -----------------------------
+DROP TABLE IF EXISTS fields;
+CREATE TABLE fields (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  type VARCHAR(255) NOT NULL,
+  required BOOLEAN DEFAULT FALSE,
+  relation_model VARCHAR(255),
+  model_id INT,
+  CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "views" (
-  "id" integer PRIMARY KEY,
-  "type" varchar,
-  "name" varchar,
-  "model_id" integer
+-- -----------------------------
+-- Tabla views
+-- -----------------------------
+DROP TABLE IF EXISTS views;
+CREATE TABLE views (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  type VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  model_id INT,
+  CONSTRAINT fk_views_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "view_fields" (
-  "id" integer PRIMARY KEY,
-  "view_id" integer,
-  "field_id" integer,
-  "position" integer
+-- -----------------------------
+-- Tabla view_fields
+-- -----------------------------
+DROP TABLE IF EXISTS view_fields;
+CREATE TABLE view_fields (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  view_id INT,
+  field_id INT,
+  position INT DEFAULT 0,
+  CONSTRAINT fk_view_fields_view FOREIGN KEY (view_id) REFERENCES views(id) ON DELETE CASCADE,
+  CONSTRAINT fk_view_fields_field FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "deployments" (
-  "id" integer PRIMARY KEY,
-  "module_id" integer,
-  "status" varchar,
-  "log" text,
-  "created_at" timestamp
+-- -----------------------------
+-- Tabla deployments
+-- -----------------------------
+DROP TABLE IF EXISTS deployments;
+CREATE TABLE deployments (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  module_id INT,
+  status VARCHAR(255),
+  log TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_deployments_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
 );
-
-ALTER TABLE "modules" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "models" ADD FOREIGN KEY ("module_id") REFERENCES "modules" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "fields" ADD FOREIGN KEY ("model_id") REFERENCES "models" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "views" ADD FOREIGN KEY ("model_id") REFERENCES "models" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "view_fields" ADD FOREIGN KEY ("view_id") REFERENCES "views" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "view_fields" ADD FOREIGN KEY ("field_id") REFERENCES "fields" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "deployments" ADD FOREIGN KEY ("module_id") REFERENCES "modules" ("id") DEFERRABLE INITIALLY IMMEDIATE;

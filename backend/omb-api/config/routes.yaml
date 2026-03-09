@@ -1,3 +1,13 @@
 #index:
 #    path: /
 #    controller: App\Controller\DefaultController::index
+
+modules:
+  path: /modules
+  controller: App\Controller\ModuleController::modules
+  methods: [ GET, POST ]
+
+module:
+  path: /modules/{id}
+  controller: App\Controller\ModuleController::module
+  methods: [ GET, DELETE ]

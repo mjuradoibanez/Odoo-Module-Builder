@@ -1,4 +1,5 @@
-version: '2'
+version: '3.8'
+
 services:
   web:
     image: buig/sf-php8.0-apache
@@ -11,9 +12,25 @@ services:
     ports:
       - 8082:80
     networks:
-      - edu-shared
+      - omb-net
     tty: true
 
+  db:
+    image: mysql:8.0
+    container_name: omb-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: omb
+      MYSQL_USER: odoo
+      MYSQL_PASSWORD: odoo
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/db:/var/lib/mysql
+      - ../../docs/database:/docker-entrypoint-initdb.d:ro
+    networks:
+      - omb-net
+
 networks:
-  edu-shared:
-    external: true
+  omb-net:
+    driver: bridge
