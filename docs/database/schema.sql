@@ -11,6 +11,7 @@ CREATE TABLE "modules" (
   "technical_name" varchar,
   "description" text,
   "version" varchar,
+  "author" varchar,
   "user_id" integer,
   "created_at" timestamp
 );
@@ -35,7 +36,15 @@ CREATE TABLE "fields" (
 CREATE TABLE "views" (
   "id" integer PRIMARY KEY,
   "type" varchar,
+  "name" varchar,
   "model_id" integer
+);
+
+CREATE TABLE "view_fields" (
+  "id" integer PRIMARY KEY,
+  "view_id" integer,
+  "field_id" integer,
+  "position" integer
 );
 
 CREATE TABLE "deployments" (
@@ -53,5 +62,9 @@ ALTER TABLE "models" ADD FOREIGN KEY ("module_id") REFERENCES "modules" ("id") D
 ALTER TABLE "fields" ADD FOREIGN KEY ("model_id") REFERENCES "models" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "views" ADD FOREIGN KEY ("model_id") REFERENCES "models" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "view_fields" ADD FOREIGN KEY ("view_id") REFERENCES "views" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "view_fields" ADD FOREIGN KEY ("field_id") REFERENCES "fields" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "deployments" ADD FOREIGN KEY ("module_id") REFERENCES "modules" ("id") DEFERRABLE INITIALLY IMMEDIATE;
