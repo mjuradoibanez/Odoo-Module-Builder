@@ -239,7 +239,7 @@ class Users extends \App\Entity\Users implements \Doctrine\ORM\Proxy\Proxy
     /**
      * {@inheritDoc}
      */
-    public function getCreatedAt(): \DateTime|string|null
+    public function getCreatedAt(): ?\DateTime
     {
 
         $this->__initializer__ && $this->__initializer__->__invoke($this, 'getCreatedAt', []);
@@ -250,7 +250,7 @@ class Users extends \App\Entity\Users implements \Doctrine\ORM\Proxy\Proxy
     /**
      * {@inheritDoc}
      */
-    public function setCreatedAt(\DateTime|string|null $createdAt): void
+    public function setCreatedAt(?\DateTime $createdAt): void
     {
 
         $this->__initializer__ && $this->__initializer__->__invoke($this, 'setCreatedAt', [$createdAt]);

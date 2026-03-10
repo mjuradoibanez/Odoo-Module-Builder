@@ -159,3 +159,5 @@ effbbf,172.23.0.1,PUT,http://localhost:8082/users/3,1773145170,,200
 2903b1,172.23.0.1,DELETE,http://localhost:8082/user/3,1773145201,,404
 621966,172.23.0.1,DELETE,http://localhost:8082/users/3,1773145206,,204
 1e4927,172.23.0.1,DELETE,http://localhost:8082/users/3,1773145208,,404
+347617,172.23.0.1,POST,http://localhost:8082/deployments,1773145386,,201
+e81227,172.23.0.1,DELETE,http://localhost:8082/deployments/5,1773146454,,204

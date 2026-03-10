@@ -48,8 +48,8 @@ class DeploymentController extends AbstractController
             }
 
             $deployment = new Deployments();
-            $deployment->setStatus($data['status'] ?? null);
-            $deployment->setLog($data['log'] ?? null);
+            $deployment->setStatus($data['status'] ?? 'pending');
+            $deployment->setLog($data['log'] ?? 'Deployment created');
             $deployment->setModule($module);
 
             $entityManager->persist($deployment);
