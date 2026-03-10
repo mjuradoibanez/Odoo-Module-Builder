@@ -1,0 +1,43 @@
+<?php //App%255CEntity%255CDeployments%2524status
+
+return [PHP_INT_MAX, static function () { return \Symfony\Component\VarExporter\Internal\Hydrator::hydrate(
+    $o = [
+        clone (($p = &\Symfony\Component\VarExporter\Internal\Registry::$prototypes)['Doctrine\\ORM\\Mapping\\Column'] ?? \Symfony\Component\VarExporter\Internal\Registry::p('Doctrine\\ORM\\Mapping\\Column')),
+        clone ($p['Symfony\\Component\\Serializer\\Annotation\\Groups'] ?? \Symfony\Component\VarExporter\Internal\Registry::p('Symfony\\Component\\Serializer\\Annotation\\Groups')),
+    ],
+    null,
+    [
+        'stdClass' => [
+            'name' => [
+                'status',
+            ],
+            'type' => [
+                'string',
+            ],
+            'length' => [
+                255,
+            ],
+            'precision' => [
+                null,
+            ],
+            'scale' => [
+                null,
+            ],
+            'nullable' => [
+                true,
+            ],
+        ],
+        'Symfony\\Component\\Serializer\\Annotation\\Groups' => [
+            'groups' => [
+                1 => [
+                    'deployments:read',
+                ],
+            ],
+        ],
+    ],
+    [
+        $o[0],
+        $o[1],
+    ],
+    []
+); }];

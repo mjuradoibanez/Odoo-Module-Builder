@@ -28,6 +28,8 @@ return [PHP_INT_MAX, static function () { return \Symfony\Component\VarExporter\
             'groups' => [
                 1 => [
                     'modules:read',
+                    'models:read',
+                    'deployments:read',
                 ],
             ],
         ],

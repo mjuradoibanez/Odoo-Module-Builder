@@ -20,7 +20,7 @@ class Users
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      *
-     * @Groups({"modules:read"})
+     * @Groups({"users:read", "modules:read"})
      */
     private $id;
 
@@ -29,7 +29,7 @@ class Users
      *
      * @ORM\Column(name="email", type="string", length=255, nullable=false)
      *
-     * @Groups({"modules:read"})
+     * @Groups({"users:read", "modules:read"})
      */
     private $email;
 
@@ -44,8 +44,15 @@ class Users
      * @var \DateTime|null
      *
      * @ORM\Column(name="created_at", type="datetime", nullable=true, options={"default"="CURRENT_TIMESTAMP"})
+     *
+     * @Groups({"users:read"})
      */
-    private $createdAt = 'CURRENT_TIMESTAMP';
+    private $createdAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
 
     public function getId(): int
     {
@@ -72,12 +79,12 @@ class Users
         $this->password = $password;
     }
 
-    public function getCreatedAt(): \DateTime|string|null
+    public function getCreatedAt(): ?\DateTime
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTime|string|null $createdAt): void
+    public function setCreatedAt(?\DateTime $createdAt): void
     {
         $this->createdAt = $createdAt;
     }

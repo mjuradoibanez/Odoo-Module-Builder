@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Models
@@ -18,6 +19,8 @@ class Models
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     *
+     * @Groups({"models:read", "fields:read", "views:read"})
      */
     private $id;
 
@@ -25,6 +28,8 @@ class Models
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
+     *
+     * @Groups({"models:read", "fields:read", "views:read"})
      */
     private $name;
 
@@ -32,6 +37,8 @@ class Models
      * @var string
      *
      * @ORM\Column(name="technical_name", type="string", length=255, nullable=false)
+     *
+     * @Groups({"models:read"})
      */
     private $technicalName;
 
@@ -42,6 +49,8 @@ class Models
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="module_id", referencedColumnName="id")
      * })
+     *
+     * @Groups({"models:read"})
      */
     private $module;
 

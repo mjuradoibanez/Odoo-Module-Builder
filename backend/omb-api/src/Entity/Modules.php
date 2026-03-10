@@ -20,7 +20,7 @@ class Modules
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      *
-     * @Groups({"modules:read"})
+     * @Groups({"modules:read", "models:read", "deployments:read"})
      */
     private $id;
 
@@ -29,7 +29,7 @@ class Modules
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      *
-     * @Groups({"modules:read"})
+     * @Groups({"modules:read", "models:read", "deployments:read"})
      */
     private $name;
 

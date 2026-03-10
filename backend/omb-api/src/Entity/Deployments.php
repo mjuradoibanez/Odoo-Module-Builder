@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Deployments
@@ -18,6 +19,8 @@ class Deployments
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     *
+     * @Groups({"deployments:read"})
      */
     private $id;
 
@@ -25,6 +28,8 @@ class Deployments
      * @var string|null
      *
      * @ORM\Column(name="status", type="string", length=255, nullable=true)
+     *
+     * @Groups({"deployments:read"})
      */
     private $status;
 
@@ -32,6 +37,8 @@ class Deployments
      * @var string|null
      *
      * @ORM\Column(name="log", type="text", length=65535, nullable=true)
+     *
+     * @Groups({"deployments:read"})
      */
     private $log;
 
@@ -39,8 +46,10 @@ class Deployments
      * @var \DateTime|null
      *
      * @ORM\Column(name="created_at", type="datetime", nullable=true, options={"default"="CURRENT_TIMESTAMP"})
+     *
+     * @Groups({"deployments:read"})
      */
-    private $createdAt = 'CURRENT_TIMESTAMP';
+    private $createdAt = null;
 
     /**
      * @var Modules
@@ -49,8 +58,15 @@ class Deployments
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="module_id", referencedColumnName="id")
      * })
+     *
+     * @Groups({"deployments:read"})
      */
     private $module;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
 
     public function getId(): int
     {
@@ -77,12 +93,12 @@ class Deployments
         $this->log = $log;
     }
 
-    public function getCreatedAt(): \DateTime|string|null
+    public function getCreatedAt(): ?\DateTime
     {
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTime|string|null $createdAt): void
+    public function setCreatedAt(?\DateTime $createdAt): void
     {
         $this->createdAt = $createdAt;
     }

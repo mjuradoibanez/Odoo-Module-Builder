@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * Fields
@@ -18,6 +19,8 @@ class Fields
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     *
+     * @Groups({"fields:read", "view_fields:read"})
      */
     private $id;
 
@@ -25,6 +28,8 @@ class Fields
      * @var string
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
+     *
+     * @Groups({"fields:read", "view_fields:read"})
      */
     private $name;
 
@@ -32,6 +37,8 @@ class Fields
      * @var string
      *
      * @ORM\Column(name="technical_name", type="string", length=255, nullable=false)
+     *
+     * @Groups({"fields:read"})
      */
     private $technicalName;
 
@@ -39,6 +46,8 @@ class Fields
      * @var string
      *
      * @ORM\Column(name="type", type="string", length=255, nullable=false)
+     *
+     * @Groups({"fields:read"})
      */
     private $type;
 
@@ -46,6 +55,8 @@ class Fields
      * @var bool|null
      *
      * @ORM\Column(name="required", type="boolean", nullable=true)
+     *
+     * @Groups({"fields:read"})
      */
     private $required = '0';
 
@@ -53,6 +64,8 @@ class Fields
      * @var string|null
      *
      * @ORM\Column(name="relation_model", type="string", length=255, nullable=true)
+     *
+     * @Groups({"fields:read"})
      */
     private $relationModel;
 
@@ -63,6 +76,8 @@ class Fields
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="model_id", referencedColumnName="id")
      * })
+     *
+     * @Groups({"fields:read"})
      */
     private $model;
 

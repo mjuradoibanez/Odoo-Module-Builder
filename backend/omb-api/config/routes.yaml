@@ -2,6 +2,8 @@
 #    path: /
 #    controller: App\Controller\DefaultController::index
 
+
+# Modules
 modules:
   path: /modules
   controller: App\Controller\ModuleController::modules
@@ -11,3 +13,69 @@ module:
   path: /modules/{id}
   controller: App\Controller\ModuleController::module
   methods: [ GET, DELETE, PUT ]
+
+# Models
+models:
+  path: /models
+  controller: App\Controller\ModelController::models
+  methods: [ GET, POST ]
+
+model:
+  path: /models/{id}
+  controller: App\Controller\ModelController::model
+  methods: [ GET, DELETE, PUT ]
+
+# Fields
+fields:
+  path: /fields
+  controller: App\Controller\FieldController::fields
+  methods: [ GET, POST ]
+
+field:
+  path: /fields/{id}
+  controller: App\Controller\FieldController::field
+  methods: [ GET, DELETE, PUT ]
+
+# Fields
+users:
+  path: /users
+  controller: App\Controller\UserController::users
+  methods: [ GET, POST ]
+
+user:
+  path: /users/{id}
+  controller: App\Controller\UserController::user
+  methods: [ GET, DELETE, PUT ]
+
+# Views
+views:
+  path: /views
+  controller: App\Controller\ViewController::views
+  methods: [ GET, POST ]
+
+view:
+  path: /views/{id}
+  controller: App\Controller\ViewController::view
+  methods: [ GET, DELETE, PUT ]
+
+# Views-fields
+viewFields:
+  path: /viewFields
+  controller: App\Controller\ViewFieldController::viewFields
+  methods: [ GET, POST ]
+
+viewField:
+  path: /viewFields/{id}
+  controller: App\Controller\ViewFieldController::viewField
+  methods: [ DELETE ]
+
+# Deployments
+deployments:
+  path: /deployments
+  controller: App\Controller\DeploymentController::deployments
+  methods: [ GET, POST ]
+
+deployment:
+  path: /deployments/{id}
+  controller: App\Controller\DeploymentController::deployment
+  methods: [ GET, DELETE ]

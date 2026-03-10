@@ -334,11 +334,53 @@
     <service id="kernel" class="App\Kernel" public="true" synthetic="true">
       <tag name="routing.route_loader"/>
     </service>
+    <service id="App\Controller\DeploymentController" class="App\Controller\DeploymentController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\DeploymentController"/>
+      </call>
+    </service>
+    <service id="App\Controller\FieldController" class="App\Controller\FieldController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\FieldController"/>
+      </call>
+    </service>
+    <service id="App\Controller\ModelController" class="App\Controller\ModelController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\ModelController"/>
+      </call>
+    </service>
     <service id="App\Controller\ModuleController" class="App\Controller\ModuleController" public="true" autowire="true" autoconfigure="true">
       <tag name="controller.service_arguments"/>
       <tag name="container.service_subscriber"/>
       <call method="setContainer">
         <argument type="service" id=".service_locator.vdmMuyE.App\Controller\ModuleController"/>
+      </call>
+    </service>
+    <service id="App\Controller\UserController" class="App\Controller\UserController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\UserController"/>
+      </call>
+    </service>
+    <service id="App\Controller\ViewController" class="App\Controller\ViewController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\ViewController"/>
+      </call>
+    </service>
+    <service id="App\Controller\ViewFieldController" class="App\Controller\ViewFieldController" public="true" autowire="true" autoconfigure="true">
+      <tag name="controller.service_arguments"/>
+      <tag name="container.service_subscriber"/>
+      <call method="setContainer">
+        <argument type="service" id=".service_locator.vdmMuyE.App\Controller\ViewFieldController"/>
       </call>
     </service>
     <service id=".legacy_controller_name_converter" class="Symfony\Bundle\FrameworkBundle\Controller\ControllerNameParser" public="false">
@@ -4867,9 +4909,27 @@
       <tag name="maker.command"/>
       <argument>/code</argument>
     </service>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\DeploymentController" class="App\Controller\DeploymentController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\DeploymentController" class="App\Controller\DeploymentController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\DeploymentController" class="App\Controller\DeploymentController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\FieldController" class="App\Controller\FieldController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\FieldController" class="App\Controller\FieldController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\FieldController" class="App\Controller\FieldController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\ModelController" class="App\Controller\ModelController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\ModelController" class="App\Controller\ModelController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\ModelController" class="App\Controller\ModelController" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\ModuleController" class="App\Controller\ModuleController" autowire="true" abstract="true"/>
     <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\ModuleController" class="App\Controller\ModuleController" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Controller\ModuleController" class="App\Controller\ModuleController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\UserController" class="App\Controller\UserController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\UserController" class="App\Controller\UserController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\UserController" class="App\Controller\UserController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\ViewController" class="App\Controller\ViewController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\ViewController" class="App\Controller\ViewController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\ViewController" class="App\Controller\ViewController" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Contracts\Service\ServiceSubscriberInterface.0.App\Controller\ViewFieldController" class="App\Controller\ViewFieldController" autowire="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Bundle\FrameworkBundle\Controller\AbstractController.0.App\Controller\ViewFieldController" class="App\Controller\ViewFieldController" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Controller\ViewFieldController" class="App\Controller\ViewFieldController" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".service_locator.CmORmuK" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
       <tag name="container.service_locator"/>
       <argument type="collection">
@@ -5157,13 +5217,35 @@
         <argument key="serializer" type="service_closure" id="serializer"/>
       </argument>
     </service>
-    <service id=".service_locator.ipRSZik" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+    <service id=".service_locator.hMEGFE1" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
       <tag name="container.service_locator"/>
       <argument type="collection">
+        <argument key="App\Controller\DeploymentController::deployment" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\DeploymentController::deployments" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\FieldController::field" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\FieldController::fields" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ModelController::model" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ModelController::models" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController::module" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController::modules" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController::user" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController::users" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewController::view" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewController::views" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewFieldController::viewFields" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\DeploymentController:deployment" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\DeploymentController:deployments" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\FieldController:field" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\FieldController:fields" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ModelController:model" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ModelController:models" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController:module" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController:modules" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController:user" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController:users" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewController:view" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewController:views" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\ViewFieldController:viewFields" type="service_closure" id=".service_locator.BuqDmxr"/>
       </argument>
     </service>
     <service id=".service_locator.Y7gDuDN" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
@@ -5449,9 +5531,45 @@
         <argument key="twig" type="service_closure" id="twig" on-invalid="ignore"/>
       </argument>
     </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\DeploymentController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\DeploymentController"/>
+      <argument>App\Controller\DeploymentController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\FieldController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\FieldController"/>
+      <argument>App\Controller\FieldController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\ModelController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\ModelController"/>
+      <argument>App\Controller\ModelController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
     <service id=".service_locator.vdmMuyE.App\Controller\ModuleController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
       <tag name="container.service_locator_context" id="App\Controller\ModuleController"/>
       <argument>App\Controller\ModuleController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\UserController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\UserController"/>
+      <argument>App\Controller\UserController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\ViewController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\ViewController"/>
+      <argument>App\Controller\ViewController</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.vdmMuyE" method="withContext"/>
+    </service>
+    <service id=".service_locator.vdmMuyE.App\Controller\ViewFieldController" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+      <tag name="container.service_locator_context" id="App\Controller\ViewFieldController"/>
+      <argument>App\Controller\ViewFieldController</argument>
       <argument type="service" id="service_container"/>
       <factory service=".service_locator.vdmMuyE" method="withContext"/>
     </service>
@@ -5601,12 +5719,12 @@
       <argument type="service" id="security.token_storage"/>
     </service>
     <service id="debug.argument_resolver.service.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\ServiceValueResolver" public="false">
-      <argument type="service" id=".service_locator.ipRSZik"/>
+      <argument type="service" id=".service_locator.hMEGFE1"/>
     </service>
     <service id="debug.argument_resolver.default.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\DefaultValueResolver" public="false"/>
     <service id="debug.argument_resolver.variadic.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\VariadicValueResolver" public="false"/>
     <service id="debug.argument_resolver.not_tagged_controller.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\NotTaggedControllerValueResolver" public="false">
-      <argument type="service" id=".service_locator.ipRSZik"/>
+      <argument type="service" id=".service_locator.hMEGFE1"/>
     </service>
     <service id=".debug.http_client.inner" class="Symfony\Contracts\HttpClient\HttpClientInterface" public="false">
       <argument type="collection"/>
@@ -5998,7 +6116,7 @@
     <service id="Psr\Log\LoggerInterface" alias="monolog.logger" public="false"/>
     <service id="container.env_var_processors_locator" alias=".service_locator.CmORmuK" public="true"/>
     <service id="twig.loader.filesystem" alias="twig.loader.native_filesystem" public="false"/>
-    <service id="argument_resolver.controller_locator" alias=".service_locator.ipRSZik"/>
+    <service id="argument_resolver.controller_locator" alias=".service_locator.hMEGFE1"/>
     <service id="twig.loader" alias="twig.loader.native_filesystem"/>
     <service id="Psr\Log\LoggerInterface $requestLogger" alias="monolog.logger.request"/>
     <service id="Psr\Log\LoggerInterface $consoleLogger" alias="monolog.logger.console"/>

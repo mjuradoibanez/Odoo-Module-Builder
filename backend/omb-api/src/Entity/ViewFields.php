@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 /**
  * ViewFields
@@ -18,6 +19,8 @@ class ViewFields
      * @ORM\Column(name="id", type="integer", nullable=false)
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
+     *
+     * @Groups({"view_fields:read"})
      */
     private $id;
 
@@ -25,6 +28,8 @@ class ViewFields
      * @var int|null
      *
      * @ORM\Column(name="position", type="integer", nullable=true)
+     *
+     * @Groups({"view_fields:read"})
      */
     private $position = '0';
 
@@ -35,6 +40,8 @@ class ViewFields
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="view_id", referencedColumnName="id")
      * })
+     *
+     * @Groups({"view_fields:read"})
      */
     private $view;
 
@@ -45,6 +52,8 @@ class ViewFields
      * @ORM\JoinColumns({
      *   @ORM\JoinColumn(name="field_id", referencedColumnName="id")
      * })
+     *
+     * @Groups({"view_fields:read"})
      */
     private $field;
 
@@ -53,12 +62,12 @@ class ViewFields
         return $this->id;
     }
 
-    public function getPosition(): int|string|null
+    public function getPosition(): ?int
     {
         return $this->position;
     }
 
-    public function setPosition(int|string|null $position): void
+    public function setPosition(?int $position): void
     {
         $this->position = $position;
     }
