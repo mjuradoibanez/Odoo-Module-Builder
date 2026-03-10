@@ -10,4 +10,4 @@ modules:
 module:
   path: /modules/{id}
   controller: App\Controller\ModuleController::module
-  methods: [ GET, DELETE ]
+  methods: [ GET, DELETE, PUT ]

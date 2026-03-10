@@ -117,6 +117,61 @@ class ModuleController extends AbstractController
             $entityManager->flush();
 
             return new Response("Module deleted", 204);
+
+        } else if ($request->isMethod('PUT')){
+            $module = $entityManager
+                ->getRepository(Modules::class)
+                ->findOneBy(['id' => $id]);
+
+            if (!$module){
+                return new Response("Module not found", 404);
+            }
+
+            $data = json_decode($request->getContent(), true);
+
+            if (!$data){
+                return new Response("Invalid JSON", 400);
+            }
+
+            // Actualizar objeto
+            $serializer->deserialize(
+                json_encode($data),
+                Modules::class,
+                'json',
+                ['object_to_populate' => $module]
+            );
+
+            // Validar duplicados
+            $existing = $entityManager
+                ->getRepository(Modules::class)
+                ->findOneBy(['technicalName' => $module->getTechnicalName()]);
+
+            if ($existing && $existing->getId() != $module->getId()){
+                return new Response("technicalName already exists", 409);
+            }
+
+            // Relación user
+            if (isset($data['user_id'])){
+                $user = $entityManager
+                    ->getRepository(Users::class)
+                    ->findOneBy(['id' => $data['user_id']]);
+
+                if (!$user){
+                    return new Response("User not found", 404);
+                }
+
+                $module->setUser($user);
+            }
+
+            $entityManager->flush();
+
+            $json = $serializer->serialize(
+                $module,
+                'json',
+                ['groups'=>'modules:read']
+            );
+
+            return new Response($json, 200, ['Content-Type'=>'application/json']);
         }
 
         return new Response("Method not allowed", 405);

@@ -44,7 +44,7 @@ return [
         149 => [[['_route' => '_profiler_exception_css', '_controller' => 'web_profiler.controller.exception_panel::stylesheet'], ['token'], null, null, false, false, null]],
         159 => [[['_route' => '_profiler', '_controller' => 'web_profiler.controller.profiler::panelAction'], ['token'], null, null, false, true, null]],
         186 => [
-            [['_route' => 'module', '_controller' => 'App\\Controller\\ModuleController::module'], ['id'], ['GET' => 0, 'DELETE' => 1], null, false, true, null],
+            [['_route' => 'module', '_controller' => 'App\\Controller\\ModuleController::module'], ['id'], ['GET' => 0, 'DELETE' => 1, 'PUT' => 2], null, false, true, null],
             [null, null, null, null, false, false, 0],
         ],
     ],
