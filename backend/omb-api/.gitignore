@@ -1,0 +1,12 @@
+# Symfony / PHP
+/vendor/
+/var/
+/bin/
+/provisioning/sites-enabled/
+/.idea/
+/.env.local
+/data/db/
+
+# OS
+.DS_Store
+Thumbs.db
