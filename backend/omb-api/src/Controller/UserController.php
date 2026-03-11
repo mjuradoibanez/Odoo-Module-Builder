@@ -53,7 +53,6 @@ class UserController extends AbstractController
             $user = new Users();
             $user->setEmail($data['email']);
             $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
-
             $entityManager->persist($user);
             $entityManager->flush();
 
@@ -139,5 +138,41 @@ class UserController extends AbstractController
         }
 
         return new Response("Method not allowed", 405);
+    }
+
+    public function login(Request $request, SerializerInterface $serializer)
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if (!$data) {
+            return new Response("Invalid JSON", 400);
+        }
+
+        $email = $data['email'] ?? null;
+        $password = $data['password'] ?? null;
+
+        if (!$email || !$password) {
+            return new Response("Missing credentials", 400);
+        }
+
+        $user = $this->getDoctrine()
+            ->getRepository(Users::class)
+            ->findOneBy(['email' => $email]);
+
+        if (!$user) {
+            return new Response("User not found", 404);
+        }
+
+        if (!password_verify($password, $user->getPassword())) {
+            return new Response("Invalid password", 401);
+        }
+
+        $json = $serializer->serialize(
+            $user,
+            'json',
+            ['groups' => 'users:read']
+        );
+
+        return new Response($json, 200, ['Content-Type' => 'application/json']);
     }
 }

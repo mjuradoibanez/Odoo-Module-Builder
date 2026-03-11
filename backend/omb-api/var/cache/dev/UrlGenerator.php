@@ -29,4 +29,5 @@ return [
     'viewField' => [['id'], ['_controller' => 'App\\Controller\\ViewFieldController::viewField'], [], [['variable', '/', '[^/]++', 'id'], ['text', '/viewFields']], [], []],
     'deployments' => [[], ['_controller' => 'App\\Controller\\DeploymentController::deployments'], [], [['text', '/deployments']], [], []],
     'deployment' => [['id'], ['_controller' => 'App\\Controller\\DeploymentController::deployment'], [], [['variable', '/', '[^/]++', 'id'], ['text', '/deployments']], [], []],
+    'login' => [[], ['_controller' => 'App\\Controller\\UserController::login'], [], [['text', '/login']], [], []],
 ];

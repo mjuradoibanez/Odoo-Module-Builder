@@ -5217,7 +5217,7 @@
         <argument key="serializer" type="service_closure" id="serializer"/>
       </argument>
     </service>
-    <service id=".service_locator.hMEGFE1" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
+    <service id=".service_locator._wiZ4xp" class="Symfony\Component\DependencyInjection\ServiceLocator" public="false">
       <tag name="container.service_locator"/>
       <argument type="collection">
         <argument key="App\Controller\DeploymentController::deployment" type="service_closure" id=".service_locator.BuqDmxr"/>
@@ -5228,6 +5228,7 @@
         <argument key="App\Controller\ModelController::models" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController::module" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController::modules" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController::login" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\UserController::user" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\UserController::users" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ViewController::view" type="service_closure" id=".service_locator.BuqDmxr"/>
@@ -5241,6 +5242,7 @@
         <argument key="App\Controller\ModelController:models" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController:module" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ModuleController:modules" type="service_closure" id=".service_locator.BuqDmxr"/>
+        <argument key="App\Controller\UserController:login" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\UserController:user" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\UserController:users" type="service_closure" id=".service_locator.BuqDmxr"/>
         <argument key="App\Controller\ViewController:view" type="service_closure" id=".service_locator.BuqDmxr"/>
@@ -5719,12 +5721,12 @@
       <argument type="service" id="security.token_storage"/>
     </service>
     <service id="debug.argument_resolver.service.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\ServiceValueResolver" public="false">
-      <argument type="service" id=".service_locator.hMEGFE1"/>
+      <argument type="service" id=".service_locator._wiZ4xp"/>
     </service>
     <service id="debug.argument_resolver.default.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\DefaultValueResolver" public="false"/>
     <service id="debug.argument_resolver.variadic.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\VariadicValueResolver" public="false"/>
     <service id="debug.argument_resolver.not_tagged_controller.inner" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\NotTaggedControllerValueResolver" public="false">
-      <argument type="service" id=".service_locator.hMEGFE1"/>
+      <argument type="service" id=".service_locator._wiZ4xp"/>
     </service>
     <service id=".debug.http_client.inner" class="Symfony\Contracts\HttpClient\HttpClientInterface" public="false">
       <argument type="collection"/>
@@ -6116,7 +6118,7 @@
     <service id="Psr\Log\LoggerInterface" alias="monolog.logger" public="false"/>
     <service id="container.env_var_processors_locator" alias=".service_locator.CmORmuK" public="true"/>
     <service id="twig.loader.filesystem" alias="twig.loader.native_filesystem" public="false"/>
-    <service id="argument_resolver.controller_locator" alias=".service_locator.hMEGFE1"/>
+    <service id="argument_resolver.controller_locator" alias=".service_locator._wiZ4xp"/>
     <service id="twig.loader" alias="twig.loader.native_filesystem"/>
     <service id="Psr\Log\LoggerInterface $requestLogger" alias="monolog.logger.request"/>
     <service id="Psr\Log\LoggerInterface $consoleLogger" alias="monolog.logger.console"/>

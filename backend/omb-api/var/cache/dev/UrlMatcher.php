@@ -20,6 +20,7 @@ return [
         '/views' => [[['_route' => 'views', '_controller' => 'App\\Controller\\ViewController::views'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
         '/viewFields' => [[['_route' => 'viewFields', '_controller' => 'App\\Controller\\ViewFieldController::viewFields'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
         '/deployments' => [[['_route' => 'deployments', '_controller' => 'App\\Controller\\DeploymentController::deployments'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
+        '/login' => [[['_route' => 'login', '_controller' => 'App\\Controller\\UserController::login'], null, ['POST' => 0], null, false, false, null]],
     ],
     [ // $regexpList
         0 => '{^(?'

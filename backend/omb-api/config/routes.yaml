@@ -79,3 +79,9 @@ deployment:
   path: /deployments/{id}
   controller: App\Controller\DeploymentController::deployment
   methods: [ GET, DELETE ]
+
+# Login
+login:
+  path: /login
+  controller: App\Controller\UserController::login
+  methods: [ POST ]

@@ -4,8 +4,8 @@ USE omb;
 -- Usuarios
 -- -----------------------------
 INSERT INTO users (email, password) VALUES
-('admin@omb.com', 'pass123'),
-('usuario@omb.com', 'pass456');
+('admin@omb.com', '$2y$10$kdNxcjoaAWpS69Qyx7o1Y.eOw/UMrMkyQ5VSlsFxCEsrZUyI2tAam'),
+('usuario@omb.com', '$2y$10$7brVOYxV62qQ4DrgR8hvzOAhwIfJaXHGL5nE.UpRuba99NYZtUMP6');
 
 -- -----------------------------
 -- Módulos
