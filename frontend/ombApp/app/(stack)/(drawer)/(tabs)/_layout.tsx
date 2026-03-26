@@ -22,28 +22,28 @@ const TabsLayout = () => {
         name='dashboard'
         options={{
           tabBarLabel: 'Módulos',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="grid-outline" color={color} />
+          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="apps-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />
       <Tabs.Screen
         name='module-editor'
         options={{
           tabBarLabel: 'Editor Módulo',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="construct-outline" color={color} />
+          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="build-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />
       <Tabs.Screen
         name='model-editor'
         options={{
-          tabBarLabel: 'Editor Modelo',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="cube-outline" color={color} />
+          tabBarLabel: 'Modelos',
+          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="layers-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />
       <Tabs.Screen
         name='deploy'
         options={{
-          tabBarLabel: 'Deploy',
-          tabBarIcon: ({ color }) => <Ionicons size={28} name="cloud-upload-outline" color={color} />
+          tabBarLabel: 'Desplegar',
+          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="cloud-upload-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />
     </Tabs>

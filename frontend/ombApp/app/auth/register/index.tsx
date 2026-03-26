@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function RegisterScreen() {
   const [form, setForm] = useState({
     email: '',
+    username: '',
     password: '',
     confirmPassword: '',
   });
@@ -35,7 +36,7 @@ export default function RegisterScreen() {
 
 
   const onRegister = async () => {
-    const { email, password, confirmPassword } = form;
+    const { email, username, password, confirmPassword } = form;
     if (!email || !password || !confirmPassword) {
       setErrorMsg('Rellena todos los campos');
       setSuccessMsg(null);
@@ -52,7 +53,7 @@ export default function RegisterScreen() {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const user = await authRegister({ email, password });
+      const user = await authRegister({ email, password, username });
       if (user) {
         setSuccessMsg('¡Registro exitoso! Ya puedes iniciar sesión.');
         setTimeout(() => router.replace('/auth/login'), 1500);
@@ -111,7 +112,7 @@ export default function RegisterScreen() {
             color: Colors.light.text,
             padding: 14,
             borderRadius: 10,
-            marginBottom: 16,
+            marginBottom: 8,
             fontSize: 16,
             borderWidth: 1,
             borderColor: Colors.light.border,
@@ -120,7 +121,37 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           value={form.email}
-          onChangeText={value => setForm({ ...form, email: value })}
+          onChangeText={value => {
+            setForm(f => {
+              // Si el usuario no ha tocado el campo username o coincide con el anterior email, autocompletar
+              const prevEmailUser = f.email.split('@')[0];
+              const shouldAutoFill = !f.username || f.username === prevEmailUser;
+              return {
+                ...f,
+                email: value,
+                username: shouldAutoFill ? value.split('@')[0] || '' : f.username
+              };
+            });
+          }}
+        />
+        <TextInput
+          placeholder="Nombre de usuario (opcional)"
+          placeholderTextColor={Colors.light.icon}
+          style={{
+            width: '100%',
+            backgroundColor: Colors.light.background,
+            color: Colors.light.text,
+            padding: 14,
+            borderRadius: 10,
+            marginBottom: 16,
+            fontSize: 16,
+            borderWidth: 1,
+            borderColor: Colors.light.border,
+            fontFamily: Fonts.sans,
+          }}
+          autoCapitalize="none"
+          value={form.username}
+          onChangeText={value => setForm({ ...form, username: value })}
         />
         <View style={{ width: '100%', marginBottom: 16 }}>
           <View style={{ position: 'relative' }}>

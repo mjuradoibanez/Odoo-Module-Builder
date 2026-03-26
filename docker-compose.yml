@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "5432:5432"
 
   odoo:
     image: odoo:19
@@ -21,7 +21,7 @@ services:
     depends_on:
       - db
     ports:
-      - "8069:8069"
+      - "8070:8070"
     volumes:
       - ./odoo/addons:/mnt/extra-addons
       - ./odoo/config:/etc/odoo

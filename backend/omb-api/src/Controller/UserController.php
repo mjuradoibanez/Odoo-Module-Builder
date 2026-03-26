@@ -34,11 +34,15 @@ class UserController extends AbstractController
                 return new Response("Invalid JSON", 400);
             }
 
-            if (
-                empty($data['email']) ||
-                empty($data['password'])
-            ) {
+
+            if (empty($data['email']) || empty($data['password'])) {
                 return new Response("Missing required fields", 400);
+            }
+
+            // Username obligatorio, pero si no lo envía, usar la parte antes de @ del email
+            $username = $data['username'] ?? null;
+            if (!$username) {
+                $username = explode('@', $data['email'])[0];
             }
 
             // Verificar email duplicado
@@ -50,8 +54,10 @@ class UserController extends AbstractController
                 return new Response("Email already exists", 409);
             }
 
+
             $user = new Users();
             $user->setEmail($data['email']);
+            $user->setUsername($username);
             $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
             $entityManager->persist($user);
             $entityManager->flush();
@@ -144,27 +150,49 @@ class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
+
+        // Permitir CORS para peticiones OPTIONS
+        if ($request->getMethod() === "OPTIONS") {
+            $response = new Response();
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            $response->headers->set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type');
+            return $response;
+        }
+
         if (!$data) {
-            return new Response("Invalid JSON", 400);
+            $response = new Response("Invalid JSON", 400);
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            return $response;
         }
 
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
 
+
         if (!$email || !$password) {
-            return new Response("Missing credentials", 400);
+            $response = new Response("Missing credentials", 400);
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            return $response;
         }
+
 
         $user = $this->getDoctrine()
             ->getRepository(Users::class)
             ->findOneBy(['email' => $email]);
 
+
         if (!$user) {
-            return new Response("User not found", 404);
+            $response = new Response("User not found", 404);
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            return $response;
         }
 
+
         if (!password_verify($password, $user->getPassword())) {
-            return new Response("Invalid password", 401);
+            $response = new Response("Invalid password", 401);
+            $response->headers->set('Access-Control-Allow-Origin', '*');
+            return $response;
         }
 
         $json = $serializer->serialize(
@@ -173,6 +201,8 @@ class UserController extends AbstractController
             ['groups' => 'users:read']
         );
 
-        return new Response($json, 200, ['Content-Type' => 'application/json']);
+        $response = new Response($json, 200, ['Content-Type' => 'application/json']);
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        return $response;
     }
 }

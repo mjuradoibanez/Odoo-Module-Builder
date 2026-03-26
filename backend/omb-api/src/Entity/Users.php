@@ -14,6 +14,24 @@ use Symfony\Component\Serializer\Annotation\Groups;
 class Users
 {
     /**
+     * @var string
+     *
+     * @ORM\Column(name="username", type="string", length=255, nullable=false)
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $username;
+
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): void
+    {
+        $this->username = $username;
+    }
+    /**
      * @var int
      *
      * @ORM\Column(name="id", type="integer", nullable=false)

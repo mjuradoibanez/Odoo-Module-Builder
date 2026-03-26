@@ -2,7 +2,7 @@ import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Modal from 'react-native-modal';
 
 // mapa de iconos asociados a rutas
@@ -35,16 +35,28 @@ export const CustomTabBar = (props: any) => {
   // Determinar tab activo
   const activeIndex = props.state?.index ?? 0;
 
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 900;
   return (
-    <View style={{ backgroundColor: '#000' }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 56, backgroundColor: '#000', borderTopColor: '#222', borderTopWidth: 1 }}>
+    <View style={{ backgroundColor: '#F7F7F7' }}>
+      <View
+        style={
+          isDesktop
+            ? { flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', width: 80, height: '100vh', position: 'fixed', left: 0, top: 0, borderRightColor: '#A084A2', borderRightWidth: 1, backgroundColor: '#F7F7F7', zIndex: 100 }
+            : { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 56, backgroundColor: '#F7F7F7', borderTopColor: '#A084A2', borderTopWidth: 1 }
+        }
+      >
         {/* Mapeo de iconos de las tabs */}
         {tabIcons.map((tab, idx) => (
-          <TouchableOpacity key={tab.name} style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }} onPress={() => handleTabPress(tab.route, idx)}>
+          <TouchableOpacity
+            key={tab.name}
+            style={isDesktop ? { marginVertical: 24, alignItems: 'center' } : { flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            onPress={() => handleTabPress(tab.route, idx)}
+          >
             <Ionicons
               name={tab.name}
               size={28}
-              color={activeIndex === idx ? '#1db954' : '#888'}
+              color={activeIndex === idx ? '#714B67' : '#A084A2'}
             />
           </TouchableOpacity>
         ))}

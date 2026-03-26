@@ -4,22 +4,22 @@ import { ombApi } from '../api/ombApi';
 export interface RegisterUserDto {
   email: string;
   password: string;
+  username?: string;
 }
 
 export const authRegister = async (data: RegisterUserDto): Promise<User | null> => {
   try {
-    const body = {
+    const body: any = {
       email: data.email,
       password: data.password,
     };
-
+    if (data.username) {
+      body.username = data.username;
+    }
     const response = await ombApi.post<User>('/users', body);
-    
     return response.data;
-  
   } catch (error: any) {
     console.log('REGISTER ERROR:', error?.response?.data);
-  
     return null;
   }
 };

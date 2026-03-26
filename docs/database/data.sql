@@ -3,9 +3,9 @@ USE omb;
 -- -----------------------------
 -- Usuarios
 -- -----------------------------
-INSERT INTO users (email, password) VALUES
-('admin@omb.com', '$2y$10$kdNxcjoaAWpS69Qyx7o1Y.eOw/UMrMkyQ5VSlsFxCEsrZUyI2tAam'),
-('usuario@omb.com', '$2y$10$7brVOYxV62qQ4DrgR8hvzOAhwIfJaXHGL5nE.UpRuba99NYZtUMP6');
+INSERT INTO users (email, username, password) VALUES
+('admin@omb.com', 'admin', '$2y$10$kdNxcjoaAWpS69Qyx7o1Y.eOw/UMrMkyQ5VSlsFxCEsrZUyI2tAam'),
+('usuario@omb.com', 'usuario', '$2y$10$7brVOYxV62qQ4DrgR8hvzOAhwIfJaXHGL5nE.UpRuba99NYZtUMP6');
 
 -- -----------------------------
 -- Módulos

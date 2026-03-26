@@ -11,8 +11,10 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
     
     return (
         <DrawerContentScrollView {...props} style={{ backgroundColor: Colors.light.background }} contentContainerStyle={{ padding: 0 }}>
-            <View className="px-6 py-6 bg-background border-b border-border">
-                <Text className="text-primary font-bold text-2xl">Menú</Text>
+            <View style={{ padding: 24, backgroundColor: Colors.light.primary, borderBottomColor: Colors.light.border, borderBottomWidth: 2, alignItems: 'center' }}>
+                {/* Puedes poner aquí el logo de Odoo si lo tienes en assets/images/odoo-logo.png */}
+                {/* <Image source={require('@/assets/images/odoo-logo.png')} style={{ width: 80, height: 32, resizeMode: 'contain', marginBottom: 8 }} /> */}
+                <Text style={{ color: Colors.light.card, fontWeight: 'bold', fontSize: 28, fontFamily: 'Montserrat-Bold', letterSpacing: 2 }}>Odoo Builder</Text>
             </View>
 
             {/*
