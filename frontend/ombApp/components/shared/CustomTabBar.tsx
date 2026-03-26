@@ -5,12 +5,12 @@ import { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import Modal from 'react-native-modal';
 
-// mapa de iconos asociados a rutas
-const tabIcons: { name: 'home-outline' | 'search-outline' | 'library-outline' | 'add-circle-outline'; route: string }[] = [
-  { name: 'home-outline', route: 'home/index' },
-  { name: 'search-outline', route: 'busqueda/index' },
-  { name: 'library-outline', route: 'biblioteca/index' },
-  { name: 'add-circle-outline', route: 'modal' },
+// Iconos y rutas para las tabs principales estilo Odoo
+const tabIcons: { name: string; route: string }[] = [
+  { name: 'apps-outline', route: 'dashboard' },
+  { name: 'build-outline', route: 'module-editor' },
+  { name: 'layers-outline', route: 'model-editor' },
+  { name: 'cloud-upload-outline', route: 'deploy' },
 ];
 
 export const CustomTabBar = (props: any) => {
@@ -42,7 +42,7 @@ export const CustomTabBar = (props: any) => {
       <View
         style={
           isDesktop
-            ? { flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', width: 80, height: '100vh', position: 'fixed', left: 0, top: 0, borderRightColor: '#A084A2', borderRightWidth: 1, backgroundColor: '#F7F7F7', zIndex: 100 }
+            ? { flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', width: 80, height: '100%', position: 'absolute', left: 0, top: 0, borderRightColor: '#A084A2', borderRightWidth: 1, backgroundColor: '#F7F7F7', zIndex: 100 }
             : { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 56, backgroundColor: '#F7F7F7', borderTopColor: '#A084A2', borderTopWidth: 1 }
         }
       >
@@ -53,11 +53,22 @@ export const CustomTabBar = (props: any) => {
             style={isDesktop ? { marginVertical: 24, alignItems: 'center' } : { flex: 1, alignItems: 'center', justifyContent: 'center' }}
             onPress={() => handleTabPress(tab.route, idx)}
           >
-            <Ionicons
-              name={tab.name}
-              size={28}
-              color={activeIndex === idx ? '#714B67' : '#A084A2'}
-            />
+            <View style={
+              activeIndex === idx
+                ? {
+                    backgroundColor: '#714B6722', // Aura morada translúcida
+                    borderRadius: 32,
+                    padding: 10,
+                    margin: 2,
+                  }
+                : {}
+            }>
+              <Ionicons
+                name={tab.name as any}
+                size={32}
+                color={activeIndex === idx ? '#714B67' : '#A084A2'}
+              />
+            </View>
           </TouchableOpacity>
         ))}
       </View>

@@ -11,10 +11,7 @@ const TabsLayout = () => {
   return (
     <Tabs
       screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: bg },
-        headerTitleStyle: { color: primary, fontFamily: font },
-        headerTintColor: primary,
+        headerShown: false,
       }}
       tabBar={props => <CustomTabBar {...props} />}
     >
@@ -44,6 +41,24 @@ const TabsLayout = () => {
         options={{
           tabBarLabel: 'Desplegar',
           tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="cloud-upload-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
+        }}
+      />
+      <Tabs.Screen
+        name='settings'
+        options={{
+          tabBarButton: () => null,
+        }}
+      />
+      <Tabs.Screen
+        name='profile'
+        options={{
+          tabBarButton: () => null,
+        }}
+      />
+      <Tabs.Screen
+        name='about'
+        options={{
+          tabBarButton: () => null,
         }}
       />
     </Tabs>

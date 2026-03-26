@@ -21,15 +21,20 @@ const DrawerLayout = () => {
         options={({ route }) => {
           const routeName = getFocusedRouteNameFromRoute(route) ?? 'dashboard';
           let title = 'Módulos';
-
-          if (routeName.includes('dashboard')) {
+          if (routeName === 'dashboard') {
             title = 'Módulos';
-          } else if (routeName.includes('module-editor')) {
+          } else if (routeName === 'module-editor') {
             title = 'Editor de Módulo';
-          } else if (routeName.includes('model-editor')) {
-            title = 'Editor de Modelo';
-          } else if (routeName.includes('deploy')) {
-            title = 'Deploy';
+          } else if (routeName === 'model-editor') {
+            title = 'Modelos';
+          } else if (routeName === 'deploy') {
+            title = 'Desplegar';
+          } else if (routeName === 'settings') {
+            title = 'Settings';
+          } else if (routeName === 'profile') {
+            title = 'Profile';
+          } else if (routeName === 'about') {
+            title = 'About';
           }
           return {
             title,
