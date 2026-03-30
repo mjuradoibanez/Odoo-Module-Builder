@@ -69,16 +69,10 @@ nombre_modulo/
 
 ## Instalacion y configuracion
 
-> Instrucciones detalladas disponibles proximamente.
-
----
-
-## Estado del proyecto
-
-Proyecto en desarrollo activo. Version inicial orientada a funcionalidad MVP.
+> Proximamente
 
 ---
 
 ## Autor
-
+María Jurado Ibáñez
 Proyecto de Fin de Grado -- Desarrollo de Aplicaciones Multiplataforma (DAM)
