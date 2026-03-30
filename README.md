@@ -8,7 +8,7 @@ Odoo Module Builder es una aplicacion web que permite crear, configurar y desple
 
 ## Tecnologias utilizadas
 
-- **Frontend:** React con TypeScript
+- **Frontend:** React
 - **Backend:** Symfony (API REST)
 - **Base de datos:** PostgreSQL
 - **ERP:** Odoo
@@ -69,16 +69,10 @@ nombre_modulo/
 
 ## Instalacion y configuracion
 
-> Instrucciones detalladas disponibles proximamente.
-
----
-
-## Estado del proyecto
-
-Proyecto en desarrollo activo. Version inicial orientada a funcionalidad MVP.
+> Proximamente.
 
 ---
 
 ## Autor
-
-Proyecto de Fin de Grado -- Desarrollo de Aplicaciones Multiplataforma (DAM)
+María Jurado Ibáñez
+Proyecto Intermodular -- Desarrollo de Aplicaciones Multiplataforma (DAM)
