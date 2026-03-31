@@ -5,6 +5,7 @@
 /provisioning/sites-enabled/
 /.idea/
 /.env.local
+/.env.webapp
 /data/db/
 
 # Symfony / PHP
