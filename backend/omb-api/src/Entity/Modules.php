@@ -79,6 +79,15 @@ class Modules
     private $createdAt = null;
 
     /**
+     * @var string|null
+     *
+     * @ORM\Column(name="category", type="string", length=255, nullable=true)
+     *
+     * @Groups({"modules:read"})
+     */
+    private $category = 'other';
+
+    /**
      * @var Users
      *
      * @ORM\ManyToOne(targetEntity="Users")
@@ -138,6 +147,16 @@ class Modules
     public function setVersion(?string $version): void
     {
         $this->version = $version;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): void
+    {
+        $this->category = $category;
     }
 
     public function getAuthor(): ?string

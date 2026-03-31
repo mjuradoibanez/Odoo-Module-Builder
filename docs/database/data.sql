@@ -10,7 +10,7 @@ INSERT INTO users (email, username, password) VALUES
 -- -----------------------------
 -- Módulos
 -- -----------------------------
-INSERT INTO modules (name, technical_name, version, author, categoria, user_id) VALUES
+INSERT INTO modules (name, technical_name, version, author, category, user_id) VALUES
 ('Academia', 'academia', '1.0', 'Admin', 'educacion', 1),
 ('Ventas', 'ventas', '1.0', 'Usuario', 'ventas', 2),
 ('RRHH', 'rrhh', '1.0', 'Admin', 'rrhh', 1),
