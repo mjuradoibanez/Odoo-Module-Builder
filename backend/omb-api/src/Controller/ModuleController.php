@@ -176,4 +176,36 @@ class ModuleController extends AbstractController
 
         return new Response("Method not allowed", 405);
     }
+
+    public function modulesUser(Request $request, SerializerInterface $serializer)
+    {
+        $userId = $request->get('user_id');
+
+        $entityManager = $this->getDoctrine()->getManager();
+
+        if ($request->isMethod('GET')) {
+            $user = $entityManager
+                ->getRepository(Users::class)
+                ->find($userId);
+
+            if (!$user){
+                return new Response("User not found", 404);
+            }
+
+            $modules = $entityManager
+                ->getRepository(Modules::class)
+                ->findBy(['user' => $user]);
+
+            if (!$modules){
+                return new Response("No modules found", 404);
+            }
+
+            $data = $serializer->serialize($modules, 'json', ['groups' => 'modules:read']);
+
+            return new Response($data, 200, ['Content-Type' => 'application/json']);
+        }
+
+        return new Response("Method not allowed", 405);
+
+    }
 }
