@@ -27,16 +27,16 @@ export const authRegister = async (data: RegisterUserDto): Promise<User | null> 
 export const authLogin = async (
   email: string,
   password: string
-): Promise<User | null> => {
+): Promise<User | { error: string } | null> => {
   try {
     const { data } = await ombApi.post<User>('/login', { email, password });
-
-    console.log('API RESPONSE:', data);
     return data;
-  
   } catch (error: any) {
-    console.log('Login error:', error.response?.data || error.message);
-  
-    return null;
+    // Si la API devuelve un mensaje de error, lo retornamos
+    const apiMsg = error?.response?.data?.message;
+    if (apiMsg) {
+      return { error: apiMsg };
+    }
+    return { error: 'No se pudo conectar con el servidor' };
   }
 };

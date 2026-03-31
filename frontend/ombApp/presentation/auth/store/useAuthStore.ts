@@ -10,7 +10,7 @@ interface AuthState {
   status: AuthStatus;
   user?: User;
 
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<string | true>;
   checkStatus: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -21,19 +21,20 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   // llama al login y actualiza el estado global
   login: async (email: string, password: string) => {
-
-    const user = await authLogin(email, password);
-
-    if (!user) {
+    const result = await authLogin(email, password);
+    if (!result || (result as any).error) {
+      let errorMsg = 'Credenciales incorrectas';
+      if (result && (result as any).error) {
+        if ((result as any).error === 'User not found') errorMsg = 'Usuario no encontrado';
+        else if ((result as any).error === 'Invalid password') errorMsg = 'Contraseña incorrecta';
+        else errorMsg = (result as any).error;
+      }
       set({ status: 'unauthenticated', user: undefined });
-      return false;
+      // Devolver el mensaje para mostrarlo en el componente
+      return errorMsg;
     }
-
-    set({ status: 'authenticated', user });
-
-    // Persistir en AsyncStorage (solo guarda strings)
-    await StorageAdapter.setItem('user', JSON.stringify(user));
-
+    set({ status: 'authenticated', user: result as any });
+    await StorageAdapter.setItem('user', JSON.stringify(result));
     return true;
   },
 

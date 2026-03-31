@@ -151,31 +151,16 @@ class UserController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
 
-        // Permitir CORS para peticiones OPTIONS
-        if ($request->getMethod() === "OPTIONS") {
-            $response = new Response();
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            $response->headers->set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-            $response->headers->set('Access-Control-Allow-Headers', 'Content-Type');
-            return $response;
-        }
-
         if (!$data) {
-            $response = new Response("Invalid JSON", 400);
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            return $response;
+            return new Response("Invalid JSON", 400);
         }
 
         $email = $data['email'] ?? null;
         $password = $data['password'] ?? null;
 
-
         if (!$email || !$password) {
-            $response = new Response("Missing credentials", 400);
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            return $response;
+            return new Response("Missing credentials", 400);
         }
-
 
         $user = $this->getDoctrine()
             ->getRepository(Users::class)
@@ -183,16 +168,11 @@ class UserController extends AbstractController
 
 
         if (!$user) {
-            $response = new Response("User not found", 404);
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            return $response;
+            return new Response("User not found", 404);
         }
 
-
         if (!password_verify($password, $user->getPassword())) {
-            $response = new Response("Invalid password", 401);
-            $response->headers->set('Access-Control-Allow-Origin', '*');
-            return $response;
+            return new Response("Invalid password", 401);
         }
 
         $json = $serializer->serialize(
@@ -201,8 +181,6 @@ class UserController extends AbstractController
             ['groups' => 'users:read']
         );
 
-        $response = new Response($json, 200, ['Content-Type' => 'application/json']);
-        $response->headers->set('Access-Control-Allow-Origin', '*');
-        return $response;
+        return new Response($json, 200, ['Content-Type' => 'application/json']);
     }
 }

@@ -33,10 +33,10 @@ export default function LoginScreen() {
       return;
     }
     setIsPosting(true);
-    const success = await login(email, password);
+    const result = await login(email, password);
     setIsPosting(false);
-    if (!success) {
-      setErrorMsg('Credenciales incorrectas');
+    if (typeof result === 'string') {
+      setErrorMsg(result);
       return;
     }
   };
