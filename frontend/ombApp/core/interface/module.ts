@@ -7,7 +7,7 @@ export interface Module {
   description?: string | null;
   version: string;
   author?: string | null;
-  categoria?: string;
+  category?: string;
   createdAt: string;
   user: User;
 }

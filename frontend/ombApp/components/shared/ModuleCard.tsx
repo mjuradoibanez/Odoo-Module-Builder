@@ -12,13 +12,18 @@ interface ModuleCardProps {
 export const ModuleCard: React.FC<ModuleCardProps> = ({ module }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  const categoria = module.categoria || 'otros';
-  const iconData = moduleCategoryIcons[categoria] || moduleCategoryIcons['otros'];
+  // Normalizar la categoría para evitar problemas de mayúsculas/minúsculas o espacios
+  const category = (module.category || 'otros').toLowerCase().replace(/\s+/g, '');
+  const iconData = moduleCategoryIcons[category] || moduleCategoryIcons['otros'];
   const showIcon = !!iconData.icon;
   const initial = module.name ? module.name.charAt(0).toUpperCase() : '?';
 
   return (
-    <View style={[styles.card, isDesktop && styles.cardDesktop]}> 
+    <View style={[
+      styles.card,
+      isDesktop && styles.cardDesktop,
+      { borderLeftColor: iconData.color }
+    ]}> 
       <View style={styles.headerRow}>
         <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}> 
           {showIcon ? (
