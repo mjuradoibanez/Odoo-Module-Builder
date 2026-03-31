@@ -2,7 +2,6 @@ import { Colors } from '@/constants/theme';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerContentComponentProps, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { useNavigationState } from '@react-navigation/native';
 import { router } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';

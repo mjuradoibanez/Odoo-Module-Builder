@@ -10,9 +10,12 @@ INSERT INTO users (email, username, password) VALUES
 -- -----------------------------
 -- Módulos
 -- -----------------------------
-INSERT INTO modules (name, technical_name, version, author, user_id) VALUES
-('Academia', 'academia', '1.0', 'Admin', 1),
-('Ventas', 'ventas', '1.0', 'Usuario', 2);
+INSERT INTO modules (name, technical_name, version, author, categoria, user_id) VALUES
+('Academia', 'academia', '1.0', 'Admin', 'educacion', 1),
+('Ventas', 'ventas', '1.0', 'Usuario', 'ventas', 2),
+('RRHH', 'rrhh', '1.0', 'Admin', 'rrhh', 1),
+('Inventario', 'inventario', '1.0', 'Admin', 'inventario', 1),
+('OtrosMod', 'otrosmod', '1.0', 'Admin', 'otros', 1);
 
 -- -----------------------------
 -- Models

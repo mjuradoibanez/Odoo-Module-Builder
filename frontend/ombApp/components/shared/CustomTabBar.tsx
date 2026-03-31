@@ -1,9 +1,9 @@
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Text, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native';
-import Modal from 'react-native-modal';
+import { useState } from 'react'; // This line remains unchanged
+import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { WebViewWrapper } from './WebViewWrapper';
 
 // Iconos y rutas para las tabs principales estilo Odoo
 const tabIcons: { name: string; route: string }[] = [
@@ -15,63 +15,110 @@ const tabIcons: { name: string; route: string }[] = [
 
 export const CustomTabBar = (props: any) => {
   const router = useRouter();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [titulo, setTitulo] = useState('');
-  const [feedback, setFeedback] = useState<string | null>(null);
   const userId = useAuthStore(state => state.user?.id);
 
-  // al pulsar en las tabs abre el modal o te lleva a la ruta
+  // Al pulsar en las tabs navega a la ruta
   const handleTabPress = (route: string, idx: number) => {
-    if (route === 'modal') {
-      setModalVisible(true);
-      setTitulo('');
-      setFeedback(null);
-
-    } else {
-      props.navigation.navigate(route);
-    }
+    props.navigation.navigate(route);
   };
 
   // Determinar tab activo
   const activeIndex = props.state?.index ?? 0;
-
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+
   return (
-    <View style={{ backgroundColor: '#F7F7F7' }}>
+    <WebViewWrapper
+      style={
+        isDesktop
+          ? (typeof window !== 'undefined' && window.document
+              ? {
+                  backgroundColor: '#F7F7F7',
+                  position: 'fixed',
+                  left: 0,
+                  top: 0,
+                  width: 80,
+                  height: '100vh',
+                  borderRight: '1px solid #A084A2',
+                  zIndex: 100,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                }
+              : {
+                  backgroundColor: '#F7F7F7',
+                  width: 80,
+                  borderRightColor: '#A084A2',
+                  borderRightWidth: 1,
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  alignItems: 'flex-start',
+                }
+            )
+          : { backgroundColor: '#F7F7F7' }
+      }
+    >
       <View
         style={
           isDesktop
-            ? { flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center', width: 80, height: '100%', position: 'absolute', left: 0, top: 0, borderRightColor: '#A084A2', borderRightWidth: 1, backgroundColor: '#F7F7F7', zIndex: 100 }
-            : { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', height: 56, backgroundColor: '#F7F7F7', borderTopColor: '#A084A2', borderTopWidth: 1 }
+            ? {
+                flexDirection: 'column',
+                justifyContent: 'center', // centrado vertical
+                alignItems: 'flex-start',
+                width: '100%',
+                height: '100%',
+              }
+            : {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                height: 56,
+                backgroundColor: '#F7F7F7',
+                borderTopColor: '#A084A2',
+                borderTopWidth: 1,
+              }
         }
       >
         {/* Mapeo de iconos de las tabs */}
         {tabIcons.map((tab, idx) => (
           <TouchableOpacity
             key={tab.name}
-            style={isDesktop ? { marginVertical: 24, alignItems: 'center' } : { flex: 1, alignItems: 'center', justifyContent: 'center' }}
+            style={
+              isDesktop
+                ? {
+                    marginTop: idx === 0 ? 32 : 0,
+                    marginBottom: 24,
+                    alignItems: 'flex-start',
+                    width: '100%',
+                  }
+                : { flex: 1, alignItems: 'center', justifyContent: 'center' }
+            }
             onPress={() => handleTabPress(tab.route, idx)}
           >
-            <View style={
-              activeIndex === idx
-                ? {
-                    backgroundColor: '#714B6722', // Aura morada translúcida
-                    borderRadius: 32,
-                    padding: 10,
-                    margin: 2,
-                  }
-                : {}
-            }>
+            <View
+              style={
+                activeIndex === idx
+                  ? {
+                      backgroundColor: '#714B6722',
+                      borderRadius: 32,
+                      padding: 10,
+                      margin: 2,
+                      marginLeft: isDesktop ? 8 : 0,
+                    }
+                  : { marginLeft: isDesktop ? 8 : 0 }
+              }
+            >
               <Ionicons
                 name={tab.name as any}
                 size={32}
                 color={activeIndex === idx ? '#714B67' : '#A084A2'}
+                style={isDesktop ? { alignSelf: 'flex-start' } : {}}
               />
             </View>
           </TouchableOpacity>
         ))}
       </View>
-    </View>
+    </WebViewWrapper>
   );
 };

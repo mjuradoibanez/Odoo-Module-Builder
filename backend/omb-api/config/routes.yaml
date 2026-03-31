@@ -2,7 +2,6 @@
 #    path: /
 #    controller: App\Controller\DefaultController::index
 
-
 # Modules
 modules:
   path: /modules
@@ -13,6 +12,11 @@ module:
   path: /modules/{id}
   controller: App\Controller\ModuleController::module
   methods: [ GET, DELETE, PUT ]
+
+modules_user:
+  path: /user/{user_id}/modules
+  controller: App\Controller\ModuleController::modulesUser
+  methods: [ GET ]
 
 # Models
 models:
