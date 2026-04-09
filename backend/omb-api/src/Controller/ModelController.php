@@ -173,4 +173,34 @@ class ModelController extends AbstractController
 
         return new Response("Method not allowed", 405);
     }
+
+    public function modelsModule(Request $request, SerializerInterface $serializer)
+    {
+        $moduleId = $request->get('id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        if ($request->isMethod('GET')) {
+            $module = $entityManager
+                ->getRepository(Modules::class)
+                ->find($moduleId);
+
+            if (!$module){
+                return new Response("Module not found", 404);
+            }
+
+            $models = $entityManager
+                ->getRepository(Models::class)
+                ->findBy(['module' => $module]);
+
+            if (!$models){
+                return new Response("No models found", 404);
+            }
+
+            $data = $serializer->serialize($models, 'json', ['groups' => 'models:read']);
+
+            return new Response($data, 200, ['Content-Type' => 'application/json']);
+        }
+
+        return new Response("Method not allowed", 405);
+    }
 }

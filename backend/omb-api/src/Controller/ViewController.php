@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Fields;
 use App\Entity\Models;
 use App\Entity\Views;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -164,6 +165,36 @@ class ViewController extends AbstractController
             $json = $serializer->serialize($view, 'json', ['groups' => 'views:read']);
 
             return new Response($json, 200, ['Content-Type' => 'application/json']);
+        }
+
+        return new Response("Method not allowed", 405);
+    }
+
+    public function viewsModel(Request $request, SerializerInterface $serializer)
+    {
+        $modelId = $request->get('id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        if ($request->isMethod('GET')) {
+            $model = $entityManager
+                ->getRepository(Models::class)
+                ->find($modelId);
+
+            if (!$model){
+                return new Response("Model not found", 404);
+            }
+
+            $views = $entityManager
+                ->getRepository(Views::class)
+                ->findBy(['model' => $model]);
+
+            if (!$views){
+                return new Response("No views found", 404);
+            }
+
+            $data = $serializer->serialize($views, 'json', ['groups' => 'views:read']);
+
+            return new Response($data, 200, ['Content-Type' => 'application/json']);
         }
 
         return new Response("Method not allowed", 405);

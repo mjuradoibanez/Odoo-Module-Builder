@@ -13,10 +13,16 @@ module:
   controller: App\Controller\ModuleController::module
   methods: [ GET, DELETE, PUT ]
 
+module_full:
+  path: /modules/{id}/full
+  controller: App\Controller\ModuleController::module_full
+  methods: [ GET ]
+
 modules_user:
   path: /user/{user_id}/modules
   controller: App\Controller\ModuleController::modulesUser
   methods: [ GET ]
+
 
 # Models
 models:
@@ -29,6 +35,11 @@ model:
   controller: App\Controller\ModelController::model
   methods: [ GET, DELETE, PUT ]
 
+models_module:
+  path: /modules/{id}/models
+  controller: App\Controller\ModelController::modelsModule
+  methods: [ GET ]
+
 # Fields
 fields:
   path: /fields
@@ -40,7 +51,12 @@ field:
   controller: App\Controller\FieldController::field
   methods: [ GET, DELETE, PUT ]
 
-# Fields
+fields_model:
+  path: /models/{id}/fields
+  controller: App\Controller\FieldController::fieldsModel
+  methods: [ GET ]
+
+# Users
 users:
   path: /users
   controller: App\Controller\UserController::users
@@ -61,6 +77,11 @@ view:
   path: /views/{id}
   controller: App\Controller\ViewController::view
   methods: [ GET, DELETE, PUT ]
+
+views_model:
+  path: /models/{id}/views
+  controller: App\Controller\ViewController::viewsModel
+  methods: [ GET ]
 
 # Views-fields
 viewFields:
