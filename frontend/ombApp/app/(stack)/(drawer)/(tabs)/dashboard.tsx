@@ -45,7 +45,7 @@ const DashboardScreen = () => {
               }}
               activeOpacity={0.8}
             >
-              <ModuleCard module={item} />
+            <ModuleCard module={item} showLock={false} />
             </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 32 }}
@@ -70,7 +70,7 @@ const DashboardScreen = () => {
               }}
               activeOpacity={0.8}
             >
-              <ModuleCard module={item} />
+            <ModuleCard module={item} showLock={false} />
             </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 32 }}

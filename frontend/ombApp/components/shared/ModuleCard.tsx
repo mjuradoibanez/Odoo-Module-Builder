@@ -5,14 +5,17 @@ import { Colors, Fonts } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { moduleCategoryIcons } from '@/core/constants/moduleCategoryIcons';
 
-interface ModuleCardProps {
+
+export interface ModuleCardProps {
   module: Module;
+  selected?: boolean;
+  showLock?: boolean;
 }
 
-export const ModuleCard: React.FC<ModuleCardProps> = ({ module }) => {
+export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLock }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
-  // Normalizar la categoría para evitar problemas de mayúsculas/minúsculas o espacios
+  // Evitar problemas de mayúsculas, minúsculas o espacios
   const category = (module.category || 'otros').toLowerCase().replace(/\s+/g, '');
   const iconData = moduleCategoryIcons[category] || moduleCategoryIcons['otros'];
   const showIcon = !!iconData.icon;
@@ -22,8 +25,9 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module }) => {
     <View style={[
       styles.card,
       isDesktop && styles.cardDesktop,
-      { borderLeftColor: iconData.color }
-    ]}> 
+      { borderLeftColor: iconData.color },
+      selected ? { backgroundColor: '#F0F0F0' } : null
+    ]}>
       <View style={styles.headerRow}>
         <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}> 
           {showIcon ? (
@@ -37,7 +41,16 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module }) => {
           <Text style={styles.technicalName}>{module.technicalName}</Text>
         </View>
         <View style={styles.versionDateCol}>
-          <Text style={styles.version}>v{module.version}</Text>
+          {/* Candado arriba a la derecha solo si showLock */}
+          {typeof module.isPublic !== 'undefined' && showLock !== false && (
+            <Ionicons
+              name={module.isPublic ? 'lock-open-outline' : 'lock-closed-outline'}
+              size={20}
+              color={module.isPublic ? Colors.light.accent : Colors.light.icon}
+              style={{ alignSelf: 'flex-end', marginBottom: 8 }}
+            />
+          )}
+          {/* Fecha abajo */}
           <View style={styles.dateRow}>
             <Ionicons name="calendar-outline" size={14} color={Colors.light.icon} style={{ marginRight: 2 }} />
             <Text style={styles.date}>{new Date(module.createdAt).toLocaleDateString()}</Text>
@@ -106,8 +119,9 @@ const styles = StyleSheet.create({
   },
   versionDateCol: {
     alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    minWidth: 70,
+    justifyContent: 'space-between',
+    minWidth: 60,
+    height: 54,
   },
   version: {
     fontSize: 13,
