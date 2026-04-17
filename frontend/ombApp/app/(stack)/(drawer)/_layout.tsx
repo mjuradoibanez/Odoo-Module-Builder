@@ -22,11 +22,11 @@ const DrawerLayout = () => {
           const routeName = getFocusedRouteNameFromRoute(route) ?? 'dashboard';
           let title = 'Módulos';
           if (routeName === 'dashboard') {
-            title = 'Módulos';
+            title = 'Inicio';
           } else if (routeName === 'module-editor') {
-            title = 'Editor de Módulo';
+            title = 'Módulos';
           } else if (routeName === 'model-editor') {
-            title = 'Modelos';
+            title = 'Nuevo Módulo';
           } else if (routeName === 'deploy') {
             title = 'Desplegar';
           } else if (routeName === 'settings') {
