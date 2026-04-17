@@ -10,9 +10,10 @@ export interface ModuleCardProps {
   module: Module;
   selected?: boolean;
   showLock?: boolean;
+  incomplete?: boolean; // Para marcar módulos incompletos (solo en Deploy)
 }
 
-export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLock }) => {
+export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLock, incomplete }) => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
   // Evitar problemas de mayúsculas, minúsculas o espacios
@@ -21,15 +22,25 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
   const showIcon = !!iconData.icon;
   const initial = module.name ? module.name.charAt(0).toUpperCase() : '?';
 
+  // Estilos condicionales para incompleto
+  const lightestGray = '#F4F4F7';
+  const cardStyle = [
+    styles.card,
+    isDesktop && styles.cardDesktop,
+    incomplete
+      ? { backgroundColor: lightestGray, borderLeftColor: iconData.color }
+      : { borderLeftColor: iconData.color },
+    selected ? { backgroundColor: '#F0F0F0' } : null
+  ];
+  const iconCircleStyle = [
+    styles.iconCircle,
+    { backgroundColor: iconData.color }
+  ];
+
   return (
-    <View style={[
-      styles.card,
-      isDesktop && styles.cardDesktop,
-      { borderLeftColor: iconData.color },
-      selected ? { backgroundColor: '#F0F0F0' } : null
-    ]}>
+    <View style={cardStyle}>
       <View style={styles.headerRow}>
-        <View style={[styles.iconCircle, { backgroundColor: iconData.color }]}> 
+        <View style={iconCircleStyle}> 
           {showIcon ? (
             <Ionicons name={iconData.icon as any} size={28} color={Colors.light.card} />
           ) : (
@@ -55,16 +66,27 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
             <Ionicons name="calendar-outline" size={14} color={Colors.light.icon} style={{ marginRight: 2 }} />
             <Text style={styles.date}>{new Date(module.createdAt).toLocaleDateString()}</Text>
           </View>
+          {/* Modulo Incompleto */}
+          {incomplete && (
+            <Text style={styles.incompleteLabel}>Incompleto</Text>
+          )}
         </View>
       </View>
       {module.description && (
         <Text style={styles.description}>{module.description}</Text>
       )}
+      
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  incompleteLabel: {
+    color: '#ba0003ff',
+    fontWeight: 'bold',
+    marginTop: 8,
+    marginLeft: 4,
+  },
   card: {
     backgroundColor: Colors.light.card,
     borderRadius: 14,
