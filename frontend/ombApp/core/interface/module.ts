@@ -10,4 +10,5 @@ export interface Module {
   category?: string;
   createdAt: string;
   user: User;
+  isPublic?: boolean;
 }

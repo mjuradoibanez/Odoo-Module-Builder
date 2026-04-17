@@ -75,6 +75,8 @@ class ModuleController extends AbstractController
             $module->setVersion($data['version'] ?? 1.0);
             $module->setAuthor($data['author'] ?? null);
             $module->setUser($user);
+            // Si no se indica, por defecto es privado
+            $module->setIsPublic(isset($data['is_public']) && (bool)$data['is_public']);
 
             // Guardar
             $entityManager->persist($module);
