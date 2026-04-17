@@ -179,4 +179,34 @@ class FieldController extends AbstractController
 
         return new Response("Method not allowed", 405);
     }
+
+    public function fieldsModel(Request $request, SerializerInterface $serializer)
+    {
+        $modelId = $request->get('id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        if ($request->isMethod('GET')) {
+            $model = $entityManager
+                ->getRepository(Models::class)
+                ->find($modelId);
+
+            if (!$model){
+                return new Response("Model not found", 404);
+            }
+
+            $fields = $entityManager
+                ->getRepository(Fields::class)
+                ->findBy(['model' => $model]);
+
+            if (!$fields){
+                return new Response("No fields found", 404);
+            }
+
+            $data = $serializer->serialize($fields, 'json', ['groups' => 'fields:read']);
+
+            return new Response($data, 200, ['Content-Type' => 'application/json']);
+        }
+
+        return new Response("Method not allowed", 405);
+    }
 }

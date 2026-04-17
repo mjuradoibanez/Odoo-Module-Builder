@@ -79,6 +79,22 @@ class Modules
     private $createdAt = null;
 
     /**
+     * @var string|null
+     *
+     * @ORM\Column(name="category", type="string", length=255, nullable=true)
+     *
+     * @Groups({"modules:read"})
+     */
+    private $category = 'other';
+    /**
+     * @var bool
+     *
+     * @ORM\Column(name="is_public", type="boolean", options={"default": false})
+     *
+     * @Groups({"modules:read"})
+     */
+    private $isPublic = false;
+    /**
      * @var Users
      *
      * @ORM\ManyToOne(targetEntity="Users")
@@ -138,6 +154,26 @@ class Modules
     public function setVersion(?string $version): void
     {
         $this->version = $version;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?string $category): void
+    {
+        $this->category = $category;
+    }
+
+    public function getIsPublic(): bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setIsPublic(bool $isPublic): void
+    {
+        $this->isPublic = $isPublic;
     }
 
     public function getAuthor(): ?string

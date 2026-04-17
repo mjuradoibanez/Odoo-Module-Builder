@@ -29,7 +29,8 @@ CREATE TABLE modules (
   description TEXT,
   version VARCHAR(255),
   author VARCHAR(255),
-  categoria VARCHAR(50) DEFAULT 'otros',
+  category VARCHAR(50) DEFAULT 'other',
+  is_public BOOLEAN DEFAULT FALSE,
   user_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

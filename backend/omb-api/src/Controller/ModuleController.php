@@ -2,8 +2,11 @@
 
 namespace App\Controller;
 
+use App\Entity\Models;
 use App\Entity\Modules;
 use App\Entity\Users;
+use App\Entity\Fields;
+use App\Entity\Views;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -72,6 +75,8 @@ class ModuleController extends AbstractController
             $module->setVersion($data['version'] ?? 1.0);
             $module->setAuthor($data['author'] ?? null);
             $module->setUser($user);
+            // Si no se indica, por defecto es privado
+            $module->setIsPublic(isset($data['is_public']) && (bool)$data['is_public']);
 
             // Guardar
             $entityManager->persist($module);
@@ -206,6 +211,74 @@ class ModuleController extends AbstractController
         }
 
         return new Response("Method not allowed", 405);
+    }
 
+    public function module_full(Request $request, SerializerInterface $serializer)
+    {
+        $id = $request->get('id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        $moduleRepo = $entityManager->getRepository(Modules::class);
+        $modelRepo = $entityManager->getRepository(Models::class);
+        $fieldRepo = $entityManager->getRepository(Fields::class);
+        $viewRepo = $entityManager->getRepository(Views::class);
+
+        $module = $moduleRepo->find($id);
+        if (!$module) {
+            return $this->json(['error' => 'Module not found'], 404);
+        }
+
+        // Obtener modelos del módulo
+        $models = $modelRepo->findBy(['module' => $module]);
+        $modelsData = [];
+
+        foreach ($models as $model) {
+            // Obtener campos y vistas de cada modelo
+            $fields = $fieldRepo->findBy(['model' => $model]);
+            $views = $viewRepo->findBy(['model' => $model]);
+
+            $modelsData[] = [
+                'id' => $model->getId(),
+                'name' => $model->getName(),
+                'technicalName' => $model->getTechnicalName(),
+                'fields' => array_map(function($field) {
+                    return [
+                        'id' => $field->getId(),
+                        'name' => $field->getName(),
+                        'technicalName' => $field->getTechnicalName(),
+                        'type' => $field->getType(),
+                        'required' => $field->getRequired(),
+                        'relationModel' => $field->getRelationModel(),
+                    ];
+                }, $fields),
+                'views' => array_map(function($view) {
+                    return [
+                        'id' => $view->getId(),
+                        'type' => $view->getType(),
+                        'name' => $view->getName(),
+                    ];
+                }, $views),
+            ];
+        }
+
+        // Montar respuesta
+        $response = [
+            'id' => $module->getId(),
+            'name' => $module->getName(),
+            'technicalName' => $module->getTechnicalName(),
+            'description' => $module->getDescription(),
+            'version' => $module->getVersion(),
+            'author' => $module->getAuthor(),
+            'createdAt' => $module->getCreatedAt(),
+            'category' => $module->getCategory(),
+            'user' => [
+                'id' => $module->getUser()->getId(),
+                'username' => $module->getUser()->getUsername(),
+                'email' => $module->getUser()->getEmail(),
+            ],
+            'models' => $modelsData,
+        ];
+
+        return $this->json($response);
     }
 }
