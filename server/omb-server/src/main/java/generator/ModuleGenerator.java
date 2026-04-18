@@ -112,7 +112,7 @@ public class ModuleGenerator {
     // Generar el contenido de los modelos
     private static String generateModels(ModuleRequest module) {
         StringBuilder sb = new StringBuilder();
-        sb.append("from odoo import models, fields, api\n\n");
+        sb.append("from odoo import models, fields, api, exceptions\n\n");
         String prefix = module.technicalName.replaceAll("[\\s]+", "_");
         for (ModuleRequest.ModelDTO model : module.models) {
             String className = capitalize(model.technicalName.replaceAll("[\\s]+", "_"));
@@ -123,10 +123,32 @@ public class ModuleGenerator {
             for (ModuleRequest.FieldDTO field : model.fields) {
                 String fieldType = field.type.substring(0,1).toUpperCase() + field.type.substring(1).toLowerCase();
                 sb.append("    ").append(field.technicalName.replaceAll("[\\s]+", "_")).append(" = fields.").append(fieldType).append("(");
+                boolean hasPrev = false;
                 if (field.relationModel != null && !field.relationModel.isEmpty()) {
                     sb.append("'" + field.relationModel + "'");
+                    hasPrev = true;
+                }
+                if (field.required) {
+                    if (hasPrev) sb.append(", ");
+                    sb.append("required=True");
+                    hasPrev = true;
                 }
                 sb.append(")\n");
+            }
+
+            // Añadir métodos @api.constrains para campos únicos
+            for (ModuleRequest.FieldDTO field : model.fields) {
+                if (field.unique) {
+                    String fname = field.technicalName.replaceAll("[\\s]+", "_");
+                    sb.append("    @api.constrains('" + fname + "')\n");
+                    sb.append("    def _check_unique_" + fname + "(self):\n");
+                    sb.append("        for record in self:\n");
+                    sb.append("            domain = [('" + fname + "', '=', record." + fname + "), ('id', '!=', record.id)]\n");
+                    sb.append("            count = self.search_count(domain)\n");
+                    sb.append("            if count > 0:\n");
+                    sb.append("                raise exceptions.ValidationError('¡Error! Ya existe un registro con el valor único en " + fname + "')\n");
+                    sb.append("\n");
+                }
             }
             sb.append("\n");
         }
@@ -189,7 +211,11 @@ public class ModuleGenerator {
             sb.append("        <form>\n");
             sb.append("          <group>\n");
             for (ModuleRequest.FieldDTO field : model.fields) {
-                sb.append("            <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"/>\n");
+                sb.append("            <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"");
+                if (field.required) {
+                    sb.append(" required=\"1\"");
+                }
+                sb.append("/>\n");
             }
             sb.append("          </group>\n");
             sb.append("        </form>\n      </field>\n    </record>\n");
@@ -231,72 +257,76 @@ public class ModuleGenerator {
     public static void main(String[] args) throws Exception {
         String json = """
 {
-    \"id\": 1,
-    \"name\": \"Academia\",
-    \"technicalName\": \"academia\",
-    \"description\": null,
-    \"version\": \"1.0\",
-    \"author\": \"Admin\",
-    \"createdAt\": \"2026-04-17T07:53:48+02:00\",
-    \"category\": \"educacion\",
-    \"user\": {
-        \"id\": 1,
-        \"username\": \"admin\",
-        \"email\": \"admin@omb.com\"
+    "id": 1,
+    "name": "Academia",
+    "technicalName": "academia",
+    "description": null,
+    "version": "1.0",
+    "author": "Admin",
+    "createdAt": "2026-04-17T07:53:48+02:00",
+    "category": "educacion",
+    "user": {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@omb.com"
     },
-    \"models\": [
+    "models": [
         {
-            \"id\": 1,
-            \"name\": \"Alumno\",
-            \"technicalName\": \"alumno\",
-            \"fields\": [
+            "id": 1,
+            "name": "Alumno",
+            "technicalName": "alumno",
+            "fields": [
                 {
-                    \"id\": 1,
-                    \"name\": \"Nombre\",
-                    \"technicalName\": \"nombre\",
-                    \"type\": \"char\",
-                    \"required\": true,
-                    \"relationModel\": null
+                    "id": 1,
+                    "name": "Nombre",
+                    "technicalName": "nombre",
+                    "type": "char",
+                    "required": true,
+                    "unique": true,
+                    "relationModel": null
                 },
                 {
-                    \"id\": 2,
-                    \"name\": \"Edad\",
-                    \"technicalName\": \"edad\",
-                    \"type\": \"integer\",
-                    \"required\": false,
-                    \"relationModel\": null
+                    "id": 2,
+                    "name": "Edad",
+                    "technicalName": "edad",
+                    "type": "integer",
+                    "required": false,
+                    "unique": false,
+                    "relationModel": null
                 }
             ],
-            \"views\": [
-                {\"id\": 1, \"type\": \"list\", \"name\": \"alumno_list\"},
-                {\"id\": 2, \"type\": \"form\", \"name\": \"alumno_form\"}
+            "views": [
+                {"id": 1, "type": "list", "name": "alumno_list"},
+                {"id": 2, "type": "form", "name": "alumno_form"}
             ]
         },
         {
-            \"id\": 2,
-            \"name\": \"Curso\",
-            \"technicalName\": \"curso\",
-            \"fields\": [
+            "id": 2,
+            "name": "Curso",
+            "technicalName": "curso",
+            "fields": [
                 {
-                    \"id\": 3,
-                    \"name\": \"Titulo\",
-                    \"technicalName\": \"titulo\",
-                    \"type\": \"char\",
-                    \"required\": true,
-                    \"relationModel\": null
+                    "id": 3,
+                    "name": "Titulo",
+                    "technicalName": "titulo",
+                    "type": "char",
+                    "required": true,
+                    "unique": true,
+                    "relationModel": null
                 },
                 {
-                    \"id\": 4,
-                    \"name\": \"Descripcion\",
-                    \"technicalName\": \"descripcion\",
-                    \"type\": \"text\",
-                    \"required\": false,
-                    \"relationModel\": null
+                    "id": 4,
+                    "name": "Descripcion",
+                    "technicalName": "descripcion",
+                    "type": "text",
+                    "required": false,
+                    "unique": false,
+                    "relationModel": null
                 }
             ],
-            \"views\": [
-                {\"id\": 3, \"type\": \"list\", \"name\": \"curso_list\"},
-                {\"id\": 4, \"type\": \"form\", \"name\": \"curso_form\"}
+            "views": [
+                {"id": 3, "type": "list", "name": "curso_list"},
+                {"id": 4, "type": "form", "name": "curso_form"}
             ]
         }
     ]

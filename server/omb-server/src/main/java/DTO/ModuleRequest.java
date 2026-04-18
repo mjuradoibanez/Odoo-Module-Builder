@@ -36,6 +36,7 @@ public class ModuleRequest {
         public String technicalName;
         public String type;
         public boolean required;
+        public boolean unique;
         public String relationModel;
     }
 
