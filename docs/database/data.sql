@@ -27,16 +27,19 @@ INSERT INTO models (name, technical_name, module_id) VALUES
 ('Pedido', 'pedido', 2);
 
 -- -----------------------------
--- Fields
--- -----------------------------
-INSERT INTO fields (name, technical_name, type, required, model_id) VALUES
-('Nombre', 'nombre', 'char', TRUE, 1),
-('Edad', 'edad', 'integer', FALSE, 1),
-('Titulo', 'titulo', 'char', TRUE, 2),
-('Descripcion', 'descripcion', 'text', FALSE, 2),
-('Nombre', 'nombre', 'char', TRUE, 3),
-('Email', 'email', 'char', TRUE, 3),
-('Fecha', 'fecha', 'date', TRUE, 4);
+INSERT INTO fields (name, technical_name, type, required, unique_field, relation_model, relation_field, model_id) VALUES
+-- Alumno
+('Nombre', 'nombre', 'char', TRUE, TRUE, NULL, NULL, 1),
+('Edad', 'edad', 'integer', FALSE, FALSE, NULL, NULL, 1),
+('Cursos', 'cursos_ids', 'many2many', FALSE, FALSE, 'academia.curso', NULL, 1),
+-- Curso
+('Titulo', 'titulo', 'char', TRUE, TRUE, NULL, NULL, 2),
+('Descripcion', 'descripcion', 'text', FALSE, FALSE, NULL, NULL, 2),
+('Alumnos', 'alumnos_ids', 'many2many', FALSE, FALSE, 'academia.alumno', NULL, 2),
+('Profesor', 'profesor_id', 'many2one', FALSE, FALSE, 'academia.profesor', NULL, 2),
+-- Profesor
+('Nombre', 'nombre', 'char', TRUE, TRUE, NULL, NULL, 3),
+('Cursos', 'cursos_ids', 'one2many', FALSE, FALSE, 'academia.curso', 'profesor_id', 3);
 
 -- -----------------------------
 -- Views
@@ -51,13 +54,13 @@ INSERT INTO views (type, name, model_id) VALUES
 -- View Fields
 -- -----------------------------
 INSERT INTO view_fields (view_id, field_id, position) VALUES
-(1, 1, 1), -- alumno_list -> nombre
-(1, 2, 2), -- alumno_list -> edad
-(2, 1, 1), -- alumno_form -> nombre
-(2, 2, 2); -- alumno_form -> edad
+(1, 1, 1), -- alumno_list - nombre
+(1, 2, 2), -- alumno_list - edad
+(2, 1, 1), -- alumno_form - nombre
+(2, 2, 2); -- alumno_form - edad
 
 -- -----------------------------
--- Deployments (simulación)
+-- Deployments
 -- -----------------------------
 INSERT INTO deployments (module_id, status, log) VALUES
 (1, 'success', 'Módulo instalado correctamente'),

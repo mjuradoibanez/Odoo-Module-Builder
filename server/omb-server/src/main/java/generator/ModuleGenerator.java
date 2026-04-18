@@ -121,13 +121,26 @@ public class ModuleGenerator {
             sb.append("    _name = '").append(modelName).append("'\n");
             sb.append("    _description = '").append(model.name).append("'\n");
             for (ModuleRequest.FieldDTO field : model.fields) {
-                String fieldType = field.type.substring(0,1).toUpperCase() + field.type.substring(1).toLowerCase();
-                sb.append("    ").append(field.technicalName.replaceAll("[\\s]+", "_")).append(" = fields.").append(fieldType).append("(");
-                boolean hasPrev = false;
-                if (field.relationModel != null && !field.relationModel.isEmpty()) {
-                    sb.append("'" + field.relationModel + "'");
-                    hasPrev = true;
+                String fname = field.technicalName.replaceAll("[\\s]+", "_");
+                String fieldType = field.type.toLowerCase();
+                boolean isRelation = fieldType.equals("many2one") || fieldType.equals("one2many") || fieldType.equals("many2many");
+                sb.append("    ").append(fname).append(" = fields.");
+                if (isRelation) {
+                    String relModel = field.relationModel != null ? "'" + field.relationModel + "'" : "";
+                    if (fieldType.equals("many2one")) {
+                        sb.append("Many2one(").append(relModel);
+                    } else if (fieldType.equals("one2many")) {
+                        // Para one2many, relationModel debe ser el modelo hijo, relationField el campo inverso
+                        String relField = field.relationField != null ? "'" + field.relationField + "'" : "";
+                        sb.append("One2many(").append(relModel).append(", ").append(relField);
+                    } else if (fieldType.equals("many2many")) {
+                        sb.append("Many2many(").append(relModel);
+                    }
+                } else {
+                    String pyFieldType = fieldType.substring(0,1).toUpperCase() + fieldType.substring(1);
+                    sb.append(pyFieldType).append("(");
                 }
+                boolean hasPrev = isRelation && !fieldType.equals("one2many");
                 if (field.required) {
                     if (hasPrev) sb.append(", ");
                     sb.append("required=True");
@@ -190,7 +203,10 @@ public class ModuleGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("<odoo>\n  <data>\n");
         String prefix = module.technicalName.replaceAll("[\\s]+", "_");
+        // Menú raíz primero
         sb.append("    <menuitem id=\"menu_root_" + prefix + "\" name=\"" + module.name + "\" sequence=\"1\"/>\n");
+
+        // 1. Todas las vistas (list y form) de todos los modelos
         for (ModuleRequest.ModelDTO model : module.models) {
             String modelName = prefix + "." + model.technicalName.replaceAll("[\\s]+", "_");
             // Vista list
@@ -219,17 +235,23 @@ public class ModuleGenerator {
             }
             sb.append("          </group>\n");
             sb.append("        </form>\n      </field>\n    </record>\n");
+        }
 
-            // Acción window para el modelo
+        // 2. Todas las actions de todos los modelos
+        for (ModuleRequest.ModelDTO model : module.models) {
+            String modelName = prefix + "." + model.technicalName.replaceAll("[\\s]+", "_");
             sb.append("    <record id=\"action_" + model.technicalName + "\" model=\"ir.actions.act_window\">\n");
             sb.append("      <field name=\"name\">" + model.name + "</field>\n");
             sb.append("      <field name=\"res_model\">" + modelName + "</field>\n");
             sb.append("      <field name=\"view_mode\">list,form</field>\n");
             sb.append("    </record>\n");
+        }
 
-            // Menú para el modelo
+        // 3. Todos los menús (primero raíz, luego hijos)
+        for (ModuleRequest.ModelDTO model : module.models) {
             sb.append("    <menuitem id=\"menu_" + model.technicalName + "\" name=\"" + model.name + "\" action=\"action_" + model.technicalName + "\" parent=\"menu_root_" + prefix + "\"/>\n");
         }
+
         sb.append("  </data>\n</odoo>\n");
         return sb.toString();
     }
@@ -257,79 +279,131 @@ public class ModuleGenerator {
     public static void main(String[] args) throws Exception {
         String json = """
 {
+  "id": 1,
+  "name": "Academia",
+  "technicalName": "academia",
+  "description": "Módulo de ejemplo con relaciones reales",
+  "version": "1.0",
+  "author": "Admin",
+  "createdAt": "2026-04-17T07:53:48+02:00",
+  "category": "educacion",
+  "user": {
     "id": 1,
-    "name": "Academia",
-    "technicalName": "academia",
-    "description": null,
-    "version": "1.0",
-    "author": "Admin",
-    "createdAt": "2026-04-17T07:53:48+02:00",
-    "category": "educacion",
-    "user": {
-        "id": 1,
-        "username": "admin",
-        "email": "admin@omb.com"
-    },
-    "models": [
+    "username": "admin",
+    "email": "admin@omb.com"
+  },
+  "models": [
+    {
+      "id": 1,
+      "name": "Alumno",
+      "technicalName": "alumno",
+      "fields": [
         {
-            "id": 1,
-            "name": "Alumno",
-            "technicalName": "alumno",
-            "fields": [
-                {
-                    "id": 1,
-                    "name": "Nombre",
-                    "technicalName": "nombre",
-                    "type": "char",
-                    "required": true,
-                    "unique": true,
-                    "relationModel": null
-                },
-                {
-                    "id": 2,
-                    "name": "Edad",
-                    "technicalName": "edad",
-                    "type": "integer",
-                    "required": false,
-                    "unique": false,
-                    "relationModel": null
-                }
-            ],
-            "views": [
-                {"id": 1, "type": "list", "name": "alumno_list"},
-                {"id": 2, "type": "form", "name": "alumno_form"}
-            ]
+          "id": 1,
+          "name": "Nombre",
+          "technicalName": "nombre",
+          "type": "char",
+          "required": true,
+          "unique": true
         },
         {
-            "id": 2,
-            "name": "Curso",
-            "technicalName": "curso",
-            "fields": [
-                {
-                    "id": 3,
-                    "name": "Titulo",
-                    "technicalName": "titulo",
-                    "type": "char",
-                    "required": true,
-                    "unique": true,
-                    "relationModel": null
-                },
-                {
-                    "id": 4,
-                    "name": "Descripcion",
-                    "technicalName": "descripcion",
-                    "type": "text",
-                    "required": false,
-                    "unique": false,
-                    "relationModel": null
-                }
-            ],
-            "views": [
-                {"id": 3, "type": "list", "name": "curso_list"},
-                {"id": 4, "type": "form", "name": "curso_form"}
-            ]
+          "id": 2,
+          "name": "Edad",
+          "technicalName": "edad",
+          "type": "integer",
+          "required": false,
+          "unique": false
+        },
+        {
+          "id": 3,
+          "name": "Cursos",
+          "technicalName": "cursos_ids",
+          "type": "many2many",
+          "relationModel": "academia.curso",
+          "required": false,
+          "unique": false
         }
-    ]
+      ],
+      "views": [
+        {"id": 1, "type": "list", "name": "alumno_list"},
+        {"id": 2, "type": "form", "name": "alumno_form"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Curso",
+      "technicalName": "curso",
+      "fields": [
+        {
+          "id": 4,
+          "name": "Titulo",
+          "technicalName": "titulo",
+          "type": "char",
+          "required": true,
+          "unique": true
+        },
+        {
+          "id": 5,
+          "name": "Descripcion",
+          "technicalName": "descripcion",
+          "type": "text",
+          "required": false,
+          "unique": false
+        },
+        {
+          "id": 6,
+          "name": "Alumnos",
+          "technicalName": "alumnos_ids",
+          "type": "many2many",
+          "relationModel": "academia.alumno",
+          "required": false,
+          "unique": false
+        },
+        {
+          "id": 7,
+          "name": "Profesor",
+          "technicalName": "profesor_id",
+          "type": "many2one",
+          "relationModel": "academia.profesor",
+          "required": false,
+          "unique": false
+        }
+      ],
+      "views": [
+        {"id": 3, "type": "list", "name": "curso_list"},
+        {"id": 4, "type": "form", "name": "curso_form"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Profesor",
+      "technicalName": "profesor",
+      "fields": [
+        {
+          "id": 8,
+          "name": "Nombre",
+          "technicalName": "nombre",
+          "type": "char",
+          "required": true,
+          "unique": true
+        },
+        {
+          "id": 9,
+          "name": "Cursos",
+          "technicalName": "cursos_ids",
+          "type": "one2many",
+          "relationModel": "academia.curso",
+          "relationField": "profesor_id",
+          "required": false,
+          "unique": false
+        }
+      ],
+      "views": [
+        {"id": 5, "type": "list", "name": "profesor_list"},
+        {"id": 6, "type": "form", "name": "profesor_form"}
+      ]
+    }
+  ]
 }
         """;
         com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
