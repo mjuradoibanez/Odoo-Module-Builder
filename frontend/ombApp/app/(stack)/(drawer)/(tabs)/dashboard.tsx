@@ -27,13 +27,15 @@ const DashboardScreen = () => {
 
   return (
     <View style={[{ flex: 1, padding: 16 }, isDesktop && { paddingLeft: 80, backgroundColor: Colors.light.background }]}> 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
-        Tus módulos públicos
-      </Text>
+      <View style={{ marginHorizontal: 30 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+          Tus módulos públicos
+        </Text>
+      </View>
       {isLoadingMy ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
       ) : myModules.filter(m => m.isPublic).length === 0 ? (
-        <Text style={{ color: Colors.light.icon }}>No tienes módulos públicos creados todavía.</Text>
+        <Text style={{ color: Colors.light.icon, marginHorizontal: 12 }}>No tienes módulos públicos creados todavía.</Text>
       ) : (
         <FlatList
           data={myModules.filter(m => m.isPublic)}
@@ -52,13 +54,15 @@ const DashboardScreen = () => {
         />
       )}
 
-      <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: Colors.light.accent }}>
-        Módulos públicos de la comunidad
-      </Text>
+      <View style={{ marginHorizontal: 30 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: Colors.light.accent }}>
+          Módulos públicos de la comunidad
+        </Text>
+      </View>
       {isLoadingPublic ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
       ) : publicModules.filter(m => m.user.id !== userId).length === 0 ? (
-        <Text style={{ color: Colors.light.icon }}>No hay módulos públicos de otros usuarios disponibles.</Text>
+        <Text style={{ color: Colors.light.icon, marginHorizontal: 12 }}>No hay módulos públicos de otros usuarios disponibles.</Text>
       ) : (
         <FlatList
           data={publicModules.filter(m => m.user.id !== userId)}

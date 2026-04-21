@@ -20,13 +20,17 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
   return (
     <ScrollView style={styles.container}>
       {/* Cabecera visual del módulo */}
-      <ModuleCard module={module} />
+      <View>
+        <ModuleCard module={module} />
+      </View>
 
       {/* Modelos */}
-      <Text style={styles.sectionTitle}>Modelos</Text>
+      <View style={{ marginHorizontal: 35 }}>
+        <Text style={styles.sectionTitle}>Modelos</Text>
+      </View>
       {module.models && module.models.length > 0 ? (
         module.models.map((model: any) => (
-          <View key={model.id} style={styles.modelBox}>
+          <View key={model.id} style={{ ...styles.modelBox, marginHorizontal: 30 }}>
             <Text style={styles.modelName}>{model.name} <Text style={styles.modelTech}>({model.technicalName})</Text></Text>
             {/* Campos */}
             <Text style={styles.subSectionTitle}>Campos</Text>
@@ -59,7 +63,9 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
           </View>
         ))
       ) : (
-        <Text style={styles.emptyText}>Este módulo no tiene modelos.</Text>
+        <View style={{ marginHorizontal: 30 }}>
+          <Text style={styles.emptyText}>Este módulo no tiene modelos.</Text>
+        </View>
       )}
     </ScrollView>
   );
