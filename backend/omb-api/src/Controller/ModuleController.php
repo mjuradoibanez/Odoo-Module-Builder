@@ -287,7 +287,9 @@ class ModuleController extends AbstractController
     // Endpoint para generar el módulo y devolver el ZIP
     public function generateModule(Request $request)
     {
-        $json = $request->getContent();
+        // Decodifica y vuelve a codificar para asegurar JSON compacto
+        $data = json_decode($request->getContent(), true);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE);
 
         // Obtener host y port de parámetros de configuración
         $host = $this->getParameter('java_server_host');

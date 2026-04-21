@@ -34,4 +34,4 @@ services:
 
 networks:
   omb-net:
-    driver: bridge
+    external: true

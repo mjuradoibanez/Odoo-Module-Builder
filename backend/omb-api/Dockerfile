@@ -5,7 +5,7 @@ FROM php:8.1-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git unzip zip libzip-dev libpng-dev libonig-dev libxml2-dev \
-    && docker-php-ext-install pdo pdo_mysql zip
+    && docker-php-ext-install pdo pdo_mysql zip sockets
 
 # Instala Composer
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \

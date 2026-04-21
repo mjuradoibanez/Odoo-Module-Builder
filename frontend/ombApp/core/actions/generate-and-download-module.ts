@@ -4,9 +4,9 @@ import { ombApi } from '@/core/auth/api/ombApi';
 export async function generateAndDownloadModule(moduleJson: any) {
   try {
     const response = await ombApi.post('/api/generate-module', moduleJson, {
-      responseType: 'blob',
+      responseType: 'blob', // Blob es un objeto en datos binarios
     });
-    return response.data; // Devuelve el blob
+    return response;
   } catch (error: any) {
     console.log('GENERATE MODULE ERROR:', error?.response?.data);
     return null;

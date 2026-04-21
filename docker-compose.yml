@@ -1,6 +1,15 @@
 version: "3.9"
 
 services:
+  java-server:
+    build:
+      context: ./server/omb-server
+    container_name: omb_java_server
+    ports:
+      - "5000:5000"
+    networks:
+      - omb-net
+    restart: unless-stopped
 
   db:
     image: postgres:15
@@ -36,3 +45,7 @@ services:
 volumes:
   postgres_data:
   odoo_data:
+
+networks:
+  omb-net:
+    external: true

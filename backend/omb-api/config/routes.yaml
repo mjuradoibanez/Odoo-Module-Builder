@@ -27,7 +27,7 @@ modules_user:
 generate_module:
   path: /api/generate-module
   controller: App\Controller\ModuleController::generateModule
-  methods: [ POST ]
+  methods: [ POST, OPTIONS ]
 
 # Models
 models:

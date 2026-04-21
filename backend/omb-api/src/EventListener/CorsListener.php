@@ -14,6 +14,7 @@ class CorsListener
         $response->headers->set('Access-Control-Allow-Origin', '*');
         $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
         $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        $response->headers->set('Access-Control-Expose-Headers', 'Content-Disposition');
     }
 
     public function onKernelRequest(RequestEvent $event)
@@ -21,10 +22,11 @@ class CorsListener
         $request = $event->getRequest();
         if ($request->getMethod() === 'OPTIONS') {
             $response = new Response();
-            $response->setStatusCode(204);
+            $response->setStatusCode(200);
             $response->headers->set('Access-Control-Allow-Origin', '*');
             $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            $response->headers->set('Access-Control-Expose-Headers', 'Content-Disposition');
             $event->setResponse($response);
         }
     }
