@@ -6,6 +6,7 @@ import { ModuleCard } from '@/components/shared/ModuleCard';
 import { Colors } from '@/constants/theme';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';
+import { useGenerateAndDownloadModule } from '@/presentation/hooks/useGenerateAndDownloadModule';
 
 // Validar si un módulo está completo: nombre técnico y al menos un modelo con campos
 function isModuleComplete(module: any): boolean {
@@ -36,6 +37,7 @@ const DeployScreen = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
+  const generateAndDownload = useGenerateAndDownloadModule();
 
   useEffect(() => {
     if (!modules || modules.length === 0) return;
@@ -99,7 +101,16 @@ const DeployScreen = () => {
         />
       )}
       {selectedModuleId && isModuleComplete(moduleDetails[selectedModuleId]) && (
-        <TouchableOpacity style={styles.deployButton}>
+        <TouchableOpacity
+          style={styles.deployButton}
+          onPress={async () => {
+            try {
+              await generateAndDownload(moduleDetails[selectedModuleId]);
+            } catch (e) {
+              alert('Error al descargar el módulo');
+            }
+          }}
+        >
           <Text style={styles.deployButtonText}>Descargar módulo</Text>
         </TouchableOpacity>
       )}
