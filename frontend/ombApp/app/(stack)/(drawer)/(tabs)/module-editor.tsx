@@ -42,9 +42,11 @@ const ModuleEditorScreen = () => {
       <View style={[{ flex: 1, flexDirection: 'row' }, { paddingLeft: 80, backgroundColor: '#F7F7F7' }]}> 
         {/* Lista de módulos del usuario */}
         <View style={{ flex: showDetail ? 0.32 : 1, padding: 16 }}>
-          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
-            Todos tus módulos
-          </Text>
+          <View style={{ marginHorizontal: 30 }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+              Todos tus módulos
+            </Text>
+          </View>
           {isLoading ? (
             <ActivityIndicator size="large" color={Colors.light.primary} />
           ) : modules.length === 0 ? (
@@ -85,9 +87,11 @@ const ModuleEditorScreen = () => {
     }
     return (
       <View style={{ flex: 1, padding: 16, backgroundColor: '#F7F7F7' }}>
-        <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
-          Todos tus módulos
-        </Text>
+        <View style={{ marginHorizontal: 30 }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+            Todos tus módulos
+          </Text>
+        </View>
         {isLoading ? (
           <ActivityIndicator size="large" color={Colors.light.primary} />
         ) : modules.length === 0 ? (

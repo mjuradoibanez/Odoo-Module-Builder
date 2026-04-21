@@ -29,7 +29,7 @@ CREATE TABLE modules (
   description TEXT,
   version VARCHAR(255),
   author VARCHAR(255),
-  category VARCHAR(50) DEFAULT 'other',
+  category VARCHAR(50) DEFAULT 'otra',
   is_public BOOLEAN DEFAULT FALSE,
   user_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -6,7 +6,7 @@
 modules:
   path: /modules
   controller: App\Controller\ModuleController::modules
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 module:
   path: /modules/{id}

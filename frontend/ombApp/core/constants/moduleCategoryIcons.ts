@@ -7,5 +7,5 @@ export const moduleCategoryIcons: Record<string, { icon: string; color: string; 
   inventario: { icon: 'cube-outline', color: '#FF6B6B' }, // rojo coral
   finanzas: { icon: 'bar-chart-outline', color: '#4CAF50' }, // verde
   marketing: { icon: 'megaphone-outline', color: '#2196F3' }, // azul
-  otros: { icon: '', color: '#A084A2' }, // gris-morado
+  otra: { icon: '', color: '#A084A2' }, // gris-morado
 };

@@ -69,9 +69,11 @@ const DeployScreen = () => {
 
   return (
     <View style={[{ flex: 1, padding: 16, backgroundColor: Colors.light.background }, isDesktop && { paddingLeft: 80 }]}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
-        Desplegar módulo Odoo
-      </Text>
+      <View style={{ marginHorizontal: 30 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: Colors.light.primary }}>
+          Desplegar módulo Odoo
+        </Text>
+      </View>
       {isLoading || loadingDetails ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
       ) : (
