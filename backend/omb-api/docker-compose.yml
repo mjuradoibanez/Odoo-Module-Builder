@@ -2,10 +2,10 @@ version: '3.8'
 
 services:
   web:
-    image: buig/sf-php8.0-apache
+    build: .
     container_name: omb-api
     volumes:
-      - .:/code
+      - .:/var/www/html
       - ./provisioning/sites-enabled:/etc/apache2/sites-enabled
     env_file:
       - .env.webapp
@@ -14,6 +14,7 @@ services:
     networks:
       - omb-net
     tty: true
+    working_dir: /var/www/html
 
   db:
     image: mysql:8.0
@@ -33,4 +34,4 @@ services:
 
 networks:
   omb-net:
-    driver: bridge
+    external: true

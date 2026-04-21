@@ -23,6 +23,11 @@ modules_user:
   controller: App\Controller\ModuleController::modulesUser
   methods: [ GET ]
 
+# Generación de módulos Odoo
+generate_module:
+  path: /api/generate-module
+  controller: App\Controller\ModuleController::generateModule
+  methods: [ POST, OPTIONS ]
 
 # Models
 models:

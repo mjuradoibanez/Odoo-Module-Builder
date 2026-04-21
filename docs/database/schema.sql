@@ -58,7 +58,9 @@ CREATE TABLE fields (
   technical_name VARCHAR(255) NOT NULL,
   type VARCHAR(255) NOT NULL,
   required BOOLEAN DEFAULT FALSE,
+  unique_field BOOLEAN DEFAULT FALSE,
   relation_model VARCHAR(255),
+  relation_field VARCHAR(255),
   model_id INT,
   CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 );

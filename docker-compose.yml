@@ -1,6 +1,15 @@
 version: "3.9"
 
 services:
+  java-server:
+    build:
+      context: ./server/omb-server
+    container_name: omb_java_server
+    ports:
+      - "5000:5000"
+    networks:
+      - omb-net
+    restart: unless-stopped
 
   db:
     image: postgres:15
@@ -21,16 +30,22 @@ services:
     depends_on:
       - db
     ports:
-      - "8070:8070"
+      - "8069:8069"
     volumes:
       - ./odoo/addons:/mnt/extra-addons
       - ./odoo/config:/etc/odoo
       - odoo_data:/var/lib/odoo
     environment:
-      HOST: db
-      USER: ${POSTGRES_USER}
-      PASSWORD: ${POSTGRES_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
 
 volumes:
   postgres_data:
   odoo_data:
+
+networks:
+  omb-net:
+    external: true

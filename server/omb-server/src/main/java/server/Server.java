@@ -4,7 +4,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class Server {
-    private static int PUERTO = 5000;
+    private static int PUERTO = Config.PUERTO;
 
     public static void main(String[] args) {
         try (ServerSocket server = new ServerSocket(PUERTO)){

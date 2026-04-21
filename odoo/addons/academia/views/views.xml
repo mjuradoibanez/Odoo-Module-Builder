@@ -1,0 +1,95 @@
+<odoo>
+  <data>
+    <menuitem id="menu_root_academia" name="Academia" sequence="1"/>
+    <record id="view_alumno_list" model="ir.ui.view">
+      <field name="name">alumno.list</field>
+      <field name="model">academia.alumno</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="edad"/>
+          <field name="cursos_ids"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_alumno_form" model="ir.ui.view">
+      <field name="name">alumno.form</field>
+      <field name="model">academia.alumno</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="edad"/>
+            <field name="cursos_ids"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_curso_list" model="ir.ui.view">
+      <field name="name">curso.list</field>
+      <field name="model">academia.curso</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="titulo"/>
+          <field name="descripcion"/>
+          <field name="alumnos_ids"/>
+          <field name="profesor_id"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_curso_form" model="ir.ui.view">
+      <field name="name">curso.form</field>
+      <field name="model">academia.curso</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="titulo" required="1"/>
+            <field name="descripcion"/>
+            <field name="alumnos_ids"/>
+            <field name="profesor_id"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_profesor_list" model="ir.ui.view">
+      <field name="name">profesor.list</field>
+      <field name="model">academia.profesor</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="cursos_ids"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_profesor_form" model="ir.ui.view">
+      <field name="name">profesor.form</field>
+      <field name="model">academia.profesor</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="cursos_ids"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_alumno" model="ir.actions.act_window">
+      <field name="name">Alumno</field>
+      <field name="res_model">academia.alumno</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_curso" model="ir.actions.act_window">
+      <field name="name">Curso</field>
+      <field name="res_model">academia.curso</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_profesor" model="ir.actions.act_window">
+      <field name="name">Profesor</field>
+      <field name="res_model">academia.profesor</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_alumno" name="Alumno" action="action_alumno" parent="menu_root_academia"/>
+    <menuitem id="menu_curso" name="Curso" action="action_curso" parent="menu_root_academia"/>
+    <menuitem id="menu_profesor" name="Profesor" action="action_profesor" parent="menu_root_academia"/>
+  </data>
+</odoo>
