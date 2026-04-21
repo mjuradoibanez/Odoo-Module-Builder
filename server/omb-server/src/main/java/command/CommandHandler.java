@@ -1,39 +1,63 @@
 package command;
 
-
 import DTO.ModuleRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import generator.ModuleGenerator;
+import java.io.File;
 
 public class CommandHandler {
-    public static String handle(String mensaje) {
+    public static class ZipResult {
+        public File zipFile;
+        public String error;
+    }
 
-        // Según el mensaje recibido hace una acción u otra
-        String[] parts = mensaje.split(";", 2);
+    // Procesa el mensaje recibido
+    public static ZipResult handleWithZip(String mensaje) {
+        ZipResult result = new ZipResult();
+        
+        String[] parts = mensaje.split(";", 2); // Divide el mensaje en dos partes
         String action = parts[0];
-
+        
         switch (action) {
             case "GENERATE_MODULE":
-                if (parts.length < 2) return "ERROR: Missing module data";
-                return generateModule(parts[1]);
+                // Si faltan datos
+                if (parts.length < 2) {
+                    result.error = "Missing module data";
+                    return result;
+                }
+
+                return generateModuleZip(parts[1]);
+            
             default:
-                return "ERROR: Unknown command";
+                result.error = "Unknown command";
+                return result;
         }
     }
 
-    private static String generateModule(String json) {
+    // Genera el ZIP a partir del JSON recibido y devuelve el resultado
+    private static ZipResult generateModuleZip(String json) {
+        ZipResult result = new ZipResult();
+        
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            ObjectMapper mapper = new ObjectMapper(); // Para leer JSON
+            
+            // Mapea el JSON a un objeto ModuleRequest
             ModuleRequest module = mapper.readValue(json, ModuleRequest.class);
 
-            // Generación concurrente de archivos
-            java.io.File tempDir = ModuleGenerator.generateModuleWithThreads(module);
+            // Genera la estructura de carpetas y archivos del módulo
+            File tempDir = ModuleGenerator.generateModuleWithThreads(module);
+
+            // Define la ruta del ZIP
+            String zipPath = tempDir.getAbsolutePath() + ".zip";
             
-            // Luego se comprimirá y enviará el ZIP
+            // Comprime la carpeta en un ZIP
+            ModuleGenerator.zipFolder(tempDir, zipPath);
             
-            return "OK: Module generated at: " + tempDir.getAbsolutePath();
+            // Guarda el archivo ZIP en el resultado
+            result.zipFile = new File(zipPath);
         } catch (Exception e) {
-            return "ERROR: " + e.getMessage();
+            result.error = e.getMessage();
         }
+        return result;
     }
 }

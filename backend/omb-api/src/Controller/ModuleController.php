@@ -283,4 +283,76 @@ class ModuleController extends AbstractController
 
         return $this->json($response);
     }
+
+    // Endpoint para generar el módulo y devolver el ZIP
+    public function generateModule(Request $request)
+    {
+        $json = $request->getContent();
+
+        // Obtener host y port de parámetros de configuración
+        $host = $this->getParameter('java_server_host');
+        $port = $this->getParameter('java_server_port');
+
+        // Crear socket (IPv4, tipo stream y protocolo TCP) y conectar al servidor Java
+        $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
+        if ($socket === false) {
+            return new Response('No se pudo crear el socket', 500);
+        }
+        // @ elimina los errores si falla
+        $result = @socket_connect($socket, $host, $port);
+        if ($result === false) {
+            socket_close($socket);
+            return new Response('No se pudo conectar al servidor Java', 500);
+        }
+
+        // Enviar comando al servidor Java (Se envía el tamaño por seguridad)
+        $command = "GENERATE_MODULE;" . $json . "\n";
+        socket_write($socket, $command, strlen($command));
+
+        // Leer la respuesta del servidor Java mientras no sea un salto de línea
+        $control = '';
+        while (($char = socket_read($socket, 1)) !== false && $char !== "\n" && $char !== "") {
+            $control .= $char;
+        }
+        $control = trim($control);
+
+        if ($control !== 'OK:ZIP') {
+            socket_close($socket);
+            return new Response('Error al procesar la petición en el servidor Java.', 500);
+        }
+
+        // Leer el tamaño del ZIP (4 bytes) y luego el contenido del ZIP
+        $sizeData = socket_read($socket, 4);
+        if ($sizeData === false || strlen($sizeData) < 4) {
+            socket_close($socket);
+            return new Response('No se pudo leer el tamaño del ZIP', 500);
+        }
+
+        // Convertir los 4 bytes a un entero (big-endian: estándar de red)
+        $size = unpack('N', $sizeData)[1];
+        $zipData = '';
+        $received = 0;
+        
+        while ($received < $size) {
+            $chunk = socket_read($socket, min(8192, $size - $received)); // Lee en fragmentos de 8KB
+            if ($chunk === false) break;
+            
+            $zipData .= $chunk; // Concatena el fragmento al resultado final
+            $received += strlen($chunk); // Actualiza la cantidad recibida
+        }
+        socket_close($socket);
+
+        if (strlen($zipData) !== $size) {
+            return new Response('ZIP incompleto recibido', 500);
+        }
+
+        // Devolver el ZIP como respuesta
+        $filename = 'module_' . date('Ymd_His') . '.zip';
+
+        $response = new Response($zipData);
+        $response->headers->set('Content-Type', 'application/zip'); // Indica que es un archivo ZIP
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"'); // Fuerza la descarga con un nombre
+        
+        return $response;
+    }
 }

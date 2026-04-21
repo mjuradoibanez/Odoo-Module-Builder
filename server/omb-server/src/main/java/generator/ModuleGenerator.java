@@ -1,8 +1,13 @@
 package generator;
 import DTO.ModuleRequest;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class ModuleGenerator {
     public static File generateModuleWithThreads(ModuleRequest module) throws Exception {
@@ -257,24 +262,30 @@ public class ModuleGenerator {
     }
 
     // Comprimir la carpeta en zip
-    private static void zipFolder(File sourceDir, String zipFilePath) throws IOException {
-        try (java.util.zip.ZipOutputStream zs = new java.util.zip.ZipOutputStream(new java.io.FileOutputStream(zipFilePath))) {
-            java.nio.file.Path pp = sourceDir.toPath();
-            java.nio.file.Files.walk(pp)
-                    .filter(path -> !java.nio.file.Files.isDirectory(path))
-                    .forEach(path -> {
-                        java.util.zip.ZipEntry zipEntry = new java.util.zip.ZipEntry(pp.relativize(path).toString());
-                        try {
-                            zs.putNextEntry(zipEntry);
-                            java.nio.file.Files.copy(path, zs);
-                            zs.closeEntry();
-                        } catch (IOException e) {
-                            System.err.println("Error zipping: " + path + " - " + e);
-                        }
-                    });
+    public static void zipFolder(File sourceDir, String zipFilePath) throws IOException {
+        try (
+            ZipOutputStream zs = new ZipOutputStream(new FileOutputStream(zipFilePath))
+        ) {
+            Path pp = sourceDir.toPath(); // Convierte la carpeta a Path
+            Files.walk(pp) // Recorre todos los archivos
+                .filter(path -> !Files.isDirectory(path))
+                .forEach(path -> {
+                    // Crea una entrada en el ZIP con la ruta relativa del archivo dentro de la carpeta
+                    ZipEntry zipEntry = new ZipEntry(pp.relativize(path).toString());
+                    // Escribe el archivo al ZIP
+                    try {
+                        zs.putNextEntry(zipEntry);
+                        Files.copy(path, zs);
+                        zs.closeEntry();
+                    } catch (IOException e) {
+                        System.err.println("Error zipping: " + path + " - " + e);
+                    }
+                }
+            );
         }
     }
 
+/*
     // Main de prueba
     public static void main(String[] args) throws Exception {
         String json = """
@@ -416,5 +427,5 @@ public class ModuleGenerator {
         System.out.println("Módulo generado y comprimido en: " + zipPath);
         
 
-    }
+    }*/
 }
