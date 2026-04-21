@@ -31,11 +31,11 @@ INSERT INTO fields (name, technical_name, type, required, unique_field, relation
 -- Alumno
 ('Nombre', 'nombre', 'char', TRUE, TRUE, NULL, NULL, 1),
 ('Edad', 'edad', 'integer', FALSE, FALSE, NULL, NULL, 1),
-('Cursos', 'cursos_ids', 'many2many', FALSE, FALSE, 'academia.curso', NULL, 1),
+('Cursos', 'cursos_ids', 'many2many', FALSE, FALSE, 'academia.curso', 'alumnos_ids', 1),
 -- Curso
 ('Titulo', 'titulo', 'char', TRUE, TRUE, NULL, NULL, 2),
 ('Descripcion', 'descripcion', 'text', FALSE, FALSE, NULL, NULL, 2),
-('Alumnos', 'alumnos_ids', 'many2many', FALSE, FALSE, 'academia.alumno', NULL, 2),
+('Alumnos', 'alumnos_ids', 'many2many', FALSE, FALSE, 'academia.alumno', 'cursos_ids', 2),
 ('Profesor', 'profesor_id', 'many2one', FALSE, FALSE, 'academia.profesor', NULL, 2),
 -- Profesor
 ('Nombre', 'nombre', 'char', TRUE, TRUE, NULL, NULL, 3),

@@ -248,7 +248,9 @@ class ModuleController extends AbstractController
                         'technicalName' => $field->getTechnicalName(),
                         'type' => $field->getType(),
                         'required' => $field->getRequired(),
+                        'unique' => $field->getUniqueField(),
                         'relationModel' => $field->getRelationModel(),
+                        'relationField' => $field->getRelationField(),
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {

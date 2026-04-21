@@ -61,6 +61,15 @@ class Fields
     private $required = '0';
 
     /**
+     * @var bool|null
+     *
+     * @ORM\Column(name="unique_field", type="boolean", nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $uniqueField = false;
+
+    /**
      * @var string|null
      *
      * @ORM\Column(name="relation_model", type="string", length=255, nullable=true)
@@ -68,6 +77,15 @@ class Fields
      * @Groups({"fields:read"})
      */
     private $relationModel;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="relation_field", type="string", length=255, nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $relationField;
 
     /**
      * @var Models
@@ -116,12 +134,38 @@ class Fields
         $this->type = $type;
     }
 
-    public function getRequired(): bool|string|null
+    public function getUniqueField(): ?bool
+    {
+        return $this->uniqueField;
+    }
+
+    public function setUniqueField(?bool $uniqueField): void
+    {
+        $this->uniqueField = $uniqueField;
+    }
+
+    public function getRelationField(): ?string
+    {
+        return $this->relationField;
+    }
+
+    public function setRelationField(?string $relationField): void
+    {
+        $this->relationField = $relationField;
+    }
+
+    /**
+     * @return bool|string|null
+     */
+    public function getRequired()
     {
         return $this->required;
     }
 
-    public function setRequired(bool|string|null $required): void
+    /**
+     * @param bool|string|null $required
+     */
+    public function setRequired($required): void
     {
         $this->required = $required;
     }
