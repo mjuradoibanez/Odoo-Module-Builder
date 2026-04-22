@@ -279,6 +279,7 @@ class ModuleController extends AbstractController
             'author' => $module->getAuthor(),
             'createdAt' => $module->getCreatedAt(),
             'category' => $module->getCategory(),
+            'isPublic' => $module->getIsPublic(),
             'user' => [
                 'id' => $module->getUser()->getId(),
                 'username' => $module->getUser()->getUsername(),

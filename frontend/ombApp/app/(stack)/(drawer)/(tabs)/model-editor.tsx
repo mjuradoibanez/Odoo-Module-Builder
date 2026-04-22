@@ -40,6 +40,7 @@ const ModelEditorScreen = () => {
   const { update, loading: loadingUpdate, error: updateError, success: updateSuccess } = useUpdateModule();
 
   const [editingModelId, setEditingModelId] = useState<number | null>(null);
+  const [showModuleEditError, setShowModuleEditError] = useState<number | null>(null); // id del modelo bloqueante
   const [modelForm, setModelForm] = useState<{ name: string; technicalName: string }>({ name: '', technicalName: '' });
   const [modelFieldErrors, setModelFieldErrors] = useState<{ name?: string; technicalName?: string }>({});
   const modelTechnicalNameRef = useRef<any>(null);
@@ -49,6 +50,8 @@ const ModelEditorScreen = () => {
 
   // Add a new state for no changes error
   const [noChangesError, setNoChangesError] = useState(false);
+  // Estado para saber si se está editando/creando campo en el modelo actualmente en edición
+  const [showModelFieldEdit, setShowModelFieldEdit] = useState(false);
 
 
   // Detecta si hay cambios en el formulario de edición de módulo
@@ -379,13 +382,25 @@ const ModelEditorScreen = () => {
               fieldErrors={fieldErrors}
               styles={styles}
             />
+
             <View style={{ marginTop: 32 }}>
               <Text style={[styles.label, { fontSize: 18, marginBottom: 12 }]}>Modelos del módulo</Text>
               {/* Lista de modelos existentes */}
               {/* Modelos existentes o botón para añadir */}
               {moduleFull.models && moduleFull.models.length > 0 ? (
                 moduleFull.models.map((model: any) => (
-                  <View key={model.id} style={{ marginBottom: 18, padding: 14, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: Colors.light.border }}>
+                  <View
+                    key={model.id}
+                    style={{
+                      marginBottom: 18,
+                      padding: 14,
+                      backgroundColor: '#fff',
+                      borderRadius: 8,
+                      borderWidth: 2,
+                      borderColor: showModuleEditError === model.id ? '#c0392b' : Colors.light.border,
+                      boxShadow: showModuleEditError === model.id ? '0 0 0 2px #c0392b44' : undefined,
+                    }}
+                  >
                     {editingModelId === model.id ? (
                       <>
                         <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6 }}>Editar modelo</Text>
@@ -400,7 +415,7 @@ const ModelEditorScreen = () => {
                           ref={modelTechnicalNameRef}
                           style={modelFieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
                           value={modelForm.technicalName}
-                          onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
+                          onChangeText={v => setModelForm(f => ({ ...f, technicalName: v } ))}
                           placeholder="Nombre técnico"
                           autoCapitalize="none"
                           returnKeyType="done"
@@ -408,14 +423,29 @@ const ModelEditorScreen = () => {
                           onBlur={() => setModelTechnicalNameFocused(false)}
                         />
                         {modelFieldErrors.technicalName && <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>}
-                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                          <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel} disabled={loadingUpdateModel}>
-                            <Text style={styles.buttonText}>{loadingUpdateModel ? 'Guardando...' : 'Guardar'}</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
-                            <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
-                          </TouchableOpacity>
-                        </View>
+                        {/* Mostrar editor de campos justo después de los inputs de nombre */}
+                        <ModelFieldsEditor
+                          modelId={model.id}
+                          editable={true}
+                          onEditStateChange={(editing) => setShowModelFieldEdit(editing)}
+                        />
+                        {/* Botones guardar y descartar al final, solo si no se está editando/creando campo */}
+                        {!showModelFieldEdit && (
+                          <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
+                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel} disabled={loadingUpdateModel}>
+                              <Text style={styles.buttonText}>{loadingUpdateModel ? 'Guardando...' : 'Guardar'}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
+                              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {/* Mensaje de error solo si se intentó guardar/cancelar el módulo antes que el modelo */}
+                        {showModuleEditError === model.id && (
+                          <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
+                            Guarda o descarta los cambios del modelo primero.
+                          </Text>
+                        )}
                       </>
                     ) : (
                       <>
@@ -423,7 +453,7 @@ const ModelEditorScreen = () => {
                         <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => handleEditModel(model)}>
                           <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
                         </TouchableOpacity>
-                        <ModelFieldsEditor modelId={model.id} editable={editingModelId === model.id} />
+                        <ModelFieldsEditor modelId={model.id} editable={false} />
                       </>
                     )}
                   </View>
@@ -475,11 +505,17 @@ const ModelEditorScreen = () => {
                 </View>
               )}
             </View>
-            {/* Botones guardar y descartar */}
+            {/* Botones guardar y descartar del módulo, muestran error si hay modelo en edición */}
             <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 32 }}>
               <TouchableOpacity
-                style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]}
-                onPress={handleUpdate}
+                style={[styles.button, { flex: 1, backgroundColor: editingModelId !== null ? '#bbb' : Colors.light.primary }]}
+                onPress={() => {
+                  if (editingModelId !== null) {
+                    setShowModuleEditError(editingModelId);
+                    return;
+                  }
+                  handleUpdate();
+                }}
                 disabled={loadingUpdate}
               >
                 <Text style={styles.buttonText}>{loadingUpdate ? 'Guardando...' : 'Guardar cambios'}</Text>
@@ -487,8 +523,11 @@ const ModelEditorScreen = () => {
               <TouchableOpacity
                 style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]}
                 onPress={() => {
+                  if (editingModelId !== null) {
+                    setShowModuleEditError(editingModelId);
+                    return;
+                  }
                   resetForm();
-                  // Try with a valid route string for Expo Router
                   router.push('/(stack)/(drawer)/(tabs)/module-editor');
                 }}
                 disabled={loadingUpdate}
