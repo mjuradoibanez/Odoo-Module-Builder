@@ -17,10 +17,10 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
   // Evitar problemas de mayúsculas, minúsculas o espacios
-  const category = (module.category || 'otros').toLowerCase().replace(/\s+/g, '');
-  const iconData = moduleCategoryIcons[category] || moduleCategoryIcons['otros'];
+  const category = (module.category || 'otra').toLowerCase().replace(/\s+/g, '');
+  const iconData = moduleCategoryIcons[category] || moduleCategoryIcons['otra'];
   const showIcon = !!iconData.icon;
-  const initial = module.name ? module.name.charAt(0).toUpperCase() : '?';
+  const initial = module.name ? String(module.name).charAt(0).toUpperCase() : '?';
 
   // Estilos condicionales para incompleto
   const lightestGray = '#F4F4F7';
@@ -48,8 +48,8 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
           )}
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{module.name}</Text>
-          <Text style={styles.technicalName}>{module.technicalName}</Text>
+          <Text style={styles.title}>{module.name || ''}</Text>
+          <Text style={styles.technicalName}>{module.technicalName || ''}</Text>
         </View>
         <View style={styles.versionDateCol}>
           {/* Candado arriba a la derecha solo si showLock */}
@@ -72,9 +72,9 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
           )}
         </View>
       </View>
-      {module.description && (
+      {module.description ? (
         <Text style={styles.description}>{module.description}</Text>
-      )}
+      ) : null}
       
     </View>
   );

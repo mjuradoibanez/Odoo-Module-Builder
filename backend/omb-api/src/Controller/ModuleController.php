@@ -49,10 +49,13 @@ class ModuleController extends AbstractController
 
             $entityManager = $this->getDoctrine()->getManager();
 
-            // Verificar duplicados
+            // Verificar duplicados por usuario
             $existing = $entityManager
                 ->getRepository(Modules::class)
-                ->findOneBy(['technicalName' => $data['technicalName']]);
+                ->findOneBy([
+                    'technicalName' => $data['technicalName'],
+                    'user' => $data['user_id']
+                ]);
 
             if ($existing){
                 return new Response("Module already exists", 404);
@@ -146,10 +149,13 @@ class ModuleController extends AbstractController
                 ['object_to_populate' => $module]
             );
 
-            // Validar duplicados
+            // Validar duplicados por usuario
             $existing = $entityManager
                 ->getRepository(Modules::class)
-                ->findOneBy(['technicalName' => $module->getTechnicalName()]);
+                ->findOneBy([
+                    'technicalName' => $module->getTechnicalName(),
+                    'user' => $module->getUser()
+                ]);
 
             if ($existing && $existing->getId() != $module->getId()){
                 return new Response("technicalName already exists", 409);

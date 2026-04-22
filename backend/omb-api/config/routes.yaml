@@ -11,7 +11,7 @@ modules:
 module:
   path: /modules/{id}
   controller: App\Controller\ModuleController::module
-  methods: [ GET, DELETE, PUT ]
+  methods: [ GET, DELETE, PUT, OPTIONS ]
 
 module_full:
   path: /modules/{id}/full
@@ -33,12 +33,12 @@ generate_module:
 models:
   path: /models
   controller: App\Controller\ModelController::models
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 model:
   path: /models/{id}
   controller: App\Controller\ModelController::model
-  methods: [ GET, DELETE, PUT ]
+  methods: [ GET, DELETE, PUT, OPTIONS ]
 
 models_module:
   path: /modules/{id}/models
@@ -49,12 +49,12 @@ models_module:
 fields:
   path: /fields
   controller: App\Controller\FieldController::fields
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 field:
   path: /fields/{id}
   controller: App\Controller\FieldController::field
-  methods: [ GET, DELETE, PUT ]
+  methods: [ GET, DELETE, PUT, OPTIONS ]
 
 fields_model:
   path: /models/{id}/fields
@@ -65,23 +65,23 @@ fields_model:
 users:
   path: /users
   controller: App\Controller\UserController::users
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 user:
   path: /users/{id}
   controller: App\Controller\UserController::user
-  methods: [ GET, DELETE, PUT ]
+  methods: [ GET, DELETE, PUT, OPTIONS ]
 
 # Views
 views:
   path: /views
   controller: App\Controller\ViewController::views
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 view:
   path: /views/{id}
   controller: App\Controller\ViewController::view
-  methods: [ GET, DELETE, PUT ]
+  methods: [ GET, DELETE, PUT, OPTIONS ]
 
 views_model:
   path: /models/{id}/views
@@ -92,23 +92,23 @@ views_model:
 viewFields:
   path: /viewFields
   controller: App\Controller\ViewFieldController::viewFields
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 viewField:
   path: /viewFields/{id}
   controller: App\Controller\ViewFieldController::viewField
-  methods: [ DELETE ]
+  methods: [ DELETE, OPTIONS ]
 
 # Deployments
 deployments:
   path: /deployments
   controller: App\Controller\DeploymentController::deployments
-  methods: [ GET, POST ]
+  methods: [ GET, POST, OPTIONS ]
 
 deployment:
   path: /deployments/{id}
   controller: App\Controller\DeploymentController::deployment
-  methods: [ GET, DELETE ]
+  methods: [ GET, DELETE, OPTIONS ]
 
 # Login
 login:
