@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFieldsOfModel } from '@/presentation/hooks/useFieldsOfModel';
-import { useCreateField } from '@/presentation/hooks/useCreateField';
-import { useUpdateField } from '@/presentation/hooks/useUpdateField';
 import { Colors } from '@/constants/theme';
-
 
 const FIELD_TYPES = [
   { label: 'Texto', value: 'char' },
@@ -22,20 +18,33 @@ const RELATION_SUBTYPES = [
   { label: 'Muchos a muchos (many2many)', value: 'many2many' },
 ];
 
-export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { modelId: number, editable: boolean, onEditStateChange?: (editing: boolean) => void }) {
-  const { fields, loading, error, reload } = useFieldsOfModel(modelId);
-  const { create, loading: loadingCreate, error: errorCreate } = useCreateField();
-  const { update, loading: loadingUpdate, error: errorUpdate } = useUpdateField();
-    const [fieldForm, setFieldForm] = useState({
-      name: '',
-      technicalName: '',
-      type: 'char',
-      required: false,
-      uniqueField: false,
-      relationModel: '',
-      relationField: '',
-      relationSubtype: 'many2one',
-    });
+export function ModelFieldsEditor({
+  fields,
+  onAddField,
+  onEditField,
+  onDeleteField,
+  editable,
+  onEditStateChange
+}: {
+  fields: any[];
+  onAddField: (field: any) => void;
+  onEditField: (id: number, updated: any) => void;
+  onDeleteField: (id: number) => void;
+  editable: boolean;
+  onEditStateChange?: (editing: boolean) => void;
+}) {
+
+  const [fieldForm, setFieldForm] = useState({
+    name: '',
+    technicalName: '',
+    type: 'char',
+    required: false,
+    uniqueField: false,
+    relationModel: '',
+    relationField: '',
+    relationSubtype: 'many2one',
+  });
+
   const [fieldErrors, setFieldErrors] = useState<any>({});
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
   const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
@@ -56,24 +65,18 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
     return Object.keys(errors).length > 0 ? errors : null;
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const errors = validate();
     if (errors) return;
     if (!fieldFormTouched) {
-      setFieldFormError('No hay cambios para guardar');
+      setFieldFormError('No hay cambios para aceptar');
       return;
     }
-    const ok = await create({ ...fieldForm, model_id: modelId });
-    if (ok) {
-      setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' });
-      setFieldErrors({});
-      setFieldFormTouched(false);
-      setShowNewFieldForm(false);
-      reload();
-    } else {
-      // Si la creación falla, mantener el formulario abierto
-      setFieldFormTouched(true);
-    }
+    onAddField({ ...fieldForm });
+    setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' });
+    setFieldErrors({});
+    setFieldFormTouched(false);
+    setShowNewFieldForm(false);
   };
 
   const handleCancel = () => {
@@ -104,11 +107,24 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
       setFieldFormTouched(false);
       setFieldFormError('');
     }
-    // Si hay edición de otro campo y tiene cambios, bloquear
-    if (editingFieldId !== null && editFieldFormTouched && editFieldForm && (editFieldForm.name !== fields.find(f => f.id === editingFieldId)?.name || editFieldForm.technicalName !== fields.find(f => f.id === editingFieldId)?.technicalName || editFieldForm.type !== fields.find(f => f.id === editingFieldId)?.type)) {
+    // Solo bloquear si intentas editar un campo distinto con cambios pendientes
+    if (
+      editingFieldId !== null &&
+      editFieldFormTouched &&
+      editFieldForm &&
+      field.id !== editingFieldId &&
+      (editFieldForm.name !== fields.find(f => f.id === editingFieldId)?.name ||
+        editFieldForm.technicalName !== fields.find(f => f.id === editingFieldId)?.technicalName ||
+        editFieldForm.type !== fields.find(f => f.id === editingFieldId)?.type ||
+        !!editFieldForm.relationModel !== !!fields.find(f => f.id === editingFieldId)?.relationModel ||
+        !!editFieldForm.relationField !== !!fields.find(f => f.id === editingFieldId)?.relationField ||
+        !!editFieldForm.required !== !!fields.find(f => f.id === editingFieldId)?.required ||
+        !!editFieldForm.uniqueField !== !!fields.find(f => f.id === editingFieldId)?.uniqueField)
+    ) {
       setEditFieldFormError('Termina o descarta la edición antes de editar otro campo.');
       return;
     }
+
     // Forzar que el tipo sea exactamente el string del chip si es relación
     setEditingFieldId(field.id);
     setEditFieldForm({
@@ -127,22 +143,19 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
     if (onEditStateChange) onEditStateChange(true);
   };
 
-  const handleEditSave = async () => {
+  const handleEditSave = () => {
     const errors = validateEdit();
     if (errors) return;
     if (editingFieldId === null) return;
     if (!editFieldFormTouched) {
-      setEditFieldFormError('No hay cambios para guardar');
+      setEditFieldFormError('No hay cambios para aceptar');
       return;
     }
-    const ok = await update(editingFieldId, { ...editFieldForm, model_id: modelId });
-    if (ok) {
-      setEditingFieldId(null);
-      setEditFieldForm(null);
-      setEditFieldErrors({});
-      setEditFieldFormTouched(false);
-      reload();
-    }
+    onEditField(editingFieldId, { ...editFieldForm });
+    setEditingFieldId(null);
+    setEditFieldForm(null);
+    setEditFieldErrors({});
+    setEditFieldFormTouched(false);
   };
 
   const handleEditCancel = () => {
@@ -191,8 +204,6 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
   return (
     <View style={{ marginTop: 10 }}>
       <Text style={styles.sectionTitle}>Campos del modelo</Text>
-      {loading && <Text style={styles.info}>Cargando campos...</Text>}
-      {error && <Text style={styles.error}>{error}</Text>}
       <View style={{ marginBottom: 10 }}>
         {fields.length === 0 && <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>}
         {fields.map((field) => (
@@ -207,9 +218,10 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
             activeOpacity={0.85}
             onPress={() => editable && handleEdit(field)}
             disabled={!editable}
+            onLongPress={() => editable && onDeleteField(field.id)}
           >
             {editingFieldId === field.id ? (
-              <View style={[styles.fieldBox, { flex: 1, marginBottom: 0 }]}> 
+              <View style={[styles.fieldBox, { flex: 1, marginBottom: 0 }]}>
                 <Text style={styles.label}>Nombre</Text>
                 <TextInput style={[styles.input, editFieldErrors.name && styles.inputError]} value={editFieldForm.name} onChangeText={v => { setEditFieldForm((f: any) => ({ ...f, name: v })); setEditFieldFormTouched(true); }} />
                 {editFieldErrors.name ? <Text style={styles.error}>{editFieldErrors.name}</Text> : null}
@@ -251,14 +263,13 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
                   </View>
                 ) : null}
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                  <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleEditSave} disabled={loadingUpdate}>
-                    <Text style={styles.buttonText}>{loadingUpdate ? 'Guardando...' : 'Guardar'}</Text>
+                  <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleEditSave}>
+                    <Text style={styles.buttonText}>Aceptar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleEditCancel}>
                     <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
                   </TouchableOpacity>
                 </View>
-                {errorUpdate ? <Text style={styles.error}>{errorUpdate}</Text> : null}
                 {editFieldFormError ? <Text style={[styles.error, { color: '#c0392b' }]}>{editFieldFormError}</Text> : null}
               </View>
             ) : (
@@ -305,7 +316,7 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
         </TouchableOpacity>
       )}
       {editable && showNewFieldForm && fields && Array.isArray(fields) && (
-        <View style={[styles.fieldBox, fieldFormError ? { borderColor: '#c0392b', borderWidth: 2 } : {}, { marginTop: 10 }]}> 
+        <View style={[styles.fieldBox, fieldFormError ? { borderColor: '#c0392b', borderWidth: 2 } : {}, { marginTop: 10 }]}>
           <Text style={styles.label}>Nombre</Text>
           <TextInput style={[styles.input, fieldErrors.name && styles.inputError]} value={fieldForm.name} onChangeText={v => { setFieldForm(f => ({ ...f, name: v })); setFieldFormTouched(true); }} placeholder="Nombre del campo" />
           {fieldErrors.name ? <Text style={styles.error}>{fieldErrors.name}</Text> : null}
@@ -351,24 +362,22 @@ export function ModelFieldsEditor({ modelId, editable, onEditStateChange }: { mo
               style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }, !fieldFormTouched && { opacity: 0.5 }]}
               onPress={() => {
                 if (!fieldFormTouched) {
-                  setFieldFormError('No hay cambios para guardar');
+                  setFieldFormError('No hay cambios para aceptar');
                   return;
                 }
-                setFieldFormError(''); // Limpiar error anterior
+                setFieldFormError('');
                 handleSave();
               }}
-              disabled={loadingCreate}
             >
-              <Text style={styles.buttonText}>{loadingCreate ? 'Creando...' : 'Crear campo'}</Text>
+              <Text style={styles.buttonText}>Aceptar</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={() => { setShowNewFieldForm(false); setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' }); setFieldErrors({}); setFieldFormTouched(false); setFieldFormError(''); }}>
-              <Text style={[styles.buttonText, { color: '#222' }]}>Descartar</Text>
+              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
           {fieldFormError ? (
             <Text style={{ color: '#c0392b', marginTop: 4, fontSize: 14, textAlign: 'left' }}>{fieldFormError}</Text>
           ) : null}
-          {!fieldFormError && errorCreate ? <Text style={styles.error}>{errorCreate}</Text> : null}
         </View>
       )}
     </View>

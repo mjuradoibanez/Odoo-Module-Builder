@@ -48,10 +48,46 @@ const ModelEditorScreen = () => {
   const { create: createModel, loading: loadingCreateModel, error: errorCreateModel } = useCreateModel();
   const { update: updateModel, loading: loadingUpdateModel, error: errorUpdateModel } = useUpdateModel();
 
-  // Add a new state for no changes error
   const [noChangesError, setNoChangesError] = useState(false);
   // Estado para saber si se está editando/creando campo en el modelo actualmente en edición
   const [showModelFieldEdit, setShowModelFieldEdit] = useState(false);
+
+  // Estado global de campos de modelos
+  const [modelFieldsMap, setModelFieldsMap] = useState<{ [modelId: number]: any[] }>({});
+
+  // Inicializa los campos de modelos cuando se carga moduleFull
+  useEffect(() => {
+    if (moduleFull && moduleFull.models) {
+      const map: { [modelId: number]: any[] } = {};
+      moduleFull.models.forEach((m: any) => {
+        map[m.id] = m.fields ? [...m.fields] : [];
+      });
+      setModelFieldsMap(map);
+    }
+  }, [moduleFull]);
+
+  // Handlers globales
+  const handleAddField = (modelId: number, field: any) => {
+    setModelFieldsMap(prev => {
+      const tempId = Math.min(0, ...(prev[modelId]?.map(f => f.id ?? 0) ?? [0])) - 1;
+      return {
+        ...prev,
+        [modelId]: [...(prev[modelId] || []), { ...field, id: tempId }],
+      };
+    });
+  };
+  const handleEditField = (modelId: number, id: number, updated: any) => {
+    setModelFieldsMap(prev => ({
+      ...prev,
+      [modelId]: prev[modelId].map((f: any) => f.id === id ? { ...f, ...updated } : f),
+    }));
+  };
+  const handleDeleteField = (modelId: number, id: number) => {
+    setModelFieldsMap(prev => ({
+      ...prev,
+      [modelId]: prev[modelId].filter((f: any) => f.id !== id),
+    }));
+  };
 
 
   // Detecta si hay cambios en el formulario de edición de módulo
@@ -82,6 +118,8 @@ const ModelEditorScreen = () => {
     setEditingModelId(null);
     setModelForm({ name: '', technicalName: '' });
     setModelFieldErrors({});
+    // Limpia errores visuales inmediatamente
+    setTimeout(() => setModelFieldErrors({}), 0);
   };
 
   const validateModel = () => {
@@ -98,7 +136,32 @@ const ModelEditorScreen = () => {
     if (errors) return;
     if (!editingId) return;
     const moduleIdNum = editingId;
+    // Detectar si hay cambios en el modelo o en sus campos
+    let hasModelChanged = false;
     if (editingModelId) {
+      const originalModel = moduleFull.models.find((m: any) => m.id === editingModelId);
+      if (
+        originalModel &&
+        (modelForm.name !== (originalModel.name || '') ||
+          modelForm.technicalName !== (originalModel.technicalName || ''))
+      ) {
+        hasModelChanged = true;
+      }
+      // Detectar cambios en campos
+      const originalFields = (originalModel && originalModel.fields) ? originalModel.fields : [];
+      const currentFields = modelFieldsMap[editingModelId] || [];
+      const fieldsChanged =
+        originalFields.length !== currentFields.length ||
+        originalFields.some((f: any, i: number) => {
+          const cf = currentFields[i];
+          return !cf || JSON.stringify(f) !== JSON.stringify(cf);
+        });
+      if (fieldsChanged) hasModelChanged = true;
+      if (!hasModelChanged) {
+        setModelFieldErrors({ technicalName: 'No hay cambios para aceptar' });
+        setTimeout(() => setModelFieldErrors({}), 2000);
+        return;
+      }
       // Editar
       const ok = await updateModel(editingModelId, {
         name: modelForm.name,
@@ -413,7 +476,7 @@ const ModelEditorScreen = () => {
                         {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
                         <TextInput
                           ref={modelTechnicalNameRef}
-                          style={modelFieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
+                          style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
                           value={modelForm.technicalName}
                           onChangeText={v => setModelForm(f => ({ ...f, technicalName: v } ))}
                           placeholder="Nombre técnico"
@@ -422,25 +485,34 @@ const ModelEditorScreen = () => {
                           onFocus={() => setModelTechnicalNameFocused(true)}
                           onBlur={() => setModelTechnicalNameFocused(false)}
                         />
-                        {modelFieldErrors.technicalName && <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>}
-                        {/* Mostrar editor de campos justo después de los inputs de nombre */}
+                        {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
+                        {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
+                          <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
+                        )}
+                        {/* Editor de campos con estado y handlers globales */}
                         <ModelFieldsEditor
-                          modelId={model.id}
+                          fields={modelFieldsMap[model.id] || []}
+                          onAddField={field => handleAddField(model.id, field)}
+                          onEditField={(id, updated) => handleEditField(model.id, id, updated)}
+                          onDeleteField={id => handleDeleteField(model.id, id)}
                           editable={true}
                           onEditStateChange={(editing) => setShowModelFieldEdit(editing)}
                         />
-                        {/* Botones guardar y descartar al final, solo si no se está editando/creando campo */}
                         {!showModelFieldEdit && (
-                          <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
-                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel} disabled={loadingUpdateModel}>
-                              <Text style={styles.buttonText}>{loadingUpdateModel ? 'Guardando...' : 'Guardar'}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
-                              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
-                            </TouchableOpacity>
-                          </View>
+                          <>
+                            <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
+                              <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel} disabled={loadingUpdateModel}>
+                                <Text style={styles.buttonText}>{loadingUpdateModel ? 'Guardando...' : 'Aceptar'}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
+                                <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+                              </TouchableOpacity>
+                            </View>
+                            {modelFieldErrors.technicalName === 'No hay cambios para aceptar' && (
+                              <Text style={[styles.error, { textAlign: 'left', marginTop: 8 }]}>{modelFieldErrors.technicalName}</Text>
+                            )}
+                          </>
                         )}
-                        {/* Mensaje de error solo si se intentó guardar/cancelar el módulo antes que el modelo */}
                         {showModuleEditError === model.id && (
                           <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
                             Guarda o descarta los cambios del modelo primero.
@@ -453,7 +525,13 @@ const ModelEditorScreen = () => {
                         <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => handleEditModel(model)}>
                           <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
                         </TouchableOpacity>
-                        <ModelFieldsEditor modelId={model.id} editable={false} />
+                        <ModelFieldsEditor
+                          fields={modelFieldsMap[model.id] || []}
+                          onAddField={() => {}}
+                          onEditField={() => {}}
+                          onDeleteField={() => {}}
+                          editable={false}
+                        />
                       </>
                     )}
                   </View>
@@ -481,18 +559,21 @@ const ModelEditorScreen = () => {
                     placeholder="Nombre del modelo"
                   />
                   {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
-                  <TextInput
-                    ref={modelTechnicalNameRef}
-                    style={modelFieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
-                    value={modelForm.technicalName}
-                    onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
-                    placeholder="Nombre técnico"
-                    autoCapitalize="none"
-                    returnKeyType="done"
-                    onFocus={() => setModelTechnicalNameFocused(true)}
-                    onBlur={() => setModelTechnicalNameFocused(false)}
-                  />
-                  {modelFieldErrors.technicalName && <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>}
+                        <TextInput
+                          ref={modelTechnicalNameRef}
+                          style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
+                          value={modelForm.technicalName}
+                          onChangeText={v => setModelForm(f => ({ ...f, technicalName: v } ))}
+                          placeholder="Nombre técnico"
+                          autoCapitalize="none"
+                          returnKeyType="done"
+                          onFocus={() => setModelTechnicalNameFocused(true)}
+                          onBlur={() => setModelTechnicalNameFocused(false)}
+                        />
+                        {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
+                        {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
+                          <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
+                        )}
                   <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
                     <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel} disabled={loadingCreateModel}>
                       <Text style={styles.buttonText}>{loadingCreateModel ? 'Creando...' : 'Crear modelo'}</Text>
