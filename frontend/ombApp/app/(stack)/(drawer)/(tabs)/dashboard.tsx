@@ -61,11 +61,11 @@ const DashboardScreen = () => {
       </View>
       {isLoadingPublic ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
-      ) : publicModules.filter(m => m.user.id !== userId).length === 0 ? (
+      ) : publicModules.filter(m => m.isPublic && m.user.id !== userId).length === 0 ? (
         <Text style={{ color: Colors.light.icon, marginHorizontal: 12 }}>No hay módulos públicos de otros usuarios disponibles.</Text>
       ) : (
         <FlatList
-          data={publicModules.filter(m => m.user.id !== userId)}
+          data={publicModules.filter(m => m.isPublic && m.user.id !== userId)}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
