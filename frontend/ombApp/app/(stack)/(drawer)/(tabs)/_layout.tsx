@@ -18,21 +18,21 @@ const TabsLayout = () => {
       <Tabs.Screen
         name='dashboard'
         options={{
-          tabBarLabel: 'Módulos',
+          tabBarLabel: 'Inicio',
           tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="apps-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
+        }}
+      />
+      <Tabs.Screen
+        name='modules'
+        options={{
+          tabBarLabel: 'Mis módulos',
+          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="build-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />
       <Tabs.Screen
         name='module-editor'
         options={{
-          tabBarLabel: 'Editor Módulo',
-          tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="build-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
-        }}
-      />
-      <Tabs.Screen
-        name='model-editor'
-        options={{
-          tabBarLabel: 'Modelos',
+          tabBarLabel: 'Editor modelos',
           tabBarIcon: ({ color, focused }) => <Ionicons size={28} name="layers-outline" color={focused ? AppColors.accent : color} style={focused ? { backgroundColor: AppColors.primary, borderRadius: 8, padding: 4 } : {}} />
         }}
       />

@@ -8,6 +8,8 @@ import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';
 import { useGenerateAndDownloadModule } from '@/presentation/hooks/useGenerateAndDownloadModule';
 
+// Pantalla de despliegue de módulo Odoo
+
 // Validar si un módulo está completo: nombre técnico y al menos un modelo con campos
 function isModuleComplete(module: any): boolean {
   if (!module.technicalName || !module.name || !Array.isArray(module.models) || module.models.length === 0) {
@@ -39,6 +41,7 @@ const DeployScreen = () => {
   const isDesktop = width >= 900;
   const generateAndDownload = useGenerateAndDownloadModule();
 
+  // Cargar detalles completos de los módulos para validar si están completos
   useEffect(() => {
     if (!modules || modules.length === 0) return;
     setLoadingDetails(true);

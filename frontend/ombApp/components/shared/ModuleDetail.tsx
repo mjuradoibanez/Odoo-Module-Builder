@@ -7,6 +7,7 @@ interface ModuleDetailProps {
   moduleId: number;
 }
 
+// Pantalla de detalle completo del módulo, mostrando modelos, campos y vistas
 export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
   const { module, isLoading } = useModuleFull(moduleId);
 

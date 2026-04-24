@@ -22,7 +22,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
   const showIcon = !!iconData.icon;
   const initial = module.name ? String(module.name).charAt(0).toUpperCase() : '?';
 
-  // Estilos condicionales para incompleto
+  // Estilos condicionales por si es un módulo incompleto
   const lightestGray = '#F4F4F7';
   const cardStyle = [
     styles.card,

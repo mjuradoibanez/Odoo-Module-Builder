@@ -1,11 +1,10 @@
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react'; // This line remains unchanged
 import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { WebViewWrapper } from './WebViewWrapper';
 
-// Iconos y rutas para las tabs principales estilo Odoo
+// Iconos y rutas para las tabs principales
 const tabIcons: { name: string; route: string }[] = [
   { name: 'apps-outline', route: 'dashboard' },
   { name: 'build-outline', route: 'module-editor' },

@@ -23,18 +23,18 @@ const DrawerLayout = () => {
           let title = 'Módulos';
           if (routeName === 'dashboard') {
             title = 'Inicio';
-          } else if (routeName === 'module-editor') {
+          } else if (routeName === 'modules') {
             title = 'Módulos';
-          } else if (routeName === 'model-editor') {
-            title = 'Nuevo Módulo';
+          } else if (routeName === 'module-editor') {
+            title = 'Creación Módulos';
           } else if (routeName === 'deploy') {
             title = 'Desplegar';
           } else if (routeName === 'settings') {
-            title = 'Settings';
+            title = 'Ajustes';
           } else if (routeName === 'profile') {
-            title = 'Profile';
+            title = 'Perfil';
           } else if (routeName === 'about') {
-            title = 'About';
+            title = 'Acerca de';
           }
           return {
             title,

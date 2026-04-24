@@ -3,6 +3,7 @@ import { Modal, View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+// Bloquea eliminar un módulo si tiene dependencias
 interface BlockDeleteModalProps {
   visible: boolean;
   onClose: () => void;
@@ -28,6 +29,7 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
     if (onDeleteBoth) onDeleteBoth();
   };
   
+  // Resetear confirmación al cerrar el modal
   React.useEffect(() => { if (!visible) setConfirm(false); }, [visible]);
   
   return (
@@ -51,7 +53,7 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <TouchableOpacity
                     onPress={() => {
-                      router.push({ pathname: '/model-editor', params: { moduleId: rel.moduleId } });
+                      router.push({ pathname: '/module-editor', params: { moduleId: rel.moduleId } });
                       onClose();
                     }}
                     activeOpacity={0.7}
@@ -62,7 +64,7 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
                   
                   <TouchableOpacity
                     onPress={() => {
-                      router.push({ pathname: '/model-editor', params: { moduleId: rel.moduleId } });
+                      router.push({ pathname: '/module-editor', params: { moduleId: rel.moduleId } });
                       onClose();
                     }}
                     activeOpacity={0.7}

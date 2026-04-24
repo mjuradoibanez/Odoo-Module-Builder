@@ -151,7 +151,7 @@ class ModelController extends AbstractController
             if (isset($data['module_id'])){
                 $module = $entityManager
                     ->getRepository(Modules::class)
-                    ->findOneBy(['id' => $data['modules_id']]);
+                    ->findOneBy(['id' => $data['module_id']]);
 
                 if (!$module){
                     return new Response("Module not found", 404);
