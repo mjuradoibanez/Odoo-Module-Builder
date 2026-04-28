@@ -174,6 +174,92 @@ class ModuleController extends AbstractController
                 $module->setUser($user);
             }
 
+            // MODELOS Y CAMPOS
+            if (isset($data['models']) && is_array($data['models'])) {
+                $modelRepo = $entityManager->getRepository(Models::class);
+                $fieldRepo = $entityManager->getRepository(Fields::class);
+
+                // Obtener modelos actuales del módulo
+                $currentModels = $modelRepo->findBy(['module' => $module]);
+                $currentModelIds = array_map(function($m) { return $m->getId(); }, $currentModels);
+                $sentModelIds = array_filter(array_map(function($m) { return $m['id'] ?? null; }, $data['models']));
+
+                // Eliminar modelos que ya no están
+                foreach ($currentModels as $curModel) {
+                    if (!in_array($curModel->getId(), $sentModelIds)) {
+                        // Eliminar campos asociados
+                        $fieldsToDelete = $fieldRepo->findBy(['model' => $curModel]);
+                        foreach ($fieldsToDelete as $f) {
+                            $entityManager->remove($f);
+                        }
+                        $entityManager->remove($curModel);
+                    }
+                }
+
+                foreach ($data['models'] as $modelData) {
+                    $model = null;
+                    if (isset($modelData['id']) && in_array($modelData['id'], $currentModelIds)) {
+                        // Actualizar modelo existente
+                        $model = $modelRepo->find($modelData['id']);
+                        if ($model) {
+                            $model->setName($modelData['name'] ?? $model->getName());
+                            $model->setTechnicalName($modelData['technicalName'] ?? $model->getTechnicalName());
+                        }
+                    } else {
+                        // Crear modelo nuevo
+                        $model = new Models();
+                        $model->setName($modelData['name'] ?? '');
+                        $model->setTechnicalName($modelData['technicalName'] ?? '');
+                        $model->setModule($module);
+                        $entityManager->persist($model);
+                        $entityManager->flush(); // Para obtener el ID
+                    }
+
+                    if ($model && isset($modelData['fields']) && is_array($modelData['fields'])) {
+                        // Procesar campos
+                        $currentFields = $fieldRepo->findBy(['model' => $model]);
+                        $currentFieldIds = array_map(function($f) { return $f->getId(); }, $currentFields);
+                        $sentFieldIds = array_filter(array_map(function($f) { return $f['id'] ?? null; }, $modelData['fields']));
+
+                        // Eliminar campos que ya no están
+                        foreach ($currentFields as $curField) {
+                            if (!in_array($curField->getId(), $sentFieldIds)) {
+                                $entityManager->remove($curField);
+                            }
+                        }
+
+                        foreach ($modelData['fields'] as $fieldData) {
+                            $field = null;
+                            if (isset($fieldData['id']) && in_array($fieldData['id'], $currentFieldIds)) {
+                                // Actualizar campo existente
+                                $field = $fieldRepo->find($fieldData['id']);
+                                if ($field) {
+                                    $field->setName($fieldData['name'] ?? $field->getName());
+                                    $field->setTechnicalName($fieldData['technicalName'] ?? $field->getTechnicalName());
+                                    $field->setType($fieldData['type'] ?? $field->getType());
+                                    $field->setRequired($fieldData['required'] ?? false);
+                                    $field->setUniqueField($fieldData['uniqueField'] ?? false);
+                                    $field->setRelationModel($fieldData['relationModel'] ?? null);
+                                    $field->setRelationField($fieldData['relationField'] ?? null);
+                                }
+                            } else {
+                                // Crear campo nuevo
+                                $field = new Fields();
+                                $field->setName($fieldData['name'] ?? '');
+                                $field->setTechnicalName($fieldData['technicalName'] ?? '');
+                                $field->setType($fieldData['type'] ?? 'char');
+                                $field->setRequired($fieldData['required'] ?? false);
+                                $field->setUniqueField($fieldData['uniqueField'] ?? false);
+                                $field->setRelationModel($fieldData['relationModel'] ?? null);
+                                $field->setRelationField($fieldData['relationField'] ?? null);
+                                $field->setModel($model);
+                                $entityManager->persist($field);
+                            }
+                        }
+                    }
+                }
+            }
+
             $entityManager->flush();
 
             $json = $serializer->serialize(

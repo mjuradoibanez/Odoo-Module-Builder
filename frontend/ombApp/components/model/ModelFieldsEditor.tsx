@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 
+// Tipos de campo disponibles
 const FIELD_TYPES = [
   { label: 'Texto', value: 'char' },
   { label: 'Entero', value: 'integer' },
@@ -12,488 +12,370 @@ const FIELD_TYPES = [
   { label: 'Relación', value: 'relation' },
 ];
 
+// Subtipos de relación
 const RELATION_SUBTYPES = [
-  { label: 'Muchos a uno (many2one)', value: 'many2one' },
-  { label: 'Uno a muchos (one2many)', value: 'one2many' },
-  { label: 'Muchos a muchos (many2many)', value: 'many2many' },
+  { label: 'Muchos a uno', value: 'many2one' },
+  { label: 'Uno a muchos', value: 'one2many' },
+  { label: 'Muchos a muchos', value: 'many2many' },
 ];
 
-export function ModelFieldsEditor({
+// Estado inicial reutilizable
+const INITIAL_FIELD = {
+  name: '',
+  technicalName: '',
+  type: 'char',
+  required: false,
+  uniqueField: false,
+  relationModel: '',
+  relationField: '',
+  relationSubtype: 'many2one',
+};
+
+// VALIDACIÓN
+const validateField = (field: any) => {
+  const errors: any = {};
+
+  if (!field.name.trim()) errors.name = 'El nombre es obligatorio';
+
+  if (!field.technicalName.trim()) {
+    errors.technicalName = 'El nombre técnico es obligatorio';
+  } else if (!/^([a-z_]+)$/.test(field.technicalName)) {
+    errors.technicalName = 'Solo minúsculas y guiones bajos';
+  }
+
+  if (!field.type) errors.type = 'El tipo es obligatorio';
+
+  return Object.keys(errors).length ? errors : null;
+};
+
+// COMPONENTE FORM
+const FieldForm = ({
+    form,
+    setForm,
+    errors,
+    touched,
+    setTouched,
+  }: {
+    form: any;
+    setForm: React.Dispatch<React.SetStateAction<any>>;
+    errors: any;
+    touched: boolean;
+    setTouched: React.Dispatch<React.SetStateAction<boolean>>;
+  }) => {
+  // Detecta cambios en cualquier campo
+  useEffect(() => {
+    setTouched(true);
+  }, [form]);
+
+  return (
+    <>
+      <Text style={styles.label}>Nombre</Text>
+      <TextInput
+        style={[styles.input, errors.name && styles.inputError]}
+        value={form.name}
+        onChangeText={(v) => setForm((f: any) => ({ ...f, name: v }))}
+      />
+      {errors.name && <Text style={styles.error}>{errors.name}</Text>}
+
+      <Text style={styles.label}>Nombre técnico</Text>
+      <TextInput
+        style={[styles.input, errors.technicalName && styles.inputError]}
+        value={form.technicalName}
+        autoCapitalize="none"
+        onChangeText={(v) =>
+          setForm((f: any) => ({ ...f, technicalName: v }))
+        }
+      />
+      {errors.technicalName && (
+        <Text style={styles.error}>{errors.technicalName}</Text>
+      )}
+
+      <Text style={styles.label}>Tipo</Text>
+      <View style={styles.pickerRow}>
+        {FIELD_TYPES.map((opt) => (
+          <TouchableOpacity
+            key={opt.value}
+            style={[
+              styles.typeOption,
+              form.type === opt.value && styles.typeOptionSelected,
+            ]}
+            onPress={() =>
+              setForm((f: any) => ({ ...f, type: opt.value }))
+            }
+          >
+            <Text
+              style={{
+                color:
+                  form.type === opt.value
+                    ? Colors.light.primary
+                    : '#444',
+              }}
+            >
+              {opt.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.switchRow}>
+        <Text>Requerido</Text>
+        <Switch
+          value={!!form.required}
+          onValueChange={(v) =>
+            setForm((f: any) => ({ ...f, required: v }))
+          }
+        />
+
+        <Text style={{ marginLeft: 16 }}>Único</Text>
+        <Switch
+          value={!!form.uniqueField}
+          onValueChange={(v) =>
+            setForm((f: any) => ({ ...f, uniqueField: v }))
+          }
+        />
+      </View>
+
+      {/* Campos extra solo si es relación */}
+      {form.type === 'relation' && (
+        <View>
+          <Text style={styles.label}>Tipo de relación</Text>
+
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {RELATION_SUBTYPES.map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={[
+                  styles.typeOption,
+                  form.relationSubtype === opt.value &&
+                  styles.typeOptionSelected,
+                ]}
+                onPress={() =>
+                  setForm((f: any) => ({
+                    ...f,
+                    relationSubtype: opt.value,
+                  }))
+                }
+              >
+                <Text>{opt.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Modelo relacionado</Text>
+          <TextInput
+            style={styles.input}
+            value={form.relationModel}
+            onChangeText={(v) =>
+              setForm((f: any) => ({ ...f, relationModel: v }))
+            }
+          />
+
+          <Text style={styles.label}>Campo relación</Text>
+          <TextInput
+            style={styles.input}
+            value={form.relationField}
+            onChangeText={(v) =>
+              setForm((f: any) => ({ ...f, relationField: v }))
+            }
+          />
+        </View>
+      )}
+    </>
+  );
+};
+
+// COMPONENTE PRINCIPAL
+export default function ModelFieldsEditor({
   fields,
   onAddField,
   onEditField,
   onDeleteField,
   editable,
-  onEditStateChange
-}: {
-  fields: any[];
-  onAddField: (field: any) => void;
-  onEditField: (id: number, updated: any) => void;
-  onDeleteField: (id: number) => void;
-  editable: boolean;
-  onEditStateChange?: (editing: boolean) => void;
-}) {
+}: any) {
 
-  const [fieldForm, setFieldForm] = useState({
-    name: '',
-    technicalName: '',
-    type: 'char',
-    required: false,
-    uniqueField: false,
-    relationModel: '',
-    relationField: '',
-    relationSubtype: 'many2one',
-  });
-
-  const [fieldErrors, setFieldErrors] = useState<any>({});
+  const [newForm, setNewForm] = useState(INITIAL_FIELD);
+  const [editForm, setEditForm] = useState<any>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [errors, setErrors] = useState<any>({});
+  const [touched, setTouched] = useState(false);
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
-  const [editingFieldId, setEditingFieldId] = useState<number | null>(null);
-  const [fieldFormTouched, setFieldFormTouched] = useState(false);
-  const [editFieldFormTouched, setEditFieldFormTouched] = useState(false);
-  const [fieldFormError, setFieldFormError] = useState('');
-  const [editFieldFormError, setEditFieldFormError] = useState('');
-  const [editFieldForm, setEditFieldForm] = useState<any>(null);
-  const [editFieldErrors, setEditFieldErrors] = useState<any>({});
 
-  const validate = () => {
-    const errors: any = {};
-    if (!fieldForm.name.trim()) errors.name = 'El nombre es obligatorio';
-    if (!fieldForm.technicalName.trim()) errors.technicalName = 'El nombre técnico es obligatorio';
-    else if (!/^([a-z_]+)$/.test(fieldForm.technicalName)) errors.technicalName = 'Solo minúsculas y guiones bajos';
-    if (!fieldForm.type) errors.type = 'El tipo es obligatorio';
-    setFieldErrors(errors);
-    return Object.keys(errors).length > 0 ? errors : null;
-  };
-
-  const handleSave = () => {
-    const errors = validate();
-    if (errors) return;
-    if (!fieldFormTouched) {
-      setFieldFormError('No hay cambios para aceptar');
-      return;
-    }
-    onAddField({ ...fieldForm });
-    setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' });
-    setFieldErrors({});
-    setFieldFormTouched(false);
+  const resetForm = () => {
+    setNewForm(INITIAL_FIELD);
+    setEditForm(null);
+    setEditingId(null);
+    setErrors({});
+    setTouched(false);
     setShowNewFieldForm(false);
   };
 
-  const handleCancel = () => {
-    setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' });
-    setFieldErrors({});
+  // Guardar nuevo campo
+  const handleAdd = () => {
+    const err = validateField(newForm);
+    if (err) return setErrors(err);
+    if (!touched) return;
+
+    onAddField(newForm);
+    resetForm();
   };
 
-  // Validación para edición
-  const validateEdit = () => {
-    const errors: any = {};
-    if (!editFieldForm.name.trim()) errors.name = 'El nombre es obligatorio';
-    if (!editFieldForm.technicalName.trim()) errors.technicalName = 'El nombre técnico es obligatorio';
-    else if (!/^([a-z_]+)$/.test(editFieldForm.technicalName)) errors.technicalName = 'Solo minúsculas y guiones bajos';
-    if (!editFieldForm.type) errors.type = 'El tipo es obligatorio';
-    setEditFieldErrors(errors);
-    return Object.keys(errors).length > 0 ? errors : null;
+  // Guardar edición
+  const handleSaveEdit = () => {
+    const err = validateField(editForm);
+    if (err) return setErrors(err);
+
+    onEditField(editingId, editForm);
+    resetForm();
   };
 
+  // Activar edición
   const handleEdit = (field: any) => {
-    // Si está abierto el formulario de nuevo campo y tiene cambios, bloquear
-    if (showNewFieldForm && fieldFormTouched && (fieldForm.name || fieldForm.technicalName)) {
-      setFieldFormError('Termina o descarta el campo nuevo antes de editar otro campo.');
-      return;
-    }
-    // Si está abierto el formulario de nuevo campo pero vacío, permitir
-    if (showNewFieldForm) {
-      setShowNewFieldForm(false);
-      setFieldFormTouched(false);
-      setFieldFormError('');
-    }
-    // Solo bloquear si intentas editar un campo distinto con cambios pendientes
-    if (
-      editingFieldId !== null &&
-      editFieldFormTouched &&
-      editFieldForm &&
-      field.id !== editingFieldId &&
-      (editFieldForm.name !== fields.find(f => f.id === editingFieldId)?.name ||
-        editFieldForm.technicalName !== fields.find(f => f.id === editingFieldId)?.technicalName ||
-        editFieldForm.type !== fields.find(f => f.id === editingFieldId)?.type ||
-        !!editFieldForm.relationModel !== !!fields.find(f => f.id === editingFieldId)?.relationModel ||
-        !!editFieldForm.relationField !== !!fields.find(f => f.id === editingFieldId)?.relationField ||
-        !!editFieldForm.required !== !!fields.find(f => f.id === editingFieldId)?.required ||
-        !!editFieldForm.uniqueField !== !!fields.find(f => f.id === editingFieldId)?.uniqueField)
-    ) {
-      setEditFieldFormError('Termina o descarta la edición antes de editar otro campo.');
-      return;
-    }
-
-    // Forzar que el tipo sea exactamente el string del chip si es relación
-    setEditingFieldId(field.id);
-    setEditFieldForm({
-      name: field.name,
-      technicalName: field.technicalName,
-      type: field.type === 'relation' || field.type === 'many2one' || field.type === 'many2many' ? 'relation' : field.type,
-      required: !!field.required,
-      uniqueField: !!field.uniqueField,
-      relationModel: field.relationModel || '',
-      relationField: field.relationField || '',
-      relationSubtype: field.type === 'many2one' || field.type === 'many2many' || field.type === 'one2many' ? field.type : 'many2one',
-    });
-    setEditFieldErrors({});
-    setEditFieldFormTouched(false);
-    setEditFieldFormError('');
-    if (onEditStateChange) onEditStateChange(true);
+    setEditingId(field.id);
+    setEditForm(field);
+    setTouched(false);
+    setErrors({});
   };
-
-  const handleEditSave = () => {
-    const errors = validateEdit();
-    if (errors) return;
-    if (editingFieldId === null) return;
-    if (!editFieldFormTouched) {
-      setEditFieldFormError('No hay cambios para aceptar');
-      return;
-    }
-    onEditField(editingFieldId, { ...editFieldForm });
-    setEditingFieldId(null);
-    setEditFieldForm(null);
-    setEditFieldErrors({});
-    setEditFieldFormTouched(false);
-  };
-
-  const handleEditCancel = () => {
-    setEditingFieldId(null);
-    setEditFieldForm(null);
-    setEditFieldErrors({});
-    setEditFieldFormTouched(false);
-    setEditFieldFormError('');
-    if (onEditStateChange) onEditStateChange(false);
-  };
-
-
-  // Avisar al padre si se abre/cierra el formulario de nuevo campo
-  React.useEffect(() => {
-    if (onEditStateChange) onEditStateChange(showNewFieldForm);
-    // Solo cuando cambia showNewFieldForm
-  }, [showNewFieldForm]);
-
-  // Detectar cambios en el formulario de nuevo campo
-  React.useEffect(() => {
-    setFieldFormTouched(
-      !!fieldForm.name || !!fieldForm.technicalName || fieldForm.type !== 'char' || !!fieldForm.relationModel || !!fieldForm.relationField || !!fieldForm.required || !!fieldForm.uniqueField
-    );
-  }, [fieldForm]);
-
-  // Detectar cambios en el formulario de edición de campo
-  React.useEffect(() => {
-    if (!editFieldForm || editingFieldId === null) {
-      setEditFieldFormTouched(false);
-      return;
-    }
-    const original = fields.find(f => f.id === editingFieldId);
-    setEditFieldFormTouched(
-      !!editFieldForm && (
-        editFieldForm.name !== original?.name ||
-        editFieldForm.technicalName !== original?.technicalName ||
-        editFieldForm.type !== original?.type ||
-        !!editFieldForm.relationModel !== !!original?.relationModel ||
-        !!editFieldForm.relationField !== !!original?.relationField ||
-        !!editFieldForm.required !== !!original?.required ||
-        !!editFieldForm.uniqueField !== !!original?.uniqueField
-      )
-    );
-  }, [editFieldForm, editingFieldId, fields]);
 
   return (
-    <View style={{ marginTop: 10 }}>
-      <Text style={styles.sectionTitle}>Campos del modelo</Text>
-      <View style={{ marginBottom: 10 }}>
-        {fields.length === 0 && <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>}
-        {fields.map((field) => (
-          <TouchableOpacity
-            key={field.id}
-            style={[
-              styles.fieldRow,
-              editable && styles.fieldRowEditable,
-              editingFieldId === field.id && styles.fieldRowActive,
-              editFieldFormError && editingFieldId === field.id ? { borderColor: '#c0392b', borderWidth: 2 } : null,
-            ]}
-            activeOpacity={0.85}
-            onPress={() => editable && handleEdit(field)}
-            disabled={!editable}
-            onLongPress={() => editable && onDeleteField(field.id)}
-          >
-            {editingFieldId === field.id ? (
-              <View style={[styles.fieldBox, { flex: 1, marginBottom: 0 }]}>
-                <Text style={styles.label}>Nombre</Text>
-                <TextInput style={[styles.input, editFieldErrors.name && styles.inputError]} value={editFieldForm.name} onChangeText={v => { setEditFieldForm((f: any) => ({ ...f, name: v })); setEditFieldFormTouched(true); }} />
-                {editFieldErrors.name ? <Text style={styles.error}>{editFieldErrors.name}</Text> : null}
-                <Text style={styles.label}>Nombre técnico</Text>
-                <TextInput style={[styles.input, editFieldErrors.technicalName && styles.inputError]} value={editFieldForm.technicalName} onChangeText={v => { setEditFieldForm((f: any) => ({ ...f, technicalName: v })); setEditFieldFormTouched(true); }} autoCapitalize="none" />
-                {editFieldErrors.technicalName ? <Text style={styles.error}>{editFieldErrors.technicalName}</Text> : null}
-                <Text style={styles.label}>Tipo</Text>
-                <View style={styles.pickerRow}>
-                  {FIELD_TYPES.map(opt => (
-                    <TouchableOpacity key={opt.value} style={[styles.typeOption, editFieldForm.type === opt.value && styles.typeOptionSelected]} onPress={() => { setEditFieldForm((f: any) => ({ ...f, type: opt.value })); setEditFieldFormTouched(true); }}>
-                      <Text style={{ color: editFieldForm.type === opt.value ? Colors.light.primary : '#444' }}>{opt.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.switchRow}>
-                  <Text>Requerido</Text>
-                  <Switch value={!!editFieldForm.required} onValueChange={v => { setEditFieldForm((f: any) => ({ ...f, required: v })); setEditFieldFormTouched(true); }} />
-                  <Text style={{ marginLeft: 16 }}>Único</Text>
-                  <Switch value={!!editFieldForm.uniqueField} onValueChange={v => { setEditFieldForm((f: any) => ({ ...f, uniqueField: v })); setEditFieldFormTouched(true); }} />
-                </View>
-                {editFieldForm.type === 'relation' ? (
-                  <View>
-                    <Text style={styles.label}>Tipo de relación</Text>
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                      {RELATION_SUBTYPES.map(opt => (
-                        <TouchableOpacity
-                          key={opt.value}
-                          style={[styles.typeOption, editFieldForm.relationSubtype === opt.value && styles.typeOptionSelected]}
-                          onPress={() => { setEditFieldForm((f: any) => ({ ...f, relationSubtype: opt.value })); setEditFieldFormTouched(true); }}
-                        >
-                          <Text style={{ color: editFieldForm.relationSubtype === opt.value ? Colors.light.primary : '#444' }}>{opt.label}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                    <Text style={styles.label}>Modelo relacionado</Text>
-                    <TextInput style={styles.input} value={editFieldForm.relationModel} onChangeText={v => { setEditFieldForm((f: any) => ({ ...f, relationModel: v })); setEditFieldFormTouched(true); }} />
-                    <Text style={styles.label}>Campo relación</Text>
-                    <TextInput style={styles.input} value={editFieldForm.relationField} onChangeText={v => { setEditFieldForm((f: any) => ({ ...f, relationField: v })); setEditFieldFormTouched(true); }} />
-                  </View>
-                ) : null}
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                  <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleEditSave}>
-                    <Text style={styles.buttonText}>Aceptar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleEditCancel}>
-                    <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-                {editFieldFormError ? <Text style={[styles.error, { color: '#c0392b' }]}>{editFieldFormError}</Text> : null}
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 4 }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
-                  {field.name}
-                  {field.required ? <Text style={{ color: '#FF3333', fontSize: 16 }}> *</Text> : null}
-                </Text>
-                <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
-                <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
-                <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
-                {editable ? (
-                  <Ionicons name="pencil" size={18} color={Colors.light.primary} style={{ marginLeft: 10, opacity: 0.7 }} />
-                ) : null}
-              </View>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-      {/* Botón para mostrar formulario de nuevo campo */}
+    <View>
+      <Text style={styles.sectionTitle}>Campos</Text>
+      {/* LISTADO DE CAMPOS */}
+      {fields.length === 0 && (
+        <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>
+      )}
+      {fields.map((field: any) => (
+        <TouchableOpacity
+          key={field.id}
+          onPress={() => editable && handleEdit(field)}
+          onLongPress={() => editable && onDeleteField(field.id)}
+          style={styles.fieldRow}
+        >
+          {editingId === field.id ? (
+            <>
+              {/* FORMULARIO EDICIÓN */}
+              <FieldForm
+                form={editForm}
+                setForm={setEditForm}
+                errors={errors}
+                touched={touched}
+                setTouched={setTouched}
+              />
+              <TouchableOpacity style={styles.button} onPress={handleSaveEdit}>
+                <Text style={styles.buttonText}>Guardar</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 4 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
+                {field.name}
+                {field.required ? <Text style={{ color: '#FF3333', fontSize: 16 }}> *</Text> : null}
+              </Text>
+              <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
+              <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
+              <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      ))}
+
+      {/* BOTÓN PARA MOSTRAR FORMULARIO DE NUEVO CAMPO */}
       {editable && !showNewFieldForm && (
         <TouchableOpacity
-          style={[styles.addFieldButton, fieldFormError ? { borderColor: '#c0392b', borderWidth: 2 } : null]}
-          onPress={() => {
-            // Si hay edición de campo y tiene cambios, bloquear
-            if (editingFieldId !== null && editFieldFormTouched && editFieldForm && (editFieldForm.name !== fields.find(f => f.id === editingFieldId)?.name || editFieldForm.technicalName !== fields.find(f => f.id === editingFieldId)?.technicalName || editFieldForm.type !== fields.find(f => f.id === editingFieldId)?.type)) {
-              setEditFieldFormError('Termina o descarta la edición antes de crear un nuevo campo.');
-              return;
-            }
-            // Si hay edición de campo pero sin cambios, permitir
-            if (editingFieldId !== null) {
-              setEditingFieldId(null);
-              setEditFieldForm(null);
-              setEditFieldErrors({});
-              setEditFieldFormTouched(false);
-              setEditFieldFormError('');
-            }
-            setShowNewFieldForm(true);
-            setFieldFormError('');
+          style={{
+            marginTop: 10,
+            backgroundColor: '#fff',
+            borderWidth: 1,
+            borderColor: Colors.light.primary,
+            borderRadius: 8,
+            paddingVertical: 10,
+            alignItems: 'center',
           }}
+          onPress={() => setShowNewFieldForm(true)}
         >
-          <Ionicons name="add-circle-outline" size={20} color={Colors.light.primary} />
-          <Text style={styles.addFieldButtonText}>Nuevo campo</Text>
+          <Text style={{ color: Colors.light.primary, fontWeight: 'bold', fontSize: 16 }}>+ Añadir campo</Text>
         </TouchableOpacity>
       )}
-      {editable && showNewFieldForm && fields && Array.isArray(fields) && (
-        <View style={[styles.fieldBox, fieldFormError ? { borderColor: '#c0392b', borderWidth: 2 } : {}, { marginTop: 10 }]}>
-          <Text style={styles.label}>Nombre</Text>
-          <TextInput style={[styles.input, fieldErrors.name && styles.inputError]} value={fieldForm.name} onChangeText={v => { setFieldForm(f => ({ ...f, name: v })); setFieldFormTouched(true); }} placeholder="Nombre del campo" />
-          {fieldErrors.name ? <Text style={styles.error}>{fieldErrors.name}</Text> : null}
-          <Text style={styles.label}>Nombre técnico</Text>
-          <TextInput style={[styles.input, fieldErrors.technicalName && styles.inputError]} value={fieldForm.technicalName} onChangeText={v => { setFieldForm(f => ({ ...f, technicalName: v })); setFieldFormTouched(true); }} placeholder="Nombre técnico" autoCapitalize="none" />
-          {fieldErrors.technicalName ? <Text style={styles.error}>{fieldErrors.technicalName}</Text> : null}
-          <Text style={styles.label}>Tipo</Text>
-          <View style={styles.pickerRow}>
-            {FIELD_TYPES.map(opt => (
-              <TouchableOpacity key={opt.value} style={[styles.typeOption, fieldForm.type === opt.value && styles.typeOptionSelected]} onPress={() => { setFieldForm(f => ({ ...f, type: opt.value })); setFieldFormTouched(true); }}>
-                <Text style={{ color: fieldForm.type === opt.value ? Colors.light.primary : '#444' }}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={styles.switchRow}>
-            <Text>Requerido</Text>
-            <Switch value={!!fieldForm.required} onValueChange={v => { setFieldForm(f => ({ ...f, required: v })); setFieldFormTouched(true); }} />
-            <Text style={{ marginLeft: 16 }}>Único</Text>
-            <Switch value={!!fieldForm.uniqueField} onValueChange={v => { setFieldForm(f => ({ ...f, uniqueField: v })); setFieldFormTouched(true); }} />
-          </View>
-          {fieldForm.type === 'relation' ? (
-            <View>
-              <Text style={styles.label}>Tipo de relación</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                {RELATION_SUBTYPES.map(opt => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.typeOption, fieldForm.relationSubtype === opt.value && styles.typeOptionSelected]}
-                    onPress={() => { setFieldForm(f => ({ ...f, relationSubtype: opt.value })); setFieldFormTouched(true); }}
-                  >
-                    <Text style={{ color: fieldForm.relationSubtype === opt.value ? Colors.light.primary : '#444' }}>{opt.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.label}>Modelo relacionado</Text>
-              <TextInput style={styles.input} value={fieldForm.relationModel} onChangeText={v => { setFieldForm(f => ({ ...f, relationModel: v })); setFieldFormTouched(true); }} />
-              <Text style={styles.label}>Campo relación</Text>
-              <TextInput style={styles.input} value={fieldForm.relationField} onChangeText={v => { setFieldForm(f => ({ ...f, relationField: v })); setFieldFormTouched(true); }} />
-            </View>
-          ) : null}
-          <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-            <TouchableOpacity
-              style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }, !fieldFormTouched && { opacity: 0.5 }]}
-              onPress={() => {
-                if (!fieldFormTouched) {
-                  setFieldFormError('No hay cambios para aceptar');
-                  return;
-                }
-                setFieldFormError('');
-                handleSave();
-              }}
-            >
-              <Text style={styles.buttonText}>Aceptar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={() => { setShowNewFieldForm(false); setFieldForm({ name: '', technicalName: '', type: 'char', required: false, uniqueField: false, relationModel: '', relationField: '', relationSubtype: 'many2one' }); setFieldErrors({}); setFieldFormTouched(false); setFieldFormError(''); }}>
-              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-          {fieldFormError ? (
-            <Text style={{ color: '#c0392b', marginTop: 4, fontSize: 14, textAlign: 'left' }}>{fieldFormError}</Text>
-          ) : null}
+
+      {editable && showNewFieldForm && (
+        <View style={styles.fieldBox}>
+          <FieldForm
+            form={newForm}
+            setForm={setNewForm}
+            errors={errors}
+            touched={touched}
+            setTouched={setTouched}
+          />
+          <TouchableOpacity style={styles.button} onPress={handleAdd}>
+            <Text style={styles.buttonText}>Añadir campo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, { backgroundColor: '#bbb', marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
+            <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
   );
 }
+
+// ESTILOS
 const styles = StyleSheet.create({
+  sectionTitle: { fontSize: 18, fontWeight: 'bold' },
+
   fieldRow: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    marginBottom: 2,
-    transitionDuration: '0.2s',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
   },
-  fieldRowEditable: {
-    cursor: 'pointer',
-    backgroundColor: '#f7f7fa',
-  },
-  fieldRowActive: {
-    backgroundColor: '#e6e6f7',
-    borderColor: Colors.light.primary,
-    borderWidth: 1,
-  },
-  addFieldButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: '#f3f0fa',
-    borderWidth: 1,
-    borderColor: Colors.light.primary,
-  },
-  addFieldButtonText: {
-    color: Colors.light.primary,
-    fontWeight: 'bold',
-    marginLeft: 6,
-    fontSize: 15,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.light.primary,
-    marginBottom: 10,
-  },
+
   fieldBox: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    marginTop: 20,
+    padding: 10,
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    padding: 14,
-    marginBottom: 14,
+    borderColor: '#ddd',
   },
-  label: {
-    fontWeight: '500',
-    marginTop: 6,
-    marginBottom: 2,
-  },
+
+  label: { marginTop: 6 },
+
   input: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
-    borderRadius: 8,
-    padding: 8,
-    fontSize: 15,
-    backgroundColor: '#fff',
-    marginBottom: 4,
+    padding: 6,
+    borderRadius: 6,
+    marginTop: 4,
   },
-  inputError: {
-    borderColor: '#FF6B6B',
-  },
+
+  inputError: { borderColor: 'red' },
+
   pickerRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginVertical: 6,
-    gap: 8,
+    marginTop: 6,
   },
+
   typeOption: {
+    padding: 6,
     borderWidth: 1,
-    borderColor: Colors.light.primary,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
     marginRight: 6,
-    marginBottom: 4,
-    backgroundColor: '#fff',
+    borderRadius: 4,
   },
+
   typeOptionSelected: {
-    backgroundColor: Colors.light.primary + '22',
-    borderColor: Colors.light.primary,
+    backgroundColor: '#ddd',
   },
+
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 8,
+    marginTop: 8,
   },
-  button: {
-    marginTop: 12,
-    backgroundColor: Colors.light.primary,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  error: {
-    color: '#FF6B6B',
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  info: {
-    color: Colors.light.icon,
-    marginBottom: 8,
-  },
-});
 
-export default ModelFieldsEditor;
+  button: {
+    marginTop: 10,
+    backgroundColor: Colors.light.primary,
+    padding: 10,
+    borderRadius: 6,
+  },
+
+  buttonText: { color: '#fff', textAlign: 'center' },
+
+  error: { color: 'red' },
+});

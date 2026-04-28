@@ -7,8 +7,8 @@ import { WebViewWrapper } from './WebViewWrapper';
 // Iconos y rutas para las tabs principales
 const tabIcons: { name: string; route: string }[] = [
   { name: 'apps-outline', route: 'dashboard' },
-  { name: 'build-outline', route: 'module-editor' },
-  { name: 'layers-outline', route: 'model-editor' },
+  { name: 'build-outline', route: 'modules' },
+  { name: 'layers-outline', route: 'module-editor' },
   { name: 'cloud-upload-outline', route: 'deploy' },
 ];
 

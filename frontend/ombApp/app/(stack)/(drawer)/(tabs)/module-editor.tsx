@@ -61,106 +61,7 @@ const ModuleEditorScreen = () => {
   const [localModels, setLocalModels] = useState<any[]>([]); // [{id, name, technicalName, ...}]
   const [modelFieldsMap, setModelFieldsMap] = useState<{ [modelId: number]: any[] }>({});
 
-  // Inicializa modelos y campos locales cuando se carga moduleFull
-  useEffect(() => {
-    if (moduleFull && moduleFull.models) {
-      setLocalModels(moduleFull.models.map((m: any) => ({ ...m })));
-      const map: { [modelId: number]: any[] } = {};
-      moduleFull.models.forEach((m: any) => {
-        map[m.id] = m.fields ? [...m.fields] : [];
-      });
-      setModelFieldsMap(map);
-    }
-  }, [moduleFull]);
-
-  // Handlers globales:
-  // Añade campos a un modelo
-  const handleAddField = (modelId: number, field: any) => {
-    setModelFieldsMap(prev => {
-      const tempId = Math.min(0, ...(prev[modelId]?.map(f => f.id ?? 0) ?? [0])) - 1;
-      return {
-        ...prev,
-        [modelId]: [...(prev[modelId] || []), { ...field, id: tempId }],
-      };
-    });
-  };
-  // Edita un campo existente
-  const handleEditField = (modelId: number, id: number, updated: any) => {
-    setModelFieldsMap(prev => ({
-      ...prev,
-      [modelId]: prev[modelId].map((f: any) => f.id === id ? { ...f, ...updated } : f),
-    }));
-  };
-  // Borra un campo de un modelo
-  const handleDeleteField = (modelId: number, id: number) => {
-    setModelFieldsMap(prev => ({
-      ...prev,
-      [modelId]: prev[modelId].filter((f: any) => f.id !== id),
-    }));
-  };
-
-  // Detecta si hay cambios en el formulario de edición de módulo, modelos o campos
-  const hasChanged = !!moduleFull && (
-    name !== (moduleFull.name || '') ||
-    technicalName !== (moduleFull.technicalName || '') ||
-    description !== (moduleFull.description || '') ||
-    category !== (categoryOptions.includes((moduleFull.category || '').toLowerCase()) ? (moduleFull.category || '').toLowerCase() : 'otra') ||
-    isPublic !== (moduleFull.isPublic === true) ||
-    // Cambios en modelos (nombre o técnico)
-    (() => {
-      const orig = moduleFull.models || [];
-      if (localModels.length !== orig.length) return true;
-      for (let i = 0; i < localModels.length; i++) {
-        const lm = localModels[i];
-        const om = orig.find((m: any) => m.id === lm.id);
-        if (!om) return true;
-        if (lm.name !== om.name || lm.technicalName !== om.technicalName) return true;
-        // Cambios en campos
-        const origFields = om.fields || [];
-        const localFields = modelFieldsMap[lm.id] || [];
-        if (origFields.length !== localFields.length) return true;
-        for (let j = 0; j < localFields.length; j++) {
-          const lf = localFields[j];
-          const of = origFields.find((f: any) => f.id === lf.id);
-          if (!of) return true;
-          // Compara propiedades relevantes del campo
-          if (lf.name !== of.name || lf.technicalName !== of.technicalName || lf.type !== of.type) return true;
-        }
-      }
-      return false;
-    })()
-  );
-
-  // Resetea el formulario de edición de módulo y modelos a los valores originales
-  const resetForm = () => {
-    if (!moduleFull) return;
-    setName(moduleFull.name || '');
-    setTechnicalName(moduleFull.technicalName || '');
-    setDescription(moduleFull.description || '');
-    const cat = (moduleFull.category || '').toLowerCase();
-    setCategory(categoryOptions.includes(cat) ? cat : 'otra');
-    setIsPublic(moduleFull.isPublic === true);
-    setFieldErrors({});
-    setError('');
-    setGeneralError(null);
-    // Reset modelos y campos locales
-    setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
-    const map: { [modelId: number]: any[] } = {};
-    (moduleFull.models || []).forEach((m: any) => {
-      map[m.id] = m.fields ? [...m.fields] : [];
-    });
-    setModelFieldsMap(map);
-  };
-
-  // Cancela edición de modelo
-  const handleCancelModel = () => {
-    setEditingModelId(null);
-    setModelForm({ name: '', technicalName: '' });
-    setModelFieldErrors({});
-    // Limpia errores visuales inmediatamente
-    setTimeout(() => setModelFieldErrors({}), 0);
-  };
-
+  // Valida el formulario de modelo
   const validateModel = () => {
     const errors: { name?: string; technicalName?: string } = {};
     if (!modelForm.name.trim()) errors.name = 'El nombre es obligatorio';
@@ -169,6 +70,101 @@ const ModuleEditorScreen = () => {
     setModelFieldErrors(errors);
     return Object.values(errors).length > 0 ? errors : null;
   };
+
+  // Detecta si hay cambios en el formulario respecto a los datos originales
+  const hasChanged = React.useMemo(() => {
+    if (!moduleFull) return false;
+    if (
+      name !== moduleFull.name ||
+      technicalName !== moduleFull.technicalName ||
+      description !== moduleFull.description ||
+      category !== moduleFull.category ||
+      isPublic !== moduleFull.isPublic
+    ) return true;
+    // Modelos
+    const origModels = moduleFull.models || [];
+    if (localModels.length !== origModels.length) return true;
+    for (let i = 0; i < localModels.length; i++) {
+      const m = localModels[i];
+      const om = origModels.find((om: any) => om.id === m.id);
+      if (!om || m.name !== om.name || m.technicalName !== om.technicalName) return true;
+      const fields = modelFieldsMap[m.id] || [];
+      const origFields = (om.fields || []);
+      if (fields.length !== origFields.length) return true;
+      for (let j = 0; j < fields.length; j++) {
+        const f = fields[j];
+        const of = origFields.find((of: any) => of.id === f.id);
+        if (!of || f.name !== of.name || f.technicalName !== of.technicalName || f.type !== of.type) return true;
+      }
+    }
+    return false;
+  }, [name, technicalName, description, category, isPublic, localModels, modelFieldsMap, moduleFull]);
+
+  // Handlers para campos de modelo
+  const handleAddField = (modelId: number, field: any) => {
+    setModelFieldsMap(prev => ({
+      ...prev,
+      [modelId]: [...(prev[modelId] || []), field],
+    }));
+  };
+
+  const handleEditField = (modelId: number, fieldId: number, updated: any) => {
+    setModelFieldsMap(prev => ({
+      ...prev,
+      [modelId]: (prev[modelId] || []).map(f => f.id === fieldId ? { ...f, ...updated } : f),
+    }));
+  };
+
+  const handleDeleteField = (modelId: number, fieldId: number) => {
+    setModelFieldsMap(prev => ({
+      ...prev,
+      [modelId]: (prev[modelId] || []).filter(f => f.id !== fieldId),
+    }));
+  };
+
+  // Cancela la edición/creación de modelo
+  const handleCancelModel = () => {
+    setEditingModelId(null);
+    setModelForm({ name: '', technicalName: '' });
+    setModelFieldErrors({});
+    setShowModuleEditError(null);
+  };
+
+  // Resetea el formulario de edición de módulo a los valores originales
+  const resetForm = () => {
+    if (!moduleFull) return;
+    setName(moduleFull.name || '');
+    setTechnicalName(moduleFull.technicalName || '');
+    setDescription(moduleFull.description || '');
+    setCategory(moduleFull.category || 'otra');
+    setIsPublic(moduleFull.isPublic === true);
+    setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
+    const fieldsMap: { [modelId: number]: any[] } = {};
+    (moduleFull.models || []).forEach((m: any) => {
+      fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
+    });
+    setModelFieldsMap(fieldsMap);
+    setEditingModelId(null);
+    setModelForm({ name: '', technicalName: '' });
+    setModelFieldErrors({});
+    setShowModuleEditError(null);
+    setGeneralError(null);
+  };
+
+  // Inicializa modelos y campos locales cuando se carga moduleFull
+  useEffect(() => {
+    if (editingId && moduleFull) {
+      setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
+      const fieldsMap: { [modelId: number]: any[] } = {};
+      (moduleFull.models || []).forEach((m: any) => {
+        fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
+      });
+      setModelFieldsMap(fieldsMap);
+    } else if (!editingId) {
+      setLocalModels([]);
+      setModelFieldsMap({});
+    }
+  }, [editingId, moduleFull]);
 
   // Valida y actualiza el estado local, no la API
   const handleSaveModel = () => {
@@ -202,7 +198,26 @@ const ModuleEditorScreen = () => {
   };
 
   // Guardar cambios
-  const handleUpdate = async () => {
+    const handleUpdate = async () => {
+    // Validación de duplicados en technical_name
+    // 1. Duplicados en modelos
+    const modelNames = localModels.map(m => m.technicalName.trim());
+    const modelDup = modelNames.find((name, idx) => modelNames.indexOf(name) !== idx);
+    if (modelDup) {
+      setGeneralError(`Hay modelos con el mismo nombre técnico: '${modelDup}'. Cambia los nombres técnicos para que sean únicos.`);
+      return;
+    }
+    // 2. Duplicados en campos de cada modelo
+    for (const m of localModels) {
+      const fields = modelFieldsMap[m.id] || [];
+      const fieldNames = fields.map(f => f.technicalName.trim());
+      const fieldDup = fieldNames.find((name, idx) => fieldNames.indexOf(name) !== idx);
+      if (fieldDup) {
+        setGeneralError(`En el modelo '${m.name}' hay campos con el mismo nombre técnico: '${fieldDup}'. Cambia los nombres técnicos para que sean únicos.`);
+        return;
+      }
+    }
+    
     if (!hasChanged) {
       setNoChangesError(true);
       setTimeout(() => setNoChangesError(false), 2000);
@@ -225,6 +240,10 @@ const ModuleEditorScreen = () => {
       category,
       user_id: user.id,
       author: user.username,
+      models: localModels.map(m => ({
+        ...m,
+        fields: modelFieldsMap[m.id] || []
+      })),
     });
     if (ok === true) {
       setError('');
@@ -596,103 +615,103 @@ const ModuleEditorScreen = () => {
               {/* Lista de modelos existentes */}
               {/* Modelos existentes o botón para añadir */}
               {localModels && localModels.length > 0 ? (
-                localModels.map((model: any) => (
-                  <View
-                    key={model.id}
-                    style={{
-                      marginBottom: 18,
-                      padding: 14,
-                      backgroundColor: '#fff',
-                      borderRadius: 8,
-                      borderWidth: 2,
-                      borderColor: showModuleEditError === model.id ? '#c0392b' : Colors.light.border,
-                      boxShadow: showModuleEditError === model.id ? '0 0 0 2px #c0392b44' : undefined,
-                    }}
-                  >
-                    {editingModelId === model.id ? (
-                      <>
-                        <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6 }}>Editar modelo</Text>
-                        <TextInput
-                          style={[styles.input, modelFieldErrors.name && styles.inputError]}
-                          value={modelForm.name}
-                          onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
-                          placeholder="Nombre del modelo"
-                        />
-                        {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
-                        <TextInput
-                          ref={modelTechnicalNameRef}
-                          style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
-                          value={modelForm.technicalName}
-                          onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
-                          placeholder="Nombre técnico"
-                          autoCapitalize="none"
-                          returnKeyType="done"
-                          onFocus={() => setModelTechnicalNameFocused(true)}
-                          onBlur={() => setModelTechnicalNameFocused(false)}
-                        />
-                        {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
-                        {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
-                          <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
-                        )}
-                        {/* Editor de campos con estado y handlers globales */}
-                        <ModelFieldsEditor
-                          fields={modelFieldsMap[model.id] || []}
-                          onAddField={field => handleAddField(model.id, field)}
-                          onEditField={(id, updated) => handleEditField(model.id, id, updated)}
-                          onDeleteField={id => handleDeleteField(model.id, id)}
-                          editable={true}
-                          onEditStateChange={(editing) => setShowModelFieldEdit(editing)}
-                        />
-                        {!showModelFieldEdit && (
-                          <>
-                            <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
-                              <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
-                                <Text style={styles.buttonText}>Aceptar</Text>
-                              </TouchableOpacity>
-                              <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
-                                <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
-                              </TouchableOpacity>
-                            </View>
-                            {modelFieldErrors.technicalName === 'No hay cambios para aceptar' && (
-                              <Text style={[styles.error, { textAlign: 'left', marginTop: 8 }]}>{modelFieldErrors.technicalName}</Text>
-                            )}
-                          </>
-                        )}
-                        {showModuleEditError === model.id && (
-                          <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
-                            Guarda o descarta los cambios del modelo primero.
-                          </Text>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{model.name} <Text style={{ color: Colors.light.icon }}>({model.technicalName})</Text></Text>
-                        <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => handleEditModel(model)}>
-                          <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
-                        </TouchableOpacity>
-                        <ModelFieldsEditor
-                          fields={modelFieldsMap[model.id] || []}
-                          onAddField={() => { }}
-                          onEditField={() => { }}
-                          onDeleteField={() => { }}
-                          editable={false}
-                        />
-                      </>
-                    )}
-                  </View>
-                ))
-              ) : (
                 <>
-                  {editingModelId === null && !modelForm.name && !modelForm.technicalName ? (
+                  {localModels.map((model: any) => (
+                    <View
+                      key={model.id}
+                      style={{
+                        marginBottom: 18,
+                        padding: 14,
+                        backgroundColor: '#fff',
+                        borderRadius: 8,
+                        borderWidth: 2,
+                        borderColor: showModuleEditError === model.id || (generalError && generalError.includes(model.technicalName)) ? '#c0392b' : Colors.light.border,
+                        boxShadow: showModuleEditError === model.id || (generalError && generalError.includes(model.technicalName)) ? '0 0 0 2px #c0392b44' : undefined,
+                      }}
+                    >
+                      {editingModelId === model.id ? (
+                        <>
+                          <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6 }}>Editar modelo</Text>
+                          <TextInput
+                            style={[styles.input, modelFieldErrors.name && styles.inputError]}
+                            value={modelForm.name}
+                            onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
+                            placeholder="Nombre del modelo"
+                          />
+                          {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
+                          <TextInput
+                            ref={modelTechnicalNameRef}
+                            style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
+                            value={modelForm.technicalName}
+                            onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
+                            placeholder="Nombre técnico"
+                            autoCapitalize="none"
+                            returnKeyType="done"
+                            onFocus={() => setModelTechnicalNameFocused(true)}
+                            onBlur={() => setModelTechnicalNameFocused(false)}
+                          />
+                          {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
+                          {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
+                            <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
+                          )}
+                          {/* Editor de campos con estado y handlers globales */}
+                          <ModelFieldsEditor
+                            fields={modelFieldsMap[model.id] || []}
+                            onAddField={(field: any) => handleAddField(model.id, field)}
+                            onEditField={(id: number, updated: any) => handleEditField(model.id, id, updated)}
+                            onDeleteField={(id: number) => handleDeleteField(model.id, id)}
+                            editable={true}
+                            onEditStateChange={(editing: boolean) => setShowModelFieldEdit(editing)}
+                          />
+                          {!showModelFieldEdit && (
+                            <>
+                              <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
+                                <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
+                                  <Text style={styles.buttonText}>Aceptar</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
+                                  <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+                                </TouchableOpacity>
+                              </View>
+                              {modelFieldErrors.technicalName === 'No hay cambios para aceptar' && (
+                                <Text style={[styles.error, { textAlign: 'left', marginTop: 8 }]}>{modelFieldErrors.technicalName}</Text>
+                              )}
+                            </>
+                          )}
+                          {showModuleEditError === model.id && (
+                            <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
+                              Guarda o descarta los cambios del modelo primero.
+                            </Text>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{model.name} <Text style={{ color: Colors.light.icon }}>({model.technicalName})</Text></Text>
+                          <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => handleEditModel(model)}>
+                            <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
+                          </TouchableOpacity>
+                          <ModelFieldsEditor
+                            fields={modelFieldsMap[model.id] || []}
+                            onAddField={() => { }}
+                            onEditField={() => { }}
+                            onDeleteField={() => { }}
+                            editable={false}
+                          />
+                        </>
+                      )}
+                    </View>
+                  ))}
+                  {/* Botón para añadir modelo siempre visible si no hay modelo en edición */}
+                  {editingModelId === null && (
                     <TouchableOpacity
                       style={styles.addModelButton}
                       onPress={() => setEditingModelId(0)}
                     >
                       <Text style={styles.addModelButtonText}>+ Añadir modelo</Text>
                     </TouchableOpacity>
-                  ) : null}
+                  )}
                 </>
-              )}
+              ) : <></>}
               {/* Formulario para añadir modelo */}
               {editingModelId === 0 && (
                 <View style={{ marginTop: 18, padding: 14, backgroundColor: '#f8f8f8', borderRadius: 8, borderWidth: 1, borderColor: Colors.light.border }}>
@@ -738,6 +757,11 @@ const ModuleEditorScreen = () => {
                 onPress={() => {
                   if (editingModelId !== null) {
                     setShowModuleEditError(editingModelId);
+                    return;
+                  }
+                  if (!hasChanged) {
+                    setNoChangesError(true);
+                    setTimeout(() => setNoChangesError(false), 2000);
                     return;
                   }
                   setSummaryData(buildModuleSummary());
