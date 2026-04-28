@@ -244,38 +244,46 @@ export default function ModelFieldsEditor({
         <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>
       )}
       {fields.map((field: any) => (
-        <TouchableOpacity
-          key={field.id}
-          onPress={() => editable && handleEdit(field)}
-          onLongPress={() => editable && onDeleteField(field.id)}
-          style={styles.fieldRow}
-        >
-          {editingId === field.id ? (
-            <>
-              {/* FORMULARIO EDICIÓN */}
-              <FieldForm
-                form={editForm}
-                setForm={setEditForm}
-                errors={errors}
-                touched={touched}
-                setTouched={setTouched}
-              />
-              <TouchableOpacity style={styles.button} onPress={handleSaveEdit}>
-                <Text style={styles.buttonText}>Guardar</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 4 }}>
-              <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
-                {field.name}
-                {field.required ? <Text style={{ color: '#FF3333', fontSize: 16 }}> *</Text> : null}
-              </Text>
-              <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
-              <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
-              <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
-            </View>
+        <View key={field.id} style={styles.fieldRow}>
+          <TouchableOpacity
+            onPress={() => editable && handleEdit(field)}
+            style={{ flex: 1 }}
+          >
+            {editingId === field.id ? (
+              <>
+                {/* FORMULARIO EDICIÓN */}
+                <FieldForm
+                  form={editForm}
+                  setForm={setEditForm}
+                  errors={errors}
+                  touched={touched}
+                  setTouched={setTouched}
+                />
+                <TouchableOpacity style={styles.button} onPress={handleSaveEdit}>
+                  <Text style={styles.buttonText}>Guardar</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 4 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
+                  {field.name}
+                  {field.required ? <Text style={{ color: '#FF3333', fontSize: 16 }}> *</Text> : null}
+                </Text>
+                <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
+                <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
+                <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          {editable && editingId !== field.id && (
+            <TouchableOpacity
+              onPress={() => onDeleteField(field.id)}
+              style={{ marginLeft: 8, padding: 4 }}
+            >
+              <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar</Text>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
+        </View>
       ))}
 
       {/* BOTÓN PARA MOSTRAR FORMULARIO DE NUEVO CAMPO */}

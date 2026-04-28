@@ -10,9 +10,16 @@ import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
+import { checkDependencies } from '@/core/helpers/checkDependencies';
+import { getModuleFull } from '@/core/actions/get-module-full';
+import { useAllModules } from '@/presentation/hooks/useAllModules';
+import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { ombApi } from '@/core/auth/api/ombApi';
 
 // Pantalla de creación y edición de módulos
 const ModuleEditorScreen = () => {
+  // Hook para obtener todos los módulos (solo IDs y nombres, no completos)
+  const { modules } = useAllModules();
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
 
@@ -29,7 +36,7 @@ const ModuleEditorScreen = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
-  
+
   // Errores de validación específicos por campo
   const { create, loading, error: backendError, success } = useCreateModule();
   const user = useAuthStore(state => state.user);
@@ -61,12 +68,18 @@ const ModuleEditorScreen = () => {
   const [localModels, setLocalModels] = useState<any[]>([]); // [{id, name, technicalName, ...}]
   const [modelFieldsMap, setModelFieldsMap] = useState<{ [modelId: number]: any[] }>({});
 
+  // Estado para el modal de bloqueo de borrado de modelo
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [blockRelations, setBlockRelations] = useState<any[]>([]);
+  const [deleteBothIds, setDeleteBothIds] = useState<[number, number] | null>(null);
+
   // Valida el formulario de modelo
   const validateModel = () => {
     const errors: { name?: string; technicalName?: string } = {};
     if (!modelForm.name.trim()) errors.name = 'El nombre es obligatorio';
     if (!modelForm.technicalName.trim()) errors.technicalName = 'El nombre técnico es obligatorio';
     else if (!/^([a-z_]+)$/.test(modelForm.technicalName)) errors.technicalName = 'Solo minúsculas y guiones bajos';
+
     setModelFieldErrors(errors);
     return Object.values(errors).length > 0 ? errors : null;
   };
@@ -81,15 +94,19 @@ const ModuleEditorScreen = () => {
       category !== moduleFull.category ||
       isPublic !== moduleFull.isPublic
     ) return true;
+
     // Modelos
     const origModels = moduleFull.models || [];
     if (localModels.length !== origModels.length) return true;
+
     for (let i = 0; i < localModels.length; i++) {
       const m = localModels[i];
       const om = origModels.find((om: any) => om.id === m.id);
+
       if (!om || m.name !== om.name || m.technicalName !== om.technicalName) return true;
       const fields = modelFieldsMap[m.id] || [];
       const origFields = (om.fields || []);
+
       if (fields.length !== origFields.length) return true;
       for (let j = 0; j < fields.length; j++) {
         const f = fields[j];
@@ -139,10 +156,12 @@ const ModuleEditorScreen = () => {
     setCategory(moduleFull.category || 'otra');
     setIsPublic(moduleFull.isPublic === true);
     setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
+
     const fieldsMap: { [modelId: number]: any[] } = {};
     (moduleFull.models || []).forEach((m: any) => {
       fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
     });
+
     setModelFieldsMap(fieldsMap);
     setEditingModelId(null);
     setModelForm({ name: '', technicalName: '' });
@@ -198,7 +217,7 @@ const ModuleEditorScreen = () => {
   };
 
   // Guardar cambios
-    const handleUpdate = async () => {
+  const handleUpdate = async () => {
     // Validación de duplicados en technical_name
     // 1. Duplicados en modelos
     const modelNames = localModels.map(m => m.technicalName.trim());
@@ -217,12 +236,13 @@ const ModuleEditorScreen = () => {
         return;
       }
     }
-    
+
     if (!hasChanged) {
       setNoChangesError(true);
       setTimeout(() => setNoChangesError(false), 2000);
       return;
     }
+
     setNoChangesError(false);
     const errors = validate();
     setError('');
@@ -662,6 +682,14 @@ const ModuleEditorScreen = () => {
                             onDeleteField={(id: number) => handleDeleteField(model.id, id)}
                             editable={true}
                             onEditStateChange={(editing: boolean) => setShowModelFieldEdit(editing)}
+                            renderFieldActions={(field: any) => (
+                              <TouchableOpacity
+                                style={{ marginLeft: 8, padding: 4 }}
+                                onPress={() => handleDeleteField(model.id, field.id)}
+                              >
+                                <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar</Text>
+                              </TouchableOpacity>
+                            )}
                           />
                           {!showModelFieldEdit && (
                             <>
@@ -687,9 +715,70 @@ const ModuleEditorScreen = () => {
                       ) : (
                         <>
                           <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{model.name} <Text style={{ color: Colors.light.icon }}>({model.technicalName})</Text></Text>
-                          <TouchableOpacity style={{ marginTop: 8, alignSelf: 'flex-end' }} onPress={() => handleEditModel(model)}>
-                            <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
+                            <TouchableOpacity
+                              style={{ alignSelf: 'flex-end' }}
+                              onPress={() => handleEditModel(model)}
+                            >
+                              <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={{ alignSelf: 'flex-end' }}
+                              onPress={async () => {
+                                // Comprobación de dependencias antes de borrar modelo
+                                // Obtener todos los módulos completos (con modelos y campos)
+                                if (!modules || modules.length === 0) {
+                                  setGeneralError('No se pudo cargar la lista de módulos para comprobar dependencias.');
+                                  return;
+                                }
+                                const allModulesFull = [];
+                                for (const mod of modules) {
+                                  const modFull = await getModuleFull(mod.id);
+                                  if (modFull) allModulesFull.push(modFull);
+                                }
+                                const thisModel = localModels.find(m => m.id === model.id);
+                                if (!thisModel || !moduleFull) return;
+
+                                // Simula el borrado del modelo en el módulo actual para la comprobación
+                                const updatedModule = {
+                                  ...moduleFull,
+                                  models: (moduleFull.models || []).filter((m: any) => m.id !== model.id)
+                                };
+                                // Reemplaza el módulo actual en la lista de módulos completos
+                                const allModulesFullSim = allModulesFull.map(m => m.id === updatedModule.id ? updatedModule : m);
+
+                                // Buscar el módulo y modelo objetivo en la lista simulada
+                                const modObj = allModulesFullSim.find(m => m.id === moduleFull.id);
+                                const modelObj = modObj?.models?.find((m: any) => m.id === thisModel.id);
+                                const technicalNameModule = modObj?.technicalName || moduleFull.technicalName;
+                                const technicalNameModel = modelObj?.technicalName || thisModel.technicalName;
+                                const { blockList, circularIds } = checkDependencies(
+                                  allModulesFullSim,
+                                  { type: 'model', id: thisModel.id, technicalName: technicalNameModule, modelTechnicalName: technicalNameModel }
+                                );
+                                if (blockList.length > 0 || circularIds) {
+                                  setBlockRelations(blockList);
+                                  setShowBlockModal(true);
+                                  setShowModuleEditError(model.id);
+                                  if (circularIds) {
+                                    setDeleteBothIds(circularIds);
+                                  } else {
+                                    setDeleteBothIds(null);
+                                  }
+                                  return;
+                                }
+                                setLocalModels(prev => prev.filter(m => m.id !== model.id));
+                                setModelFieldsMap(prev => {
+                                  const copy = { ...prev };
+                                  delete copy[model.id];
+                                  return copy;
+                                });
+                                setShowModuleEditError(null);
+                              }}
+                            >
+                              <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar modelo</Text>
+                            </TouchableOpacity>
+                          </View>
                           <ModelFieldsEditor
                             fields={modelFieldsMap[model.id] || []}
                             onAddField={() => { }}
@@ -711,7 +800,7 @@ const ModuleEditorScreen = () => {
                     </TouchableOpacity>
                   )}
                 </>
-              ) : <></>}
+              ) : null}
               {/* Formulario para añadir modelo */}
               {editingModelId === 0 && (
                 <View style={{ marginTop: 18, padding: 14, backgroundColor: '#f8f8f8', borderRadius: 8, borderWidth: 1, borderColor: Colors.light.border }}>
@@ -815,6 +904,32 @@ const ModuleEditorScreen = () => {
             )}
           </View>
         </ScrollView>
+        {/* Modal de bloqueo de borrado de modelo */}
+        <BlockDeleteModal
+          visible={showBlockModal}
+          onClose={() => setShowBlockModal(false)}
+          relatedModules={blockRelations}
+          showDeleteBoth={!!deleteBothIds}
+          type="model"
+          onDeleteBoth={async () => {
+            // Eliminar ambos modelos por API y recargar
+            if (deleteBothIds) {
+              try {
+                await Promise.all([
+                  ombApi.delete(`/models/${deleteBothIds[0]}`),
+                  ombApi.delete(`/models/${deleteBothIds[1]}`)
+                ]);
+                if (typeof reload === 'function') reload();
+              } catch (e) {
+                console.error('Error eliminando ambos modelos:', e);
+                alert('Hubo un error eliminando ambos modelos. Por favor, inténtalo de nuevo.');
+                return;
+              }
+              setShowBlockModal(false);
+              setShowModuleEditError(null);
+            }
+          }}
+        />
       </KeyboardAvoidingView>
     );
   }

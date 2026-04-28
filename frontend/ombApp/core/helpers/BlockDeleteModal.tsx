@@ -16,9 +16,10 @@ interface BlockDeleteModalProps {
   }>;
   onDeleteBoth?: () => void;
   showDeleteBoth?: boolean;
+  type?: 'module' | 'model'; // Distinguir el contexto
 }
 
-export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onClose, relatedModules, onDeleteBoth, showDeleteBoth }) => {
+export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onClose, relatedModules, onDeleteBoth, showDeleteBoth, type = 'module' }) => {
   const [confirm, setConfirm] = useState(false);
   const handleDeleteBoth = () => {
     if (!confirm) {
@@ -41,10 +42,14 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
         <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 32, width: 500, maxWidth: '98%', shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 16, elevation: 8 }}>
-          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#c0392b', marginBottom: 16, letterSpacing: 0.2 }}>No se puede eliminar el módulo</Text>
-          
+          <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#c0392b', marginBottom: 16, letterSpacing: 0.2 }}>
+            {type === 'model' ? 'No se puede eliminar el modelo' : 'No se puede eliminar el módulo'}
+          </Text>
           <Text style={{ marginBottom: 18, color: '#333', fontSize: 16, lineHeight: 22 }}>
-            Este módulo tiene <Text style={{ fontWeight: 'bold', color: '#c0392b' }}>dependencias activas</Text> desde otros módulos. Para poder eliminarlo, primero elimina o modifica los siguientes campos relacionales:
+            {type === 'model'
+              ? <>Este modelo tiene <Text style={{ fontWeight: 'bold', color: '#c0392b' }}>dependencias activas</Text> desde otros modelos o módulos. Para poder eliminarlo, primero elimina o modifica los siguientes campos relacionales:</>
+              : <>Este módulo tiene <Text style={{ fontWeight: 'bold', color: '#c0392b' }}>dependencias activas</Text> desde otros módulos. Para poder eliminarlo, primero elimina o modifica los siguientes campos relacionales:</>
+            }
           </Text>
           
           <ScrollView style={{ maxHeight: 320, marginBottom: 18 }}>
@@ -96,7 +101,11 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
                 }}
               >
                 <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17, textAlign: 'center', letterSpacing: 0.2 }}>
-                  {confirm ? '¿Estás seguro?' : 'Eliminar ambos módulos'}
+                  {confirm
+                    ? '¿Estás seguro?'
+                    : type === 'model'
+                      ? 'Eliminar ambos modelos'
+                      : 'Eliminar ambos módulos'}
                 </Text>
               </TouchableOpacity>
             )}
