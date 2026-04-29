@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
+import { Picker } from '@react-native-picker/picker';
+import { ODOO_STANDARD_MODELS } from '@/constants/odooStandardModels';
+import { useModelFields } from '@/presentation/hooks/useModelFields';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Colors } from '@/constants/theme';
 
@@ -18,6 +21,15 @@ const RELATION_SUBTYPES = [
   { label: 'Uno a muchos', value: 'one2many' },
   { label: 'Muchos a muchos', value: 'many2many' },
 ];
+
+/**
+ * Obtiene el nombre completo del modelo (módulo.técnico o solo técnico)
+ */
+const getFullModelName = (m: any) => {
+  if (!m) return '';
+  if (m.module && m.module.technicalName) return `${m.module.technicalName}.${m.technicalName}`;
+  return m.technicalName;
+};
 
 // Estado inicial reutilizable
 const INITIAL_FIELD = {
@@ -44,28 +56,47 @@ const validateField = (field: any) => {
   }
 
   if (!field.type) errors.type = 'El tipo es obligatorio';
-
-  return Object.keys(errors).length ? errors : null;
+  return Object.keys(errors).length > 0 ? errors : null;
 };
+
 
 // COMPONENTE FORM
 const FieldForm = ({
-    form,
-    setForm,
-    errors,
-    touched,
-    setTouched,
-  }: {
-    form: any;
-    setForm: React.Dispatch<React.SetStateAction<any>>;
-    errors: any;
-    touched: boolean;
-    setTouched: React.Dispatch<React.SetStateAction<boolean>>;
-  }) => {
+  form,
+  setForm,
+  errors,
+  touched,
+  setTouched,
+}: {
+  form: any;
+  setForm: Dispatch<SetStateAction<any>>;
+  errors: any;
+  touched: boolean;
+  setTouched: Dispatch<SetStateAction<boolean>>;
+}) => {
   // Detecta cambios en cualquier campo
   useEffect(() => {
     setTouched(true);
   }, [form]);
+
+  // Hook para cargar los campos del modelo relacionado seleccionado
+  let selectedOwnModelId: number | undefined = undefined;
+  let selectedOwnModel: any = undefined;
+  if (form.availableOwnModels && form.relationModel) {
+    selectedOwnModel = form.availableOwnModels.find((m: any) => getFullModelName(m) === form.relationModel);
+    selectedOwnModelId = selectedOwnModel?.id;
+  }
+  const { fields: apiFields, loading: loadingFields } = useModelFields(selectedOwnModelId);
+  const relatedFields = (selectedOwnModel?.fields && selectedOwnModel.fields.length > 0) ? selectedOwnModel.fields : apiFields;
+
+  // Si el campo de relación seleccionado ya no existe en el modelo destino, lo resetea
+  useEffect(() => {
+    if (!form.relationField || !relatedFields || loadingFields) return;
+    const exists = relatedFields.some((f: any) => f.technicalName === form.relationField);
+    if (!exists) {
+      setForm((prev: any) => ({ ...prev, relationField: '' }));
+    }
+  }, [relatedFields, loadingFields]);
 
   return (
     <>
@@ -162,22 +193,49 @@ const FieldForm = ({
           </View>
 
           <Text style={styles.label}>Modelo relacionado</Text>
-          <TextInput
-            style={styles.input}
-            value={form.relationModel}
-            onChangeText={(v) =>
-              setForm((f: any) => ({ ...f, relationModel: v }))
-            }
-          />
+          <View style={[styles.input, { padding: 0 }]}>
+            <Picker
+              selectedValue={form.relationModel}
+              onValueChange={(v) => setForm((f: any) => ({ ...f, relationModel: v, relationField: '' }))}
+            >
+              <Picker.Item label="Selecciona un modelo..." value="" />
+              {/* Modelos propios (de la sesión) */}
+              {form.availableOwnModels && form.availableOwnModels.length > 0 && (
+                <Picker.Item label="--- Modelos propios ---" value="__own__" enabled={false} />
+              )}
+              {form.availableOwnModels && form.availableOwnModels.map((m: any) => (
+                <Picker.Item
+                  key={m.technicalName}
+                  label={m.module && (m.module.name || m.module.technicalName) ? `${m.name} (${m.module.name || m.module.technicalName})` : m.name || m.technicalName}
+                  value={getFullModelName(m)}
+                />
+              ))}
+              {/* Modelos estándar Odoo */}
+              <Picker.Item label="--- Modelos estándar Odoo ---" value="__odoo__" enabled={false} />
+              {ODOO_STANDARD_MODELS.map((m) => (
+                <Picker.Item key={m.technicalName} label={m.label} value={m.technicalName} />
+              ))}
+            </Picker>
+          </View>
 
-          <Text style={styles.label}>Campo relación</Text>
-          <TextInput
-            style={styles.input}
-            value={form.relationField}
-            onChangeText={(v) =>
-              setForm((f: any) => ({ ...f, relationField: v }))
-            }
-          />
+          {/* Selector de campo solo si el modelo destino es propio */}
+          {form.availableOwnModels && form.availableOwnModels.some((m: any) => getFullModelName(m) === form.relationModel) && (
+            <>
+              <Text style={styles.label}>Campo relación</Text>
+              <View style={[styles.input, { padding: 0 }]}>
+                <Picker
+                  selectedValue={form.relationField}
+                  onValueChange={(v) => setForm((f: any) => ({ ...f, relationField: v }))}
+                  enabled={!!form.relationModel && !loadingFields}
+                >
+                  <Picker.Item label={loadingFields ? 'Cargando campos...' : 'Selecciona un campo...'} value="" />
+                  {relatedFields && relatedFields.map((f: any) => (
+                    <Picker.Item key={f.technicalName} label={f.name || f.technicalName} value={f.technicalName} />
+                  ))}
+                </Picker>
+              </View>
+            </>
+          )}
         </View>
       )}
     </>
@@ -191,17 +249,25 @@ export default function ModelFieldsEditor({
   onEditField,
   onDeleteField,
   editable,
+  ownModels = [], // [{ technicalName, name }]
 }: any) {
 
-  const [newForm, setNewForm] = useState(INITIAL_FIELD);
+  const [newForm, setNewForm] = useState({ ...INITIAL_FIELD, availableOwnModels: ownModels });
   const [editForm, setEditForm] = useState<any>(null);
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [errors, setErrors] = useState<any>({});
   const [touched, setTouched] = useState(false);
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
 
+  // Sincroniza availableOwnModels en newForm y editForm cuando cambian los modelos propios
+  useEffect(() => {
+    setNewForm(f => ({ ...f, availableOwnModels: ownModels }));
+    setEditForm((f: typeof editForm) => f ? { ...f, availableOwnModels: ownModels } : f);
+  }, [ownModels]);
+
   const resetForm = () => {
-    setNewForm(INITIAL_FIELD);
+    setNewForm({ ...INITIAL_FIELD, availableOwnModels: ownModels });
     setEditForm(null);
     setEditingId(null);
     setErrors({});
@@ -209,29 +275,60 @@ export default function ModelFieldsEditor({
     setShowNewFieldForm(false);
   };
 
+
+  // Lógica para guardar campo (nuevo o editado)
+  const saveField = (formData: any, callback: (idOrField: any, field?: any) => void, id?: number) => {
+    const err = validateField(formData);
+    if (err) return setErrors(err);
+    if (!touched && !id) return; // Solo para nuevo campo
+
+    const { availableOwnModels, ...fieldToProcess } = formData;
+    const fieldToSave = {
+      ...fieldToProcess,
+      type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
+      relationModel: fieldToProcess.relationModel
+    };
+    if (id !== undefined) {
+      callback(id, fieldToSave);
+    } else {
+      callback(fieldToSave);
+    }
+    resetForm();
+  };
+
   // Guardar nuevo campo
   const handleAdd = () => {
-    const err = validateField(newForm);
-    if (err) return setErrors(err);
-    if (!touched) return;
-
-    onAddField(newForm);
-    resetForm();
+    saveField(newForm, onAddField);
   };
 
   // Guardar edición
   const handleSaveEdit = () => {
-    const err = validateField(editForm);
-    if (err) return setErrors(err);
-
-    onEditField(editingId, editForm);
-    resetForm();
+    saveField(editForm, onEditField, editingId === null ? undefined : editingId);
   };
 
-  // Activar edición
+    // Activar edición
   const handleEdit = (field: any) => {
+    let parsedType = field.type;
+    let relationSubtype = 'many2one';
+    let relationModel = field.relationModel;
+    let relationField = field.relationField || '';
+
+    // Detectar si es relación
+    if (["many2one", "one2many", "many2many"].includes(field.type)) {
+      parsedType = "relation";
+      relationSubtype = field.type;
+    }
+
     setEditingId(field.id);
-    setEditForm(field);
+    setEditForm({
+      ...field,
+      type: parsedType,
+      relationSubtype,
+      relationModel,
+      relationField,
+      availableOwnModels: ownModels,
+    });
+
     setTouched(false);
     setErrors({});
   };
@@ -244,7 +341,7 @@ export default function ModelFieldsEditor({
         <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>
       )}
       {fields.map((field: any) => (
-        <View key={field.id} style={styles.fieldRow}>
+        <View key={field.id || field.technicalName} style={styles.fieldRow}>
           <TouchableOpacity
             onPress={() => editable && handleEdit(field)}
             style={{ flex: 1 }}

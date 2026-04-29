@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Models;
 use App\Entity\Modules;
+use App\Entity\Users;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -193,6 +194,50 @@ class ModelController extends AbstractController
                 ->findBy(['module' => $module]);
 
             if (!$models){
+                return new Response("No models found", 404);
+            }
+
+            $data = $serializer->serialize($models, 'json', ['groups' => 'models:read']);
+
+            return new Response($data, 200, ['Content-Type' => 'application/json']);
+        }
+
+        return new Response("Method not allowed", 405);
+    }
+
+    public function modelsUser(Request $request, SerializerInterface $serializer)
+    {
+        $userId = $request->get('user_id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        if ($request->isMethod('GET')) {
+            $user = $entityManager
+                ->getRepository(Users::class)
+                ->find($userId);
+
+            if (!$user){
+                return new Response("User not found", 404);
+            }
+
+            // Buscar todos los módulos del usuario
+            $modules = $entityManager
+                ->getRepository(Modules::class)
+                ->findBy(['user' => $user]);
+
+            if (!$modules || count($modules) === 0){
+                return new Response("No modules found for user", 404);
+            }
+
+            // Buscar todos los modelos de esos módulos
+            $models = $entityManager
+                ->getRepository(Models::class)
+                ->createQueryBuilder('m')
+                ->where('m.module IN (:modules)')
+                ->setParameter('modules', $modules)
+                ->getQuery()
+                ->getResult();
+
+            if (!$models || count($models) === 0){
                 return new Response("No models found", 404);
             }
 

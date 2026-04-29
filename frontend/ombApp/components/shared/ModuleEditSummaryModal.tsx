@@ -88,12 +88,12 @@ export const ModuleEditSummaryModal: React.FC<ModuleEditSummaryModalProps> = ({ 
             <Text style={{ fontWeight: 'bold', fontSize: 18, marginVertical: 10 }}>Modelos</Text>
             {(!moduleData || !Array.isArray(moduleData.models) || moduleData.models.length === 0) && <Text style={{ color: '#aaa' }}>Sin modelos</Text>}
             {(Array.isArray(moduleData?.models) ? moduleData.models.filter(m => m && typeof m === 'object') : []).map(model => (
-              <View key={model.id} style={{ marginBottom: 12, padding: 10, borderRadius: 8, backgroundColor: model.changeType !== 'unchanged' ? '#f7f7f7' : undefined, borderLeftWidth: 5, borderLeftColor: colorForChange(model.changeType) }}>
+              <View key={model.id || model.technicalName} style={{ marginBottom: 12, padding: 10, borderRadius: 8, backgroundColor: model.changeType !== 'unchanged' ? '#f7f7f7' : undefined, borderLeftWidth: 5, borderLeftColor: colorForChange(model.changeType) }}>
                 <Text style={{ fontWeight: 'bold', color: colorForChange(model.changeType), fontSize: 16 }}>{model?.name ?? '(Sin nombre)'} <Text style={{ color: '#888' }}>({model?.technicalName ?? '-'})</Text> {model?.changeType !== 'unchanged' && `[${model?.changeType === 'new' ? 'Nuevo' : model?.changeType === 'edit' ? 'Editado' : 'Eliminado'}]`}</Text>
                 {Array.isArray(model.fields) && model.fields.filter(f => f && typeof f === 'object').length > 0 && (
                   <View style={{ marginLeft: 10, marginTop: 4 }}>
                     {model.fields.filter(f => f && typeof f === 'object').map(field => (
-                      <Text key={field.id} style={{ color: colorForChange(field.changeType), fontSize: 15 }}>
+                      <Text key={field.id || field.technicalName} style={{ color: colorForChange(field.changeType), fontSize: 15 }}>
                         - {field?.name ?? '(Sin nombre)'} <Text style={{ color: '#888' }}>({field?.technicalName ?? '-'}, {field?.type ?? '-'})</Text> {field?.changeType !== 'unchanged' && `[${field?.changeType === 'new' ? 'Nuevo' : field?.changeType === 'edit' ? 'Editado' : 'Eliminado'}]`}
                       </Text>
                     ))}

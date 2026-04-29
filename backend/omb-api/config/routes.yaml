@@ -45,6 +45,11 @@ models_module:
   controller: App\Controller\ModelController::modelsModule
   methods: [ GET ]
 
+models_user:
+  path: /user/{user_id}/models
+  controller: App\Controller\ModelController::modelsUser
+  methods: [ GET ]
+
 # Fields
 fields:
   path: /fields

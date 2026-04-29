@@ -38,7 +38,7 @@ class Modules
      *
      * @ORM\Column(name="technical_name", type="string", length=255, nullable=false)
      *
-     * @Groups({"modules:read"})
+     * @Groups({"modules:read", "models:read", "deployments:read"})
      */
     private $technicalName;
 
