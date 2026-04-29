@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -103,7 +105,35 @@ public class ModuleGenerator {
         if (module.description != null && !module.description.equals("null") && !module.description.isEmpty()) {
             sb.append("    'description': '").append(module.description).append("',\n");
         }
-        sb.append("    'depends': ['base'],\n");
+
+        // Recopilar dependencias únicas de campos relacionales
+        Set<String> depends = new HashSet<>();
+        depends.add("base");
+        String currentModule = module.technicalName;
+        if (module.models != null) {
+            for (DTO.ModuleRequest.ModelDTO model : module.models) {
+                if (model.fields != null) {
+                    for (DTO.ModuleRequest.FieldDTO field : model.fields) {
+                        if (field.relationModule != null && !field.relationModule.isEmpty()
+                            && !field.relationModule.equals(currentModule)
+                            && !field.relationModule.equals("base")) {
+                            depends.add(field.relationModule);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Siempre incluir 'base' (ya añadido)
+        sb.append("    'depends': [");
+        boolean first = true;
+        for (String dep : depends) {
+            if (!first) sb.append(", ");
+            sb.append("'").append(dep).append("'");
+            first = false;
+        }
+        sb.append("],\n");
+
         sb.append("    'data': [\n");
         sb.append("        'security/ir.model.access.csv',\n");
         sb.append("        'views/views.xml'\n");

@@ -88,6 +88,15 @@ class Fields
     private $relationField;
 
     /**
+     * @var string|null
+     *
+     * @ORM\Column(name="relation_module", type="string", length=255, nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $relationModule;
+    
+    /**
      * @var Models
      *
      * @ORM\ManyToOne(targetEntity="Models")
@@ -178,6 +187,16 @@ class Fields
     public function setRelationModel(?string $relationModel): void
     {
         $this->relationModel = $relationModel;
+    }
+
+    public function getRelationModule(): ?string
+    {
+        return $this->relationModule;
+    }
+
+    public function setRelationModule(?string $relationModule): void
+    {
+        $this->relationModule = $relationModule;
     }
 
     public function getModel(): Models

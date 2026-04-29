@@ -283,11 +283,36 @@ export default function ModelFieldsEditor({
     if (!touched && !id) return; // Solo para nuevo campo
 
     const { availableOwnModels, ...fieldToProcess } = formData;
-    const fieldToSave = {
+
+    let relationModule = undefined;
+
+    // Si es modelo propio
+    if (
+      fieldToProcess.availableOwnModels &&
+      fieldToProcess.relationModel &&
+      fieldToProcess.availableOwnModels.some((m: any) => getFullModelName(m) === fieldToProcess.relationModel)
+    ) {
+      const ownModel = fieldToProcess.availableOwnModels.find((m: any) => getFullModelName(m) === fieldToProcess.relationModel);
+      relationModule = ownModel?.module?.technicalName || '';
+    }
+
+    // Si es modelo estándar de Odoo
+    if (!relationModule && fieldToProcess.relationModel) {
+      const odooModel = ODOO_STANDARD_MODELS.find(m => m.technicalName === fieldToProcess.relationModel);
+      relationModule = odooModel?.module || '';
+    }
+
+
+    let fieldToSave: any = {
       ...fieldToProcess,
       type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
       relationModel: fieldToProcess.relationModel
     };
+    // Solo añadir relationModule si es relacional
+    if (["many2one", "one2many", "many2many"].includes(fieldToSave.type) && relationModule) {
+      fieldToSave.relationModule = relationModule;
+    }
+
     if (id !== undefined) {
       callback(id, fieldToSave);
     } else {
@@ -306,7 +331,7 @@ export default function ModelFieldsEditor({
     saveField(editForm, onEditField, editingId === null ? undefined : editingId);
   };
 
-    // Activar edición
+  // Activar edición
   const handleEdit = (field: any) => {
     let parsedType = field.type;
     let relationSubtype = 'many2one';

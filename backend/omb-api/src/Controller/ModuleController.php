@@ -241,6 +241,7 @@ class ModuleController extends AbstractController
                                     $field->setUniqueField($fieldData['uniqueField'] ?? false);
                                     $field->setRelationModel($fieldData['relationModel'] ?? null);
                                     $field->setRelationField($fieldData['relationField'] ?? null);
+                                    $field->setRelationModule($fieldData['relationModule'] ?? null);
                                 }
                             } else {
                                 // Crear campo nuevo
@@ -252,6 +253,7 @@ class ModuleController extends AbstractController
                                 $field->setUniqueField($fieldData['uniqueField'] ?? false);
                                 $field->setRelationModel($fieldData['relationModel'] ?? null);
                                 $field->setRelationField($fieldData['relationField'] ?? null);
+                                $field->setRelationModule($fieldData['relationModule'] ?? null);
                                 $field->setModel($model);
                                 $entityManager->persist($field);
                             }
@@ -343,6 +345,8 @@ class ModuleController extends AbstractController
                         'unique' => $field->getUniqueField(),
                         'relationModel' => $field->getRelationModel(),
                         'relationField' => $field->getRelationField(),
+                           // Solo incluir relationModule si el tipo es relacional y tiene valor
+                           'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {
@@ -413,7 +417,7 @@ class ModuleController extends AbstractController
 
         if ($control !== 'OK:ZIP') {
             socket_close($socket);
-            return new Response('Error al procesar la petición en el servidor Java.', 500);
+            return new Response('Error en el servidor Java: ' . $control, 500);
         }
 
         // Leer el tamaño del ZIP (4 bytes) y luego el contenido del ZIP

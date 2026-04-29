@@ -40,7 +40,9 @@ public class CommandHandler {
         
         try {
             ObjectMapper mapper = new ObjectMapper(); // Para leer JSON
-            
+            // Ignora campos del JSON que no estén en la clase DTO
+            mapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
             // Mapea el JSON a un objeto ModuleRequest
             ModuleRequest module = mapper.readValue(json, ModuleRequest.class);
 
