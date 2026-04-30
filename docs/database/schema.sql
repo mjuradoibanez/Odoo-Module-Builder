@@ -15,7 +15,8 @@ CREATE TABLE users (
   email VARCHAR(255) NOT NULL,
   username VARCHAR(255) NOT NULL,
   password VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_email_user UNIQUE (email, username)
 );
 
 -- -----------------------------
@@ -29,11 +30,12 @@ CREATE TABLE modules (
   description TEXT,
   version VARCHAR(255),
   author VARCHAR(255),
-  category VARCHAR(50) DEFAULT 'other',
+  category VARCHAR(50) DEFAULT 'otra',
   is_public BOOLEAN DEFAULT FALSE,
   user_id INT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_module UNIQUE (technical_name, user_id)
 );
 
 -- -----------------------------
@@ -45,7 +47,8 @@ CREATE TABLE models (
   name VARCHAR(255) NOT NULL,
   technical_name VARCHAR(255) NOT NULL,
   module_id INT,
-  CONSTRAINT fk_models_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+  CONSTRAINT fk_models_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_model UNIQUE (technical_name, module_id)
 );
 
 -- -----------------------------
@@ -61,8 +64,10 @@ CREATE TABLE fields (
   unique_field BOOLEAN DEFAULT FALSE,
   relation_model VARCHAR(255),
   relation_field VARCHAR(255),
+  relation_module VARCHAR(255),
   model_id INT,
-  CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
+  CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_field UNIQUE (technical_name, model_id)
 );
 
 -- -----------------------------

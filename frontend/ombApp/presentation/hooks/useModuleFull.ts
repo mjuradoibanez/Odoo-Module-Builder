@@ -8,6 +8,10 @@ export const useModuleFull = (moduleId: number) => {
   useEffect(() => {
     if (!moduleId) return;
     loadModule();
+    // Escuchar evento global para recargar si hay cambios
+    const handler = () => loadModule();
+    window.addEventListener('modules-updated', handler);
+    return () => window.removeEventListener('modules-updated', handler);
   }, [moduleId]);
 
   const loadModule = async () => {

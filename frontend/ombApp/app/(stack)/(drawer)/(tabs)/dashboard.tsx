@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, useWindowDimensions, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
@@ -7,13 +7,14 @@ import { usePublicModules } from '@/presentation/hooks/usePublicModules';
 import { ModuleCard } from '@/components/shared/ModuleCard';
 import { Colors } from '@/constants/theme';
 
+// Pantalla de Inicio
 const DashboardScreen = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
   const user = useAuthStore(state => state.user);
   const userId = user?.id;
 
-  // Si no hay userId, mostrar loader o null
+  // Si no hay userId, mostrar loader
   if (!userId) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.light.background }}>
@@ -25,15 +26,24 @@ const DashboardScreen = () => {
   const { modules: myModules, isLoading: isLoadingMy, reload } = useUserModules(userId);
   const { modules: publicModules, isLoading: isLoadingPublic } = usePublicModules();
 
+  // Recarga automática al editar módulos
+  useEffect(() => {
+    const handler = () => reload();
+    window.addEventListener('modules-updated', handler);
+    return () => window.removeEventListener('modules-updated', handler);
+  }, [reload]);
+
   return (
     <View style={[{ flex: 1, padding: 16 }, isDesktop && { paddingLeft: 80, backgroundColor: Colors.light.background }]}> 
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
-        Tus módulos públicos
-      </Text>
+      <View style={{ marginHorizontal: 30 }}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+          Tus módulos públicos
+        </Text>
+      </View>
       {isLoadingMy ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
       ) : myModules.filter(m => m.isPublic).length === 0 ? (
-        <Text style={{ color: Colors.light.icon }}>No tienes módulos públicos creados todavía.</Text>
+        <Text style={{ color: Colors.light.icon, marginHorizontal: 12 }}>No tienes módulos públicos creados todavía.</Text>
       ) : (
         <FlatList
           data={myModules.filter(m => m.isPublic)}
@@ -41,32 +51,35 @@ const DashboardScreen = () => {
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
-                router.push({ pathname: '/module-editor', params: { id: item.id } });
+                router.push({ pathname: '/modules', params: { id: item.id } });
               }}
               activeOpacity={0.8}
             >
-            <ModuleCard module={item} showLock={false} />
+              <ModuleCard module={item} showLock={false} />
             </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 32 }}
         />
       )}
 
-      <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: Colors.light.accent }}>
-        Módulos públicos de la comunidad
-      </Text>
+      {/* Módulos públicos de otros usuarios */}
+      <View style={{ marginHorizontal: 30 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: Colors.light.accent }}>
+          Módulos públicos de la comunidad
+        </Text>
+      </View>
       {isLoadingPublic ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
-      ) : publicModules.filter(m => m.user.id !== userId).length === 0 ? (
-        <Text style={{ color: Colors.light.icon }}>No hay módulos públicos de otros usuarios disponibles.</Text>
+      ) : publicModules.filter(m => m.isPublic && m.user.id !== userId).length === 0 ? (
+        <Text style={{ color: Colors.light.icon, marginHorizontal: 12 }}>No hay módulos públicos de otros usuarios disponibles.</Text>
       ) : (
         <FlatList
-          data={publicModules.filter(m => m.user.id !== userId)}
+          data={publicModules.filter(m => m.isPublic && m.user.id !== userId)}
           keyExtractor={item => item.id.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
-                router.push({ pathname: '/module-editor', params: { id: item.id } });
+                router.push({ pathname: '/modules', params: { id: item.id } });
               }}
               activeOpacity={0.8}
             >

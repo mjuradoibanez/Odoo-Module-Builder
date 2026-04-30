@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -96,14 +98,42 @@ public class ModuleGenerator {
     private static String generateManifest(ModuleRequest module) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\n");
-        sb.append("    'name': '").append(module.technicalName).append("',\n");
+        sb.append("    'name': '").append(module.name).append("',\n");
         sb.append("    'version': '").append(module.version).append("',\n");
         sb.append("    'author': '").append(module.author).append("',\n");
         sb.append("    'category': '").append(module.category).append("',\n");
         if (module.description != null && !module.description.equals("null") && !module.description.isEmpty()) {
             sb.append("    'description': '").append(module.description).append("',\n");
         }
-        sb.append("    'depends': ['base'],\n");
+
+        // Recopilar dependencias únicas de campos relacionales
+        Set<String> depends = new HashSet<>();
+        depends.add("base");
+        String currentModule = module.technicalName;
+        if (module.models != null) {
+            for (DTO.ModuleRequest.ModelDTO model : module.models) {
+                if (model.fields != null) {
+                    for (DTO.ModuleRequest.FieldDTO field : model.fields) {
+                        if (field.relationModule != null && !field.relationModule.isEmpty()
+                            && !field.relationModule.equals(currentModule)
+                            && !field.relationModule.equals("base")) {
+                            depends.add(field.relationModule);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Siempre incluir 'base' (ya añadido)
+        sb.append("    'depends': [");
+        boolean first = true;
+        for (String dep : depends) {
+            if (!first) sb.append(", ");
+            sb.append("'").append(dep).append("'");
+            first = false;
+        }
+        sb.append("],\n");
+
         sb.append("    'data': [\n");
         sb.append("        'security/ir.model.access.csv',\n");
         sb.append("        'views/views.xml'\n");
@@ -284,148 +314,4 @@ public class ModuleGenerator {
             );
         }
     }
-
-/*
-    // Main de prueba
-    public static void main(String[] args) throws Exception {
-        String json = """
-{
-  "id": 1,
-  "name": "Academia",
-  "technicalName": "academia",
-  "description": "Módulo de ejemplo con relaciones reales",
-  "version": "1.0",
-  "author": "Admin",
-  "createdAt": "2026-04-17T07:53:48+02:00",
-  "category": "educacion",
-  "user": {
-    "id": 1,
-    "username": "admin",
-    "email": "admin@omb.com"
-  },
-  "models": [
-    {
-      "id": 1,
-      "name": "Alumno",
-      "technicalName": "alumno",
-      "fields": [
-        {
-          "id": 1,
-          "name": "Nombre",
-          "technicalName": "nombre",
-          "type": "char",
-          "required": true,
-          "unique": true
-        },
-        {
-          "id": 2,
-          "name": "Edad",
-          "technicalName": "edad",
-          "type": "integer",
-          "required": false,
-          "unique": false
-        },
-        {
-          "id": 3,
-          "name": "Cursos",
-          "technicalName": "cursos_ids",
-          "type": "many2many",
-          "relationModel": "academia.curso",
-          "required": false,
-          "unique": false
-        }
-      ],
-      "views": [
-        {"id": 1, "type": "list", "name": "alumno_list"},
-        {"id": 2, "type": "form", "name": "alumno_form"}
-      ]
-    },
-    {
-      "id": 2,
-      "name": "Curso",
-      "technicalName": "curso",
-      "fields": [
-        {
-          "id": 4,
-          "name": "Titulo",
-          "technicalName": "titulo",
-          "type": "char",
-          "required": true,
-          "unique": true
-        },
-        {
-          "id": 5,
-          "name": "Descripcion",
-          "technicalName": "descripcion",
-          "type": "text",
-          "required": false,
-          "unique": false
-        },
-        {
-          "id": 6,
-          "name": "Alumnos",
-          "technicalName": "alumnos_ids",
-          "type": "many2many",
-          "relationModel": "academia.alumno",
-          "required": false,
-          "unique": false
-        },
-        {
-          "id": 7,
-          "name": "Profesor",
-          "technicalName": "profesor_id",
-          "type": "many2one",
-          "relationModel": "academia.profesor",
-          "required": false,
-          "unique": false
-        }
-      ],
-      "views": [
-        {"id": 3, "type": "list", "name": "curso_list"},
-        {"id": 4, "type": "form", "name": "curso_form"}
-      ]
-    },
-    {
-      "id": 3,
-      "name": "Profesor",
-      "technicalName": "profesor",
-      "fields": [
-        {
-          "id": 8,
-          "name": "Nombre",
-          "technicalName": "nombre",
-          "type": "char",
-          "required": true,
-          "unique": true
-        },
-        {
-          "id": 9,
-          "name": "Cursos",
-          "technicalName": "cursos_ids",
-          "type": "one2many",
-          "relationModel": "academia.curso",
-          "relationField": "profesor_id",
-          "required": false,
-          "unique": false
-        }
-      ],
-      "views": [
-        {"id": 5, "type": "list", "name": "profesor_list"},
-        {"id": 6, "type": "form", "name": "profesor_form"}
-      ]
-    }
-  ]
-}
-        """;
-        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-        DTO.ModuleRequest module = mapper.readValue(json, DTO.ModuleRequest.class);
-        File result = generateModuleWithThreads(module);
-        
-        // Comprimir la carpeta generada en un zip
-        String zipPath = result.getAbsolutePath() + ".zip";
-        zipFolder(result, zipPath);
-        System.out.println("Módulo generado y comprimido en: " + zipPath);
-        
-
-    }*/
 }

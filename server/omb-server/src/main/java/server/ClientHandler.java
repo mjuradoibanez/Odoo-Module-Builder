@@ -23,9 +23,10 @@ public class ClientHandler implements Runnable {
                 System.out.println("Received: " + mensaje);
 
                 // Procesa el comando recibido y genera el ZIP
-                command.CommandHandler.ZipResult result = command.CommandHandler.handleWithZip(mensaje);
+                CommandHandler.ZipResult result = CommandHandler.handleWithZip(mensaje);
                 
                 if (result.error != null) {
+                    System.err.println("Error processing command: " + result.error);
                     out.write(("ERROR: " + result.error + "\n").getBytes());
                     out.flush();
                 } else if (result.zipFile != null) {

@@ -11,6 +11,7 @@ public class ModuleRequest {
     public String author;
     public String createdAt;
     public String category;
+    public boolean isPublic;
     public UserDTO user;
     public List<ModelDTO> models;
     
@@ -39,6 +40,7 @@ public class ModuleRequest {
         public boolean unique;
         public String relationModel;
         public String relationField; // Para one2many: campo inverso
+        public String relationModule; // Módulo al que pertenece el modelo relacionado
     }
 
     public static class ViewDTO {

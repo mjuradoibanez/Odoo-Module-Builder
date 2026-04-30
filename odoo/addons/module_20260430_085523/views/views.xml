@@ -1,0 +1,35 @@
+<odoo>
+  <data>
+    <menuitem id="menu_root_lista_tareas" name="lista de tareas" sequence="1"/>
+    <record id="view_tareas_list" model="ir.ui.view">
+      <field name="name">tareas.list</field>
+      <field name="model">lista_tareas.tareas</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="fecha"/>
+          <field name="completada"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_tareas_form" model="ir.ui.view">
+      <field name="name">tareas.form</field>
+      <field name="model">lista_tareas.tareas</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="fecha"/>
+            <field name="completada"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_tareas" model="ir.actions.act_window">
+      <field name="name">tareas</field>
+      <field name="res_model">lista_tareas.tareas</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_tareas" name="tareas" action="action_tareas" parent="menu_root_lista_tareas"/>
+  </data>
+</odoo>

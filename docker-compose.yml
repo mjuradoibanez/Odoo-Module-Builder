@@ -23,6 +23,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - omb-net
 
   odoo:
     image: odoo:19
@@ -31,6 +33,8 @@ services:
       - db
     ports:
       - "8069:8069"
+    networks:
+      - omb-net
     volumes:
       - ./odoo/addons:/mnt/extra-addons
       - ./odoo/config:/etc/odoo

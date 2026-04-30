@@ -1,0 +1,35 @@
+<odoo>
+  <data>
+    <menuitem id="menu_root_otrosmod" name="OtrosMod" sequence="1"/>
+    <record id="view_generador_list" model="ir.ui.view">
+      <field name="name">generador.list</field>
+      <field name="model">otrosmod.generador</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="probando"/>
+          <field name="asd"/>
+          <field name="cal"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_generador_form" model="ir.ui.view">
+      <field name="name">generador.form</field>
+      <field name="model">otrosmod.generador</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="probando"/>
+            <field name="asd"/>
+            <field name="cal"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_generador" model="ir.actions.act_window">
+      <field name="name">generador</field>
+      <field name="res_model">otrosmod.generador</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_generador" name="generador" action="action_generador" parent="menu_root_otrosmod"/>
+  </data>
+</odoo>
