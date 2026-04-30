@@ -24,10 +24,11 @@ const ModuleEditorScreen = () => {
   const [blockRelations, setBlockRelations] = useState<any[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [deleteBothIds, setDeleteBothIds] = useState<[number, number] | null>(null);
+  const { modules: allModules = [], isLoading: loadingAllModules, reload } = useAllModules();
+
   if (!userId) {
     return null;
   }
-  const { modules: allModules = [], isLoading: loadingAllModules, reload } = useAllModules();
 
   // Recarga automática al editar módulos
   useEffect(() => {
@@ -55,6 +56,9 @@ const ModuleEditorScreen = () => {
       }
     }
   };
+
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState<string | undefined>(undefined);
 
   if (isDesktop) {
     const showDetail = !!id;
@@ -135,6 +139,17 @@ const ModuleEditorScreen = () => {
                   }}
                   disabled={deleting}
                   onPress={async () => {
+                    if (!deleteConfirm) {
+                      setDeleteConfirm(true);
+                      setDeleteConfirmText('Pulsa de nuevo para confirmar');
+                      setTimeout(() => {
+                        setDeleteConfirm(false);
+                        setDeleteConfirmText(undefined);
+                      }, 2000);
+                      return;
+                    }
+                    setDeleteConfirm(false);
+                    setDeleteConfirmText(undefined);
                     setDeleting(true);
 
                     // Obtener todos los módulos completos (con modelos y campos)
@@ -191,7 +206,7 @@ const ModuleEditorScreen = () => {
                   activeOpacity={0.85}
                 >
                   <Ionicons name="trash" size={22} color="#fff" />
-                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>Eliminar</Text>
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>{deleteConfirmText || 'Eliminar'}</Text>
                 </TouchableOpacity>
 
                 <BlockDeleteModal
@@ -237,6 +252,7 @@ const ModuleEditorScreen = () => {
             Todos tus módulos
           </Text>
         </View>
+
         {isLoading ? (
           <ActivityIndicator size="large" color={Colors.light.primary} />
         ) : modules.length === 0 ? (

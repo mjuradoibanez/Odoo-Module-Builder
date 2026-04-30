@@ -36,6 +36,8 @@ const ModuleEditorScreen = () => {
   const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [redirectMessage, setRedirectMessage] = useState('');
 
   // Errores de validación específicos por campo
   const { create, loading, error: backendError, success } = useCreateModule();
@@ -43,6 +45,23 @@ const ModuleEditorScreen = () => {
   const [fieldErrors, setFieldErrors] = useState<{ name?: string; technicalName?: string; category?: string }>({});
   const technicalNameRef = useRef<any>(null);
   const [technicalNameFocused, setTechnicalNameFocused] = useState(false);
+
+  // Sincronización controlada por foco
+  const [syncTechName, setSyncTechName] = useState(false);
+  const [syncName, setSyncName] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing && syncTechName) {
+      setTechnicalName(name.toLowerCase().replace(/\s+/g, '_'));
+    }
+  }, [name, isEditing, syncTechName]);
+
+  useEffect(() => {
+    if (!isEditing && syncName) {
+      setName(technicalName);
+    }
+  }, [technicalName, isEditing, syncName]);
+
 
   // Carga datos del módulo a editar
   const { module: moduleFull, isLoading: loadingFull, reload } = useModuleFull(editingId || 0);
@@ -58,6 +77,31 @@ const ModuleEditorScreen = () => {
   const [modelTechnicalNameFocused, setModelTechnicalNameFocused] = useState(false);
   const [noChangesError, setNoChangesError] = useState(false);
   const [showUpdateSuccess, setShowUpdateSuccess] = useState(false);
+
+  // Sincronización controlada por foco para modelos
+  const [syncModelTechName, setSyncModelTechName] = useState(false);
+  const [syncModelName, setSyncModelName] = useState(false);
+
+  // Es un modelo nuevo si su ID es 0 (formulario añadir) o negativo (recién añadido localmente)
+  const isNewModelEditing = editingModelId === 0 || (editingModelId !== null && editingModelId < 0);
+
+  useEffect(() => {
+    if (isNewModelEditing && syncModelTechName) {
+      setModelForm(prev => ({
+        ...prev,
+        technicalName: prev.name.toLowerCase().replace(/\s+/g, '_')
+      }));
+    }
+  }, [modelForm.name, isNewModelEditing, syncModelTechName]);
+
+  useEffect(() => {
+    if (isNewModelEditing && syncModelName) {
+      setModelForm(prev => ({
+        ...prev,
+        name: prev.technicalName
+      }));
+    }
+  }, [modelForm.technicalName, isNewModelEditing, syncModelName]);
 
   // Estado para el modal de resumen de cambios
   const [showSummaryModal, setShowSummaryModal] = useState<false | 'save' | 'discard'>(false);
@@ -185,23 +229,37 @@ const ModuleEditorScreen = () => {
 
   // Handlers para campos de modelo
   const handleAddField = (modelId: number, field: any) => {
+    setModelFieldsMap(prev => {
+      const currentFields = prev[modelId] || [];
+      // Generar id temporal si no tiene uno (para editarlo antes de guardar)
+      const minId = Math.min(0, ...currentFields.map(f => typeof f.id === 'number' ? f.id : 0)) - 1;
+      const fieldWithId = { ...field, id: field.id ?? minId };
+      return {
+        ...prev,
+        [modelId]: [...currentFields, fieldWithId],
+      };
+    });
+  };
+
+  const handleEditField = (modelId: number, fieldId: any, updated: any) => {
     setModelFieldsMap(prev => ({
       ...prev,
-      [modelId]: [...(prev[modelId] || []), field],
+      [modelId]: (prev[modelId] || []).map(f => {
+        // Editar campos nuevos sin id (usando technicalName)
+        const match = f.id === fieldId || (f.id === undefined && f.technicalName === fieldId);
+        return match ? { ...f, ...updated } : f;
+      }),
     }));
   };
 
-  const handleEditField = (modelId: number, fieldId: number, updated: any) => {
+  const handleDeleteField = (modelId: number, fieldId: any) => {
     setModelFieldsMap(prev => ({
       ...prev,
-      [modelId]: (prev[modelId] || []).map(f => f.id === fieldId ? { ...f, ...updated } : f),
-    }));
-  };
-
-  const handleDeleteField = (modelId: number, fieldId: number) => {
-    setModelFieldsMap(prev => ({
-      ...prev,
-      [modelId]: (prev[modelId] || []).filter(f => f.id !== fieldId),
+      [modelId]: (prev[modelId] || []).filter(f => {
+        // Permitir eliminar campos nuevos sin id (usando technicalName)
+        const match = f.id === fieldId || (f.id === undefined && f.technicalName === fieldId);
+        return !match;
+      }),
     }));
   };
 
@@ -378,6 +436,8 @@ const ModuleEditorScreen = () => {
       setDescription('');
       setCategory('otra');
       setIsPublic(true);
+      setSuccessMessage('');
+      setRedirectMessage('');
     }
   }, [editingId, moduleFull]);
 
@@ -395,20 +455,38 @@ const ModuleEditorScreen = () => {
   const handleCreate = async () => {
     const errors = validate();
     setError('');
+    setSuccessMessage('');
+    setRedirectMessage('');
+
     if (errors) return;
     if (!user?.id) {
       setError('No se ha encontrado el usuario autenticado.');
       return;
     }
-    const ok = await create({ name, technicalName, description, isPublic, user_id: user.id, author: user.username, category });
-    if (ok) {
+
+    const result = await create({ name, technicalName, description, isPublic, user_id: user.id, author: user.username, category });
+    if (result && result.data && result.data.id) {
       setError('');
       setFieldErrors({});
-      // Limpia el formulario
       setName('');
       setTechnicalName('');
       setDescription('');
-      alert('¡Módulo creado correctamente!');
+      setSuccessMessage('¡Módulo creado correctamente!');
+
+      setRedirectMessage('Serás redirigido a los detalles del módulo en 3 segundos...');
+      setTimeout(() => {
+        setRedirectMessage('');
+        // Disparar evento global para recargar la lista de módulos
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('modules-updated'));
+        }
+        router.push({ pathname: '/(stack)/(drawer)/(tabs)/modules', params: { id: String(result.data.id) } });
+      }, 3000);
+
+    } else if (result && result.error) {
+      setError(result.error);
+      setSuccessMessage('');
+      setRedirectMessage('');
     }
   };
 
@@ -610,8 +688,13 @@ const ModuleEditorScreen = () => {
         value={name}
         onChangeText={setName}
         placeholder="Ej: Academia"
+        onFocus={() => {
+          if (!isEditing && !technicalName) setSyncTechName(true);
+        }}
+        onBlur={() => setSyncTechName(false)}
       />
       {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
+
       <Text style={styles.label}>Nombre técnico *</Text>
       <TextInput
         ref={technicalNameRef}
@@ -621,10 +704,17 @@ const ModuleEditorScreen = () => {
         placeholder="Ej: academia_modulo"
         autoCapitalize="none"
         returnKeyType="done"
-        onFocus={() => setTechnicalNameFocused(true)}
-        onBlur={() => setTechnicalNameFocused(false)}
+        onFocus={() => {
+          setTechnicalNameFocused(true);
+          if (!isEditing && !name) setSyncName(true);
+        }}
+        onBlur={() => {
+          setTechnicalNameFocused(false);
+          setSyncName(false);
+        }}
       />
       {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
+
       <Text style={styles.label}>Descripción</Text>
       <TextInput
         style={[styles.input, { height: 80 }]}
@@ -633,6 +723,7 @@ const ModuleEditorScreen = () => {
         placeholder="Descripción breve del módulo"
         multiline
       />
+
       <Text style={styles.label}>Categoría *</Text>
       <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : Colors.light.border, borderRadius: 8, marginBottom: 8 }]}>
         <Picker
@@ -645,6 +736,7 @@ const ModuleEditorScreen = () => {
           ))}
         </Picker>
       </View>
+      
       {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
         <TouchableOpacity
@@ -722,6 +814,10 @@ const ModuleEditorScreen = () => {
                         value={modelForm.name}
                         onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
                         placeholder="Nombre del modelo"
+                        onFocus={() => {
+                          if (isNewModelEditing && !modelForm.technicalName) setSyncModelTechName(true);
+                        }}
+                        onBlur={() => setSyncModelTechName(false)}
                       />
 
                       {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
@@ -733,8 +829,14 @@ const ModuleEditorScreen = () => {
                         placeholder="Nombre técnico"
                         autoCapitalize="none"
                         returnKeyType="done"
-                        onFocus={() => setModelTechnicalNameFocused(true)}
-                        onBlur={() => setModelTechnicalNameFocused(false)}
+                        onFocus={() => {
+                          setModelTechnicalNameFocused(true);
+                          if (isNewModelEditing && !modelForm.name) setSyncModelName(true);
+                        }}
+                        onBlur={() => {
+                          setModelTechnicalNameFocused(false);
+                          setSyncModelName(false);
+                        }}
                       />
 
                       {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
@@ -767,10 +869,12 @@ const ModuleEditorScreen = () => {
                             <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
                               <Text style={styles.buttonText}>Aceptar</Text>
                             </TouchableOpacity>
+
                             <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
                               <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
                             </TouchableOpacity>
                           </View>
+
                           {modelFieldErrors.technicalName === 'No hay cambios para aceptar' && (
                             <Text style={[styles.error, { textAlign: 'left', marginTop: 8 }]}>{modelFieldErrors.technicalName}</Text>
                           )}
@@ -792,6 +896,7 @@ const ModuleEditorScreen = () => {
                         >
                           <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
                         </TouchableOpacity>
+
                         <TouchableOpacity
                           style={{ alignSelf: 'flex-end' }}
                           onPress={async () => {
@@ -802,6 +907,7 @@ const ModuleEditorScreen = () => {
                           <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar modelo</Text>
                         </TouchableOpacity>
                       </View>
+
                       <ModelFieldsEditor
                         fields={modelFieldsMap[model.id] || []}
                         onAddField={() => { }}
@@ -833,8 +939,13 @@ const ModuleEditorScreen = () => {
                     value={modelForm.name}
                     onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
                     placeholder="Nombre del modelo"
+                    onFocus={() => {
+                      if (isNewModelEditing && !modelForm.technicalName) setSyncModelTechName(true);
+                    }}
+                    onBlur={() => setSyncModelTechName(false)}
                   />
                   {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
+
                   <TextInput
                     ref={modelTechnicalNameRef}
                     style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
@@ -843,18 +954,25 @@ const ModuleEditorScreen = () => {
                     placeholder="Nombre técnico"
                     autoCapitalize="none"
                     returnKeyType="done"
-                    onFocus={() => setModelTechnicalNameFocused(true)}
-                    onBlur={() => setModelTechnicalNameFocused(false)}
+                    onFocus={() => {
+                      setModelTechnicalNameFocused(true);
+                      if (isNewModelEditing && !modelForm.name) setSyncModelName(true);
+                    }}
+                    onBlur={() => {
+                      setModelTechnicalNameFocused(false);
+                      setSyncModelName(false);
+                    }}
                   />
-
                   {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
                   {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
                     <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
                   )}
+
                   <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
                     <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
                       <Text style={styles.buttonText}>Crear modelo</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
                       <Text style={[styles.buttonText, { color: '#222' }]}>Descartar</Text>
                     </TouchableOpacity>
@@ -902,9 +1020,11 @@ const ModuleEditorScreen = () => {
                     setShowModuleEditError(editingModelId);
                     return;
                   }
+
                   if (hasChanged) {
                     setSummaryData(buildModuleSummary());
                     setShowSummaryModal('discard');
+
                   } else {
                     resetForm();
                     router.push('/(stack)/(drawer)/(tabs)/modules');
@@ -926,6 +1046,7 @@ const ModuleEditorScreen = () => {
                   if (showSummaryModal === 'discard') {
                     resetForm();
                     router.push('/(stack)/(drawer)/(tabs)/modules');
+
                   } else {
                     handleUpdate();
                   }
@@ -957,6 +1078,7 @@ const ModuleEditorScreen = () => {
                   ombApi.delete(`/models/${deleteBothIds[0]}`),
                   ombApi.delete(`/models/${deleteBothIds[1]}`)
                 ]);
+
                 if (typeof reload === 'function') reload();
               } catch (e) {
                 alert('Hubo un error eliminando ambos modelos. Por favor, inténtalo de nuevo.');
@@ -994,8 +1116,12 @@ const ModuleEditorScreen = () => {
           fieldErrors={fieldErrors}
           styles={styles}
         />
+
+        {successMessage ? <Text style={{ color: '#2ecc40', marginTop: 10 }}>{successMessage}</Text> : null}
+        {redirectMessage ? <Text style={{ color: '#888', marginTop: 4 }}>{redirectMessage}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {backendError && !error ? <Text style={styles.error}>{backendError}</Text> : null}
+        
         <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Creando...' : 'Crear módulo'}</Text>
         </TouchableOpacity>

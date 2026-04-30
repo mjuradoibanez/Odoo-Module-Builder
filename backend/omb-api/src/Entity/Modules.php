@@ -85,7 +85,7 @@ class Modules
      *
      * @Groups({"modules:read"})
      */
-    private $category = 'other';
+    private $category = 'otra';
     /**
      * @var bool
      *

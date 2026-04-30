@@ -75,7 +75,7 @@ class ModuleController extends AbstractController
             $module->setName($data['name']);
             $module->setTechnicalName($data['technicalName']);
             $module->setDescription($data['description'] ?? null);
-            $module->setVersion($data['version'] ?? 1.0);
+            $module->setVersion($data['version'] ?? "1.0");
             $module->setAuthor($data['author'] ?? null);
             $module->setUser($user);
             // Si no se indica, por defecto es privado
@@ -445,13 +445,14 @@ class ModuleController extends AbstractController
             return new Response('ZIP incompleto recibido', 500);
         }
 
-        // Devolver el ZIP como respuesta
-        $filename = 'module_' . date('Ymd_His') . '.zip';
+        // Devolver el ZIP como respuesta (technicalName.zip)
+        $moduleData = json_decode($request->getContent(), true);
+        $technicalName = isset($moduleData['technicalName']) ? $moduleData['technicalName'] : 'module';
+        $filename = $technicalName . '.zip';
 
         $response = new Response($zipData);
-        $response->headers->set('Content-Type', 'application/zip'); // Indica que es un archivo ZIP
-        $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"'); // Fuerza la descarga con un nombre
-        
+        $response->headers->set('Content-Type', 'application/zip');
+        $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
         return $response;
     }
 }

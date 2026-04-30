@@ -26,21 +26,18 @@ export function useCreateModule() {
       if (typeof result.error === 'string') {
         if (result.error.includes('already exists')) {
           setError('Ya existe un módulo con ese nombre técnico.');
-
         } else if (result.error.includes('Missing required fields')) {
           setError('Faltan campos obligatorios.');
-
         } else {
           setError(result.error);
         }
       } else {
         setError('Error desconocido al crear el módulo.');
       }
-      return false;
+      return { error: result.error };
     }
-    
     setSuccess(true);
-    return true;
+    return { data: result.data };
   };
 
   return { create, loading, error, success };

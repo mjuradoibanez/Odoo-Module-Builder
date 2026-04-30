@@ -22,9 +22,7 @@ const RELATION_SUBTYPES = [
   { label: 'Muchos a muchos', value: 'many2many' },
 ];
 
-/**
- * Obtiene el nombre completo del modelo (módulo.técnico o solo técnico)
- */
+//Obtiene el nombre completo del modelo (módulo.técnico o solo técnico)
 const getFullModelName = (m: any) => {
   if (!m) return '';
   if (m.module && m.module.technicalName) return `${m.module.technicalName}.${m.technicalName}`;
@@ -79,19 +77,47 @@ const FieldForm = ({
     setTouched(true);
   }, [form]);
 
+  // Sincronización controlada por foco para campos
+  const [syncTechName, setSyncTechName] = useState(false);
+  const [syncName, setSyncName] = useState(false);
+
+  // Es un campo nuevo si no tiene id o es negativo
+  const isNew = !form.id || (typeof form.id === 'number' && form.id <= 0);
+
+  useEffect(() => {
+    if (isNew && syncTechName) {
+      setForm((prev: any) => ({
+        ...prev,
+        technicalName: prev.name.toLowerCase().replace(/\s+/g, '_')
+      }));
+    }
+  }, [form.name, isNew, syncTechName]);
+
+  useEffect(() => {
+    if (isNew && syncName) {
+      setForm((prev: any) => ({
+        ...prev,
+        name: prev.technicalName
+      }));
+    }
+  }, [form.technicalName, isNew, syncName]);
+
   // Hook para cargar los campos del modelo relacionado seleccionado
   let selectedOwnModelId: number | undefined = undefined;
   let selectedOwnModel: any = undefined;
+
   if (form.availableOwnModels && form.relationModel) {
     selectedOwnModel = form.availableOwnModels.find((m: any) => getFullModelName(m) === form.relationModel);
     selectedOwnModelId = selectedOwnModel?.id;
   }
+
   const { fields: apiFields, loading: loadingFields } = useModelFields(selectedOwnModelId);
   const relatedFields = (selectedOwnModel?.fields && selectedOwnModel.fields.length > 0) ? selectedOwnModel.fields : apiFields;
 
   // Si el campo de relación seleccionado ya no existe en el modelo destino, lo resetea
   useEffect(() => {
     if (!form.relationField || !relatedFields || loadingFields) return;
+
     const exists = relatedFields.some((f: any) => f.technicalName === form.relationField);
     if (!exists) {
       setForm((prev: any) => ({ ...prev, relationField: '' }));
@@ -105,6 +131,10 @@ const FieldForm = ({
         style={[styles.input, errors.name && styles.inputError]}
         value={form.name}
         onChangeText={(v) => setForm((f: any) => ({ ...f, name: v }))}
+        onFocus={() => {
+          if (isNew && !form.technicalName) setSyncTechName(true);
+        }}
+        onBlur={() => setSyncTechName(false)}
       />
       {errors.name && <Text style={styles.error}>{errors.name}</Text>}
 
@@ -116,6 +146,10 @@ const FieldForm = ({
         onChangeText={(v) =>
           setForm((f: any) => ({ ...f, technicalName: v }))
         }
+        onFocus={() => {
+          if (isNew && !form.name) setSyncName(true);
+        }}
+        onBlur={() => setSyncName(false)}
       />
       {errors.technicalName && (
         <Text style={styles.error}>{errors.technicalName}</Text>
@@ -199,6 +233,7 @@ const FieldForm = ({
               onValueChange={(v) => setForm((f: any) => ({ ...f, relationModel: v, relationField: '' }))}
             >
               <Picker.Item label="Selecciona un modelo..." value="" />
+
               {/* Modelos propios (de la sesión) */}
               {form.availableOwnModels && form.availableOwnModels.length > 0 && (
                 <Picker.Item label="--- Modelos propios ---" value="__own__" enabled={false} />
@@ -210,6 +245,7 @@ const FieldForm = ({
                   value={getFullModelName(m)}
                 />
               ))}
+
               {/* Modelos estándar Odoo */}
               <Picker.Item label="--- Modelos estándar Odoo ---" value="__odoo__" enabled={false} />
               {ODOO_STANDARD_MODELS.map((m) => (
@@ -250,15 +286,23 @@ export default function ModelFieldsEditor({
   onDeleteField,
   editable,
   ownModels = [], // [{ technicalName, name }]
+  onEditStateChange,
 }: any) {
 
   const [newForm, setNewForm] = useState({ ...INITIAL_FIELD, availableOwnModels: ownModels });
   const [editForm, setEditForm] = useState<any>(null);
 
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<any>(null);
   const [errors, setErrors] = useState<any>({});
   const [touched, setTouched] = useState(false);
   const [showNewFieldForm, setShowNewFieldForm] = useState(false);
+
+  // Notificar cambios de estado de edición al padre
+  useEffect(() => {
+    if (onEditStateChange) {
+      onEditStateChange(editingId !== null || showNewFieldForm);
+    }
+  }, [editingId, showNewFieldForm, onEditStateChange]);
 
   // Sincroniza availableOwnModels en newForm y editForm cuando cambian los modelos propios
   useEffect(() => {
@@ -274,7 +318,6 @@ export default function ModelFieldsEditor({
     setTouched(false);
     setShowNewFieldForm(false);
   };
-
 
   // Lógica para guardar campo (nuevo o editado)
   const saveField = (formData: any, callback: (idOrField: any, field?: any) => void, id?: number) => {
@@ -302,18 +345,18 @@ export default function ModelFieldsEditor({
       relationModule = odooModel?.module || '';
     }
 
-
     let fieldToSave: any = {
       ...fieldToProcess,
       type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
       relationModel: fieldToProcess.relationModel
     };
+
     // Solo añadir relationModule si es relacional
     if (["many2one", "one2many", "many2many"].includes(fieldToSave.type) && relationModule) {
       fieldToSave.relationModule = relationModule;
     }
 
-    if (id !== undefined) {
+    if (id !== undefined && id !== null) {
       callback(id, fieldToSave);
     } else {
       callback(fieldToSave);
@@ -358,20 +401,27 @@ export default function ModelFieldsEditor({
     setErrors({});
   };
 
+  const getFieldKey = (field: any) => {
+    return (field.id !== undefined && field.id !== null) ? field.id : field.technicalName;
+  };
+
   return (
     <View>
       <Text style={styles.sectionTitle}>Campos</Text>
+
       {/* LISTADO DE CAMPOS */}
       {fields.length === 0 && (
         <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>
       )}
+
       {fields.map((field: any) => (
         <View key={field.id || field.technicalName} style={styles.fieldRow}>
           <TouchableOpacity
-            onPress={() => editable && handleEdit(field)}
+            onPress={() => editable && editingId !== getFieldKey(field) && handleEdit(field)}
             style={{ flex: 1 }}
+            disabled={editingId === getFieldKey(field)}
           >
-            {editingId === field.id ? (
+            {editingId !== null && editingId === getFieldKey(field) ? (
               <>
                 {/* FORMULARIO EDICIÓN */}
                 <FieldForm
@@ -397,6 +447,7 @@ export default function ModelFieldsEditor({
               </View>
             )}
           </TouchableOpacity>
+
           {editable && editingId !== field.id && (
             <TouchableOpacity
               onPress={() => onDeleteField(field.id)}
@@ -438,6 +489,7 @@ export default function ModelFieldsEditor({
           <TouchableOpacity style={styles.button} onPress={handleAdd}>
             <Text style={styles.buttonText}>Añadir campo</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity style={[styles.button, { backgroundColor: '#bbb', marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
             <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
           </TouchableOpacity>
