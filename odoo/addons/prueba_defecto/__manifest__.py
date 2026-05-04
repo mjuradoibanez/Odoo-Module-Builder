@@ -1,9 +1,8 @@
 {
-    'name': 'lista_tareas',
+    'name': 'prueba defecto',
     'version': '1.0',
-    'author': 'admin',
+    'author': 'usuario',
     'category': 'otra',
-    'description': 'Lista tipo To-Do',
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',

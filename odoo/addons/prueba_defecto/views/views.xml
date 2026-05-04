@@ -1,0 +1,39 @@
+<odoo>
+  <data>
+    <record id="view_default_list" model="ir.ui.view">
+      <field name="name">default.list</field>
+      <field name="model">prueba_defecto.default</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="txt"/>
+          <field name="int"/>
+          <field name="dec"/>
+          <field name="bool"/>
+          <field name="fecha"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_default_form" model="ir.ui.view">
+      <field name="name">default.form</field>
+      <field name="model">prueba_defecto.default</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="txt" required="1"/>
+            <field name="int"/>
+            <field name="dec"/>
+            <field name="bool"/>
+            <field name="fecha"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_default" model="ir.actions.act_window">
+      <field name="name">default</field>
+      <field name="res_model">prueba_defecto.default</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_root_prueba_defecto" name="prueba defecto" sequence="1"/>
+    <menuitem id="menu_default" name="default" action="action_default" parent="menu_root_prueba_defecto"/>
+  </data>
+</odoo>
