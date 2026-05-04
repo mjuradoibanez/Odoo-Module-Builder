@@ -42,6 +42,7 @@ public class ModuleRequest {
         public String relationModel;
         public String relationField; // Para one2many: campo inverso
         public String relationModule; // Módulo al que pertenece el modelo relacionado
+        public String defaultValue;
     }
 
     public static class ViewDTO {

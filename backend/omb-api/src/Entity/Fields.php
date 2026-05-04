@@ -95,6 +95,15 @@ class Fields
      * @Groups({"fields:read"})
      */
     private $relationModule;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="default_value", type="string", length=255, nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $defaultValue;
     
     /**
      * @var Models
@@ -207,5 +216,15 @@ class Fields
     public function setModel(Models $model): void
     {
         $this->model = $model;
+    }
+
+    public function getDefaultValue(): ?string
+    {
+        return $this->defaultValue;
+    }
+
+    public function setDefaultValue(?string $defaultValue): void
+    {
+        $this->defaultValue = $defaultValue;
     }
 }

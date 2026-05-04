@@ -196,6 +196,18 @@ public class ModuleGenerator {
                     sb.append("required=True");
                     hasPrev = true;
                 }
+                if (field.defaultValue != null && !field.defaultValue.isEmpty() && !isRelation) {
+                    if (hasPrev) sb.append(", ");
+                    sb.append("default=");
+                    if (fieldType.equals("boolean")) {
+                        sb.append(field.defaultValue.toLowerCase().equals("true") ? "True" : "False");
+                    } else if (fieldType.equals("integer") || fieldType.equals("float") || fieldType.equals("monetary")) {
+                        sb.append(field.defaultValue);
+                    } else {
+                        sb.append("'").append(field.defaultValue).append("'");
+                    }
+                    hasPrev = true;
+                }
                 sb.append(")\n");
                 
             }

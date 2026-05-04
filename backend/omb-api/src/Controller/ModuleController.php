@@ -242,6 +242,9 @@ class ModuleController extends AbstractController
                                     $field->setRelationModel($fieldData['relationModel'] ?? null);
                                     $field->setRelationField($fieldData['relationField'] ?? null);
                                     $field->setRelationModule($fieldData['relationModule'] ?? null);
+                                    if (array_key_exists('defaultValue', $fieldData)) {
+                                        $field->setDefaultValue($fieldData['defaultValue']);
+                                    }
                                 }
                             } else {
                                 // Crear campo nuevo
@@ -254,6 +257,7 @@ class ModuleController extends AbstractController
                                 $field->setRelationModel($fieldData['relationModel'] ?? null);
                                 $field->setRelationField($fieldData['relationField'] ?? null);
                                 $field->setRelationModule($fieldData['relationModule'] ?? null);
+                                $field->setDefaultValue($fieldData['defaultValue'] ?? null);
                                 $field->setModel($model);
                                 $entityManager->persist($field);
                             }
@@ -381,8 +385,9 @@ class ModuleController extends AbstractController
                         'unique' => $field->getUniqueField(),
                         'relationModel' => $field->getRelationModel(),
                         'relationField' => $field->getRelationField(),
-                           // Solo incluir relationModule si el tipo es relacional y tiene valor
-                           'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
+                        'defaultValue' => $field->getDefaultValue(),
+                        // Solo incluir relationModule si el tipo es relacional y tiene valor
+                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {

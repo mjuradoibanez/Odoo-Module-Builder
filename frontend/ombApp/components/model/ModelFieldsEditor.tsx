@@ -4,6 +4,8 @@ import { ODOO_STANDARD_MODELS } from '@/constants/odooStandardModels';
 import { useModelFields } from '@/presentation/hooks/useModelFields';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch } from 'react-native';
 import { Colors } from '@/constants/theme';
+import ReactDatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 // Tipos de campo disponibles
 const FIELD_TYPES = [
@@ -39,6 +41,7 @@ const INITIAL_FIELD = {
   relationModel: '',
   relationField: '',
   relationSubtype: 'many2one',
+  defaultValue: '',
 };
 
 // VALIDACIÓN
@@ -165,7 +168,7 @@ const FieldForm = ({
               form.type === opt.value && styles.typeOptionSelected,
             ]}
             onPress={() =>
-              setForm((f: any) => ({ ...f, type: opt.value }))
+              setForm((f: any) => ({ ...f, type: opt.value, defaultValue: '' }))
             }
           >
             <Text
@@ -199,6 +202,62 @@ const FieldForm = ({
           }
         />
       </View>
+
+      {/* VALOR POR DEFECTO DINÁMICO */}
+      {form.type !== 'relation' && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={styles.label}>Valor por defecto</Text>
+          
+          {form.type === 'boolean' ? (
+            <View style={[styles.switchRow, { marginTop: 4 }]}>
+              <Text>{form.defaultValue === 'true' ? 'Activado (True)' : 'Desactivado (False)'}</Text>
+              <Switch
+                value={form.defaultValue === 'true'}
+                onValueChange={(v) =>
+                  setForm((f: any) => ({ ...f, defaultValue: v ? 'true' : 'false' }))
+                }
+              />
+            </View>
+
+          ) : form.type === 'integer' || form.type === 'float' ? (
+            <TextInput
+              style={styles.input}
+              value={form.defaultValue}
+              placeholder={form.type === 'integer' ? 'Ej: 123' : 'Ej: 3.14'}
+              keyboardType="numeric"
+              onChangeText={(v) => {
+                // Solo permitir números válidos
+                if (form.type === 'integer') {
+                  if (/^-?\d*$/.test(v)) setForm((f: any) => ({ ...f, defaultValue: v }));
+                } else { // Convertir coma a punto para decimales
+                  if (/^-?\d*(\.|,)?\d*$/.test(v)) setForm((f: any) => ({ ...f, defaultValue: v.replace(',', '.') }));
+                }
+              }}
+            />
+          ) : form.type === 'date' ? ( // Calendario para elegir fecha por defecto
+            <div style={{ marginTop: 4 }}>
+              <ReactDatePicker
+                selected={form.defaultValue ? new Date(form.defaultValue) : null}
+                onChange={(date: Date | null) => {
+                  setForm((f: any) => ({ ...f, defaultValue: date ? date.toISOString().slice(0, 10) : '' }));
+                }}
+                dateFormat="yyyy-MM-dd"
+                placeholderText="AAAA-MM-DD"
+                className="react-datepicker__input-text"
+                popperPlacement='top' // Se muestra encima del input
+              />
+            </div>
+          ) : ( // Input de texto para otros tipos
+            <TextInput
+              style={styles.input}
+              value={form.defaultValue}
+              placeholder="Ingresa valor..."
+              keyboardType="default"
+              onChangeText={(v) => setForm((f: any) => ({ ...f, defaultValue: v }))}
+            />
+          )}
+        </View>
+      )}
 
       {/* Campos extra solo si es relación */}
       {form.type === 'relation' && (
@@ -348,7 +407,8 @@ export default function ModelFieldsEditor({
     let fieldToSave: any = {
       ...fieldToProcess,
       type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
-      relationModel: fieldToProcess.relationModel
+      relationModel: fieldToProcess.relationModel,
+      defaultValue: fieldToProcess.type === 'relation' ? null : fieldToProcess.defaultValue // No guardar valor por defecto para campos de relación
     };
 
     // Solo añadir relationModule si es relacional
@@ -443,6 +503,9 @@ export default function ModelFieldsEditor({
                 </Text>
                 <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
                 <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
+                {field.defaultValue && (
+                  <Text style={{ color: '#27ae60', marginLeft: 6 }}>{`[Def: ${field.defaultValue}]`}</Text>
+                )}
                 <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
               </View>
             )}
