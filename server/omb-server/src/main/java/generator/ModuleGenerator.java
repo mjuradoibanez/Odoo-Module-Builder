@@ -157,7 +157,17 @@ public class ModuleGenerator {
             sb.append("class ").append(className).append("(models.Model):\n");
             sb.append("    _name = '").append(modelName).append("'\n");
             sb.append("    _description = '").append(model.name).append("'\n");
-
+            
+            // Determinar el campo para _rec_name (por defecto 'name', si no el primero disponible)
+            if (!model.fields.isEmpty()) {
+                boolean hasNameField = model.fields.stream().anyMatch(f -> "name".equals(f.technicalName.toLowerCase()));
+                if (!hasNameField) {
+                    String firstFieldName = model.fields.get(0).technicalName.replaceAll("[\\s]+", "_");
+                    sb.append("    _rec_name = '").append(firstFieldName).append("'\n");
+                }
+            }
+            sb.append("\n");
+            
             for (ModuleRequest.FieldDTO field : model.fields) {
                 String fname = field.technicalName.replaceAll("[\\s]+", "_");
                 String fieldType = field.type.toLowerCase();
@@ -187,6 +197,7 @@ public class ModuleGenerator {
                     hasPrev = true;
                 }
                 sb.append(")\n");
+                
             }
 
             // Añadir métodos @api.constrains para campos únicos
