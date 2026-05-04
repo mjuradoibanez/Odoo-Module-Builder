@@ -66,6 +66,7 @@ CREATE TABLE fields (
   relation_field VARCHAR(255),
   relation_module VARCHAR(255),
   default_value VARCHAR(255),
+  selection_options JSON,
   model_id INT,
   CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
   CONSTRAINT uq_technical_name_field UNIQUE (technical_name, model_id)

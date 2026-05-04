@@ -481,7 +481,7 @@ const ModuleEditorScreen = () => {
       setTechnicalName('');
       setDescription('');
       setCategory('otra');
-      setIsPublic(true);
+      setIsPublic(false);
       setSuccessMessage('');
       setRedirectMessage('');
     }

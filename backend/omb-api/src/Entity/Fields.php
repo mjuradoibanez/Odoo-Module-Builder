@@ -104,6 +104,15 @@ class Fields
      * @Groups({"fields:read"})
      */
     private $defaultValue;
+
+    /**
+     * @var array|null
+     *
+     * @ORM\Column(name="selection_options", type="json", nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $selectionOptions;
     
     /**
      * @var Models
@@ -226,5 +235,15 @@ class Fields
     public function setDefaultValue(?string $defaultValue): void
     {
         $this->defaultValue = $defaultValue;
+    }
+
+    public function getSelectionOptions(): ?array
+    {
+        return $this->selectionOptions;
+    }
+
+    public function setSelectionOptions(?array $selectionOptions): void
+    {
+        $this->selectionOptions = $selectionOptions;
     }
 }

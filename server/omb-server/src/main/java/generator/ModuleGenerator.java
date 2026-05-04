@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Map;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -185,12 +186,27 @@ public class ModuleGenerator {
                     } else if (fieldType.equals("many2many")) {
                         sb.append("Many2many(").append(relModel);
                     }
+                } else if (fieldType.equals("selection")) {
+                    sb.append("Selection([\n");
+                    if (field.selectionOptions != null) {
+                        for (Map<String, String> opt : field.selectionOptions) {
+                            sb.append("        ('").append(opt.get("key")).append("', '").append(opt.get("label")).append("'),\n");
+                        }
+                    }
+                    sb.append("    ]");
                 } else {
                     String pyFieldType = fieldType.substring(0,1).toUpperCase() + fieldType.substring(1);
                     sb.append(pyFieldType).append("(");
                 }
 
-                boolean hasPrev = isRelation && !fieldType.equals("one2many");
+                // Ver si ya hay contenido dentro del paréntesis para poner o no una coma
+                boolean hasPrev = (isRelation && field.relationModel != null && !field.relationModel.isEmpty()) || fieldType.equals("selection");
+
+                // Añadimos siempre el atributo string
+                if (hasPrev) sb.append(", ");
+                sb.append("string='").append(field.name).append("'");
+                hasPrev = true;
+
                 if (field.required) {
                     if (hasPrev) sb.append(", ");
                     sb.append("required=True");

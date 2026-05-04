@@ -14,6 +14,7 @@ const FIELD_TYPES = [
   { label: 'Decimal', value: 'float' },
   { label: 'Booleano', value: 'boolean' },
   { label: 'Fecha', value: 'date' },
+  { label: 'Selección', value: 'selection' },
   { label: 'Relación', value: 'relation' },
 ];
 
@@ -42,6 +43,7 @@ const INITIAL_FIELD = {
   relationField: '',
   relationSubtype: 'many2one',
   defaultValue: '',
+  selectionOptions: [] as { key: string; label: string }[],
 };
 
 // VALIDACIÓN
@@ -203,8 +205,8 @@ const FieldForm = ({
         />
       </View>
 
-      {/* VALOR POR DEFECTO DINÁMICO */}
-      {form.type !== 'relation' && (
+      {/* VALOR POR DEFECTO */}
+      {form.type !== 'relation' && form.type !== 'selection' && (
         <View style={{ marginTop: 12 }}>
           <Text style={styles.label}>Valor por defecto</Text>
           
@@ -234,6 +236,7 @@ const FieldForm = ({
                 }
               }}
             />
+
           ) : form.type === 'date' ? ( // Calendario para elegir fecha por defecto
             <div style={{ marginTop: 4 }}>
               <ReactDatePicker
@@ -247,6 +250,7 @@ const FieldForm = ({
                 popperPlacement='top' // Se muestra encima del input
               />
             </div>
+
           ) : ( // Input de texto para otros tipos
             <TextInput
               style={styles.input}
@@ -256,6 +260,65 @@ const FieldForm = ({
               onChangeText={(v) => setForm((f: any) => ({ ...f, defaultValue: v }))}
             />
           )}
+        </View>
+      )}
+
+      {/* GESTIÓN DE OPCIONES PARA SELECCIÓN */}
+      {form.type === 'selection' && (
+        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
+          <Text style={[styles.label, { fontWeight: 'bold' }]}>Opciones de selección</Text>
+
+          {(form.selectionOptions || []).map((opt: any, index: number) => (
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ flex: 1 }}>{`${opt.key}: ${opt.label}`}</Text>
+              <TouchableOpacity onPress={() => {
+                const newOpts = [...form.selectionOptions];
+                newOpts.splice(index, 1);
+                setForm((f: any) => ({ ...f, selectionOptions: newOpts }));
+              }}>
+                <Text style={{ color: 'red', marginLeft: 10 }}>X</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Clave (ej: 0)"
+              value={form._newOptKey || ''}
+              onChangeText={(v) => setForm((f: any) => ({ ...f, _newOptKey: v }))}
+            />
+            <TextInput
+              style={[styles.input, { flex: 2 }]}
+              placeholder="Etiqueta (ej: Bajo)"
+              value={form._newOptLabel || ''}
+              onChangeText={(v) => setForm((f: any) => ({ ...f, _newOptLabel: v }))}
+            />
+            
+            <TouchableOpacity 
+              style={{ backgroundColor: Colors.light.primary, padding: 10, borderRadius: 6, justifyContent: 'center' }}
+              onPress={() => {
+                if (!form._newOptKey || !form._newOptLabel) return;
+                const newOpts = [...(form.selectionOptions || []), { key: form._newOptKey, label: form._newOptLabel }];
+                setForm((f: any) => ({ ...f, selectionOptions: newOpts, _newOptKey: '', _newOptLabel: '' }));
+              }}
+            >
+              <Text style={{ color: '#fff' }}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.label, { marginTop: 16 }]}>Valor por defecto</Text>
+          <View style={[styles.input, { padding: 0 }]}>
+            <Picker
+              selectedValue={form.defaultValue}
+              onValueChange={(v) => setForm((f: any) => ({ ...f, defaultValue: v }))}
+            >
+              <Picker.Item label="Selecciona valor por defecto..." value="" />
+              {(form.selectionOptions || []).map((opt: any) => (
+                <Picker.Item key={opt.key} label={opt.label} value={opt.key} />
+              ))}
+            </Picker>
+          </View>
         </View>
       )}
 
@@ -408,7 +471,8 @@ export default function ModelFieldsEditor({
       ...fieldToProcess,
       type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
       relationModel: fieldToProcess.relationModel,
-      defaultValue: fieldToProcess.type === 'relation' ? null : fieldToProcess.defaultValue // No guardar valor por defecto para campos de relación
+      defaultValue: fieldToProcess.type === 'relation' ? null : fieldToProcess.defaultValue,
+      selectionOptions: fieldToProcess.type === 'selection' ? fieldToProcess.selectionOptions : null
     };
 
     // Solo añadir relationModule si es relacional
