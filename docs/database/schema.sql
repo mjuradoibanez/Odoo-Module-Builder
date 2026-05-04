@@ -78,12 +78,13 @@ CREATE TABLE views (
   id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   type VARCHAR(255) NOT NULL,
   name VARCHAR(255),
+  configuration JSON, -- Configuraciones de las vistas
   model_id INT,
   CONSTRAINT fk_views_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
 );
 
 -- -----------------------------
--- Tabla view_fields
+-- Tabla view_fields (pendiente de eliminar)
 -- -----------------------------
 DROP TABLE IF EXISTS view_fields;
 CREATE TABLE view_fields (

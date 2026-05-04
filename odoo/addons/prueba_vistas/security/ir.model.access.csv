@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_vistas_personal,prueba_vistas.vistas_personal,model_prueba_vistas_vistas_personal,base.group_user,1,1,1,1

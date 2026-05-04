@@ -1,6 +1,7 @@
 package DTO;
 
 import java.util.List;
+import java.util.Map;
 
 public class ModuleRequest {
     public int id;
@@ -47,5 +48,6 @@ public class ModuleRequest {
         public int id;
         public String type;
         public String name;
+        public Map<String, Object> configuration;
     }
 }

@@ -16,6 +16,7 @@ public class ModuleGenerator {
         // Crear estructura de carpetas
         File root = new File(System.getProperty("java.io.tmpdir"), module.technicalName);
         root.mkdirs();
+
         File modelsDir = new File(root, "models");
         File securityDir = new File(root, "security");
         File viewsDir = new File(root, "views");
@@ -149,17 +150,20 @@ public class ModuleGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("from odoo import models, fields, api, exceptions\n\n");
         String prefix = module.technicalName.replaceAll("[\\s]+", "_");
+
         for (ModuleRequest.ModelDTO model : module.models) {
             String className = capitalize(model.technicalName.replaceAll("[\\s]+", "_"));
             String modelName = prefix + "." + model.technicalName.replaceAll("[\\s]+", "_");
             sb.append("class ").append(className).append("(models.Model):\n");
             sb.append("    _name = '").append(modelName).append("'\n");
             sb.append("    _description = '").append(model.name).append("'\n");
+
             for (ModuleRequest.FieldDTO field : model.fields) {
                 String fname = field.technicalName.replaceAll("[\\s]+", "_");
                 String fieldType = field.type.toLowerCase();
                 boolean isRelation = fieldType.equals("many2one") || fieldType.equals("one2many") || fieldType.equals("many2many");
                 sb.append("    ").append(fname).append(" = fields.");
+
                 if (isRelation) {
                     String relModel = field.relationModel != null ? "'" + field.relationModel + "'" : "";
                     if (fieldType.equals("many2one")) {
@@ -175,6 +179,7 @@ public class ModuleGenerator {
                     String pyFieldType = fieldType.substring(0,1).toUpperCase() + fieldType.substring(1);
                     sb.append(pyFieldType).append("(");
                 }
+
                 boolean hasPrev = isRelation && !fieldType.equals("one2many");
                 if (field.required) {
                     if (hasPrev) sb.append(", ");
@@ -223,7 +228,7 @@ public class ModuleGenerator {
         String prefix = module.technicalName.replaceAll("[\\s]+", "_");
         for (ModuleRequest.ModelDTO model : module.models) {
             String modelName = prefix + "." + model.technicalName.replaceAll("[\\s]+", "_");
-            // External id: model_<prefijo>_<nombre_modelo> (puntos y espacios a guiones bajos)
+            // External id: model_<prefijo>_<nombre_modelo> (puntos y espacios pasan a guiones bajos)
             String externalId = "model_" + modelName.replaceAll("[. ]+", "_");
             sb.append("access_").append(model.technicalName).append(",");
             sb.append(modelName).append(",");
@@ -238,38 +243,130 @@ public class ModuleGenerator {
         StringBuilder sb = new StringBuilder();
         sb.append("<odoo>\n  <data>\n");
         String prefix = module.technicalName.replaceAll("[\\s]+", "_");
-        // Menú raíz primero
-        sb.append("    <menuitem id=\"menu_root_" + prefix + "\" name=\"" + module.name + "\" sequence=\"1\"/>\n");
-
-        // 1. Todas las vistas (list y form) de todos los modelos
+        
+        // 1. Todas las vistas de todos los modelos
         for (ModuleRequest.ModelDTO model : module.models) {
             String modelName = prefix + "." + model.technicalName.replaceAll("[\\s]+", "_");
-            // Vista list
-            sb.append("    <record id=\"view_" + model.technicalName + "_list\" model=\"ir.ui.view\">\n");
-            sb.append("      <field name=\"name\">" + model.technicalName + ".list</field>\n");
-            sb.append("      <field name=\"model\">" + modelName + "</field>\n");
-            sb.append("      <field name=\"arch\" type=\"xml\">\n");
-            sb.append("        <list>\n");
-            for (ModuleRequest.FieldDTO field : model.fields) {
-                sb.append("          <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"/>\n");
-            }
-            sb.append("        </list>\n      </field>\n    </record>\n");
-            // Vista form
-            sb.append("    <record id=\"view_" + model.technicalName + "_form\" model=\"ir.ui.view\">\n");
-            sb.append("      <field name=\"name\">" + model.technicalName + ".form</field>\n");
-            sb.append("      <field name=\"model\">" + modelName + "</field>\n");
-            sb.append("      <field name=\"arch\" type=\"xml\">\n");
-            sb.append("        <form>\n");
-            sb.append("          <group>\n");
-            for (ModuleRequest.FieldDTO field : model.fields) {
-                sb.append("            <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"");
-                if (field.required) {
-                    sb.append(" required=\"1\"");
+            
+            // Forzar list y form (siempre están)
+            boolean hasList = false;
+            boolean hasForm = false;
+            if (model.views != null) {
+                for (ModuleRequest.ViewDTO v : model.views) {
+                    if ("list".equals(v.type)) hasList = true;
+                    if ("form".equals(v.type)) hasForm = true;
                 }
-                sb.append("/>\n");
             }
-            sb.append("          </group>\n");
-            sb.append("        </form>\n      </field>\n    </record>\n");
+
+            // Generar vista list
+            if (!hasList) {
+                sb.append("    <record id=\"view_" + model.technicalName + "_list\" model=\"ir.ui.view\">\n");
+                sb.append("      <field name=\"name\">" + model.technicalName + ".list</field>\n");
+                sb.append("      <field name=\"model\">" + modelName + "</field>\n");
+                sb.append("      <field name=\"arch\" type=\"xml\">\n");
+                sb.append("        <list>\n");
+                for (ModuleRequest.FieldDTO field : model.fields) {
+                    sb.append("          <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"/>\n");
+                }
+                sb.append("        </list>\n      </field>\n    </record>\n");
+            }
+
+            // Generar vista form
+            if (!hasForm) {
+                sb.append("    <record id=\"view_" + model.technicalName + "_form\" model=\"ir.ui.view\">\n");
+                sb.append("      <field name=\"name\">" + model.technicalName + ".form</field>\n");
+                sb.append("      <field name=\"model\">" + modelName + "</field>\n");
+                sb.append("      <field name=\"arch\" type=\"xml\">\n");
+                sb.append("        <form>\n");
+                sb.append("          <group>\n");
+                for (ModuleRequest.FieldDTO field : model.fields) {
+                    sb.append("            <field name=\"" + field.technicalName.replaceAll("[\\s]+", "_") + "\"");
+                    if (field.required) {
+                        sb.append(" required=\"1\"");
+                    }
+                    sb.append("/>\n");
+                }
+                sb.append("          </group>\n");
+                sb.append("        </form>\n      </field>\n    </record>\n");
+            }
+
+            // Generar vistas adicionales si existen (graph, kanban, calendar y search)
+            if (model.views != null) {
+                for (ModuleRequest.ViewDTO view : model.views) {
+                    String vType = view.type.toLowerCase();
+                    if (vType.equals("list") || vType.equals("form")) continue; // Ya añadidas
+
+                    sb.append("    <record id=\"view_" + model.technicalName + "_" + vType + "\" model=\"ir.ui.view\">\n");
+                    sb.append("      <field name=\"name\">" + model.technicalName + "." + vType + "</field>\n");
+                    sb.append("      <field name=\"model\">" + modelName + "</field>\n");
+                    sb.append("      <field name=\"arch\" type=\"xml\">\n");
+
+                    if (vType.equals("search")) {
+                        sb.append("        <search>\n");
+                        if (view.configuration != null && view.configuration.get("fields") != null) {
+                            java.util.List<String> searchFields = (java.util.List<String>) view.configuration.get("fields");
+                            for (String f : searchFields) {
+                                sb.append("          <field name=\"" + f + "\"/>\n");
+                            }
+                        } else {
+                            // Por defecto primer campo
+                            if (!model.fields.isEmpty()) {
+                                sb.append("          <field name=\"" + model.fields.get(0).technicalName + "\"/>\n");
+                            }
+                        }
+                        sb.append("        </search>\n");
+                    } else if (vType.equals("kanban")) {
+                        Object gb = (view.configuration != null) ? view.configuration.get("group_by") : null;
+                        String groupBy = (gb != null) ? gb.toString() : null;
+
+                        sb.append("        <kanban" + (groupBy != null && !groupBy.isEmpty() ? " default_group_by=\"" + groupBy + "\"" : "") + ">\n");
+                        sb.append("          <templates>\n");
+                        sb.append("            <t t-name=\"card\">\n");
+                        sb.append("              <div class=\"oe_kanban_global_click\">\n");
+                        sb.append("                <div class=\"oe_kanban_details\">\n");
+                        sb.append("                  <strong class=\"o_kanban_record_title\">\n");
+                        if (!model.fields.isEmpty()) {
+                            sb.append("                    <field name=\"" + model.fields.get(0).technicalName + "\"/>\n");
+                        }
+                        sb.append("                  </strong>\n");
+                        sb.append("                </div>\n");
+                        sb.append("              </div>\n");
+                        sb.append("            </t>\n");
+                        sb.append("          </templates>\n");
+                        sb.append("        </kanban>\n");
+
+                    } else if (vType.equals("calendar")) {
+                        Object ds = (view.configuration != null) ? view.configuration.get("date_start") : null;
+                        Object dstop = (view.configuration != null) ? view.configuration.get("date_stop") : null;
+                        Object col = (view.configuration != null) ? view.configuration.get("color") : null;
+                        String dateStart = (ds != null) ? ds.toString() : "create_date";
+                        String dateStop = (dstop != null) ? dstop.toString() : null;
+                        String color = (col != null) ? col.toString() : null;
+                        sb.append("        <calendar string=\"" + view.name + "\" date_start=\"" + dateStart + "\"");
+                        if (dateStop != null && !dateStop.isEmpty()) sb.append(" date_stop=\"" + dateStop + "\"");
+                        if (color != null && !color.isEmpty()) sb.append(" color=\"" + color + "\"");
+                        sb.append(">\n");
+                        if (!model.fields.isEmpty()) {
+                            sb.append("          <field name=\"" + model.fields.get(0).technicalName + "\"/>\n");
+                        }
+                        sb.append("        </calendar>\n");
+
+                    } else if (vType.equals("graph")) {
+                        Object gt = (view.configuration != null) ? view.configuration.get("graph_type") : null;
+                        String type = (gt != null) ? gt.toString() : "bar";
+                        sb.append("        <graph string=\"" + view.name + "\" type=\"" + type + "\">\n");
+                        if (view.configuration != null) {
+                            Object row = view.configuration.get("row_field");
+                            Object measure = view.configuration.get("measure_field");
+                            if (row != null && !row.toString().isEmpty()) sb.append("          <field name=\"" + row.toString() + "\" type=\"row\"/>\n");
+                            if (measure != null && !measure.toString().isEmpty()) sb.append("          <field name=\"" + measure.toString() + "\" type=\"measure\"/>\n");
+                        }
+                        sb.append("        </graph>\n");
+                    }
+
+                    sb.append("      </field>\n    </record>\n");
+                }
+            }
         }
 
         // 2. Todas las actions de todos los modelos
@@ -278,11 +375,24 @@ public class ModuleGenerator {
             sb.append("    <record id=\"action_" + model.technicalName + "\" model=\"ir.actions.act_window\">\n");
             sb.append("      <field name=\"name\">" + model.name + "</field>\n");
             sb.append("      <field name=\"res_model\">" + modelName + "</field>\n");
-            sb.append("      <field name=\"view_mode\">list,form</field>\n");
+            
+            StringBuilder modes = new StringBuilder("list,form");
+            if (model.views != null) {
+                for (ModuleRequest.ViewDTO v : model.views) {
+                    String t = v.type.toLowerCase();
+                    if (!t.equals("list") && !t.equals("form") && !t.equals("search")) {
+                        modes.append(",").append(t);
+                    }
+                }
+            }
+            sb.append("      <field name=\"view_mode\">" + modes.toString() + "</field>\n");
             sb.append("    </record>\n");
         }
 
-        // 3. Todos los menús (primero raíz, luego hijos)
+        // 3. Menú raíz
+        sb.append("    <menuitem id=\"menu_root_" + prefix + "\" name=\"" + module.name + "\" sequence=\"1\"/>\n");
+
+        // 4. Todos los menús hijos
         for (ModuleRequest.ModelDTO model : module.models) {
             sb.append("    <menuitem id=\"menu_" + model.technicalName + "\" name=\"" + model.name + "\" action=\"action_" + model.technicalName + "\" parent=\"menu_root_" + prefix + "\"/>\n");
         }

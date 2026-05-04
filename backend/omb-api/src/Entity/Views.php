@@ -54,6 +54,15 @@ class Views
      */
     private $model;
 
+    /**
+     * @var array|null
+     *
+     * @ORM\Column(name="configuration", type="json", nullable=true)
+     *
+     * @Groups({"views:read"})
+     */
+    private $configuration;
+
     public function getId(): int
     {
         return $this->id;
@@ -87,5 +96,15 @@ class Views
     public function setModel(Models $model): void
     {
         $this->model = $model;
+    }
+
+    public function getConfiguration(): ?array
+    {
+        return $this->configuration;
+    }
+
+    public function setConfiguration(?array $configuration): void
+    {
+        $this->configuration = $configuration;
     }
 }

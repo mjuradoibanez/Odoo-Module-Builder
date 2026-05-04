@@ -259,6 +259,42 @@ class ModuleController extends AbstractController
                             }
                         }
                     }
+
+                    if ($model && isset($modelData['views']) && is_array($modelData['views'])) {
+                        // Procesar vistas
+                        $views = $entityManager->getRepository(Views::class);
+                        $currentViews = $views->findBy(['model' => $model]);
+                        $currentViewIds = array_column($currentViews, 'id'); // IDs de vistas actuales
+                        $sentViewIds = array_column($modelData['views'] ?? [], 'id'); // IDs de vistas enviadas desde el frontend
+
+                        // Eliminar vistas que ya no están
+                        foreach ($currentViews as $curView) {
+                            if (!in_array($curView->getId(), $sentViewIds)) {
+                                $entityManager->remove($curView);
+                            }
+                        }
+
+                        foreach ($modelData['views'] as $viewData) {
+                            $view = null;
+                            // Actualizar vista existente
+                            if (isset($viewData['id']) && in_array($viewData['id'], $currentViewIds)) {
+                                $view = $viewRepo->find($viewData['id']);
+                                if ($view) {
+                                    $view->setType($viewData['type'] ?? $view->getType());
+                                    $view->setName($viewData['name'] ?? $view->getName());
+                                    $view->setConfiguration($viewData['configuration'] ?? null);
+                                }
+                            // Crear nueva vista
+                            } else {
+                                $view = new Views();
+                                $view->setType($viewData['type'] ?? 'list');
+                                $view->setName($viewData['name'] ?? '');
+                                $view->setConfiguration($viewData['configuration'] ?? null);
+                                $view->setModel($model);
+                                $entityManager->persist($view);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -354,6 +390,7 @@ class ModuleController extends AbstractController
                         'id' => $view->getId(),
                         'type' => $view->getType(),
                         'name' => $view->getName(),
+                        'configuration' => $view->getConfiguration(),
                     ];
                 }, $views),
             ];

@@ -45,14 +45,17 @@ const DeployScreen = () => {
   useEffect(() => {
     if (!modules || modules.length === 0) return;
     setLoadingDetails(true);
+
     const fetchMissingDetails = async () => {
       const details: Record<number, any> = {};
+      
       await Promise.all(
         modules.map(async m => {
           if (moduleDetails[m.id]) {
             details[m.id] = moduleDetails[m.id];
             return;
           }
+          
           try {
             const data = await getModuleFull(m.id);
             details[m.id] = data;
@@ -62,9 +65,11 @@ const DeployScreen = () => {
           }
         })
       );
+      
       setManyModuleDetails(details);
       setLoadingDetails(false);
     };
+    
     fetchMissingDetails();
   }, [modules]);
 
@@ -77,6 +82,7 @@ const DeployScreen = () => {
           Desplegar módulo Odoo
         </Text>
       </View>
+    
       {isLoading || loadingDetails ? (
         <ActivityIndicator size="large" color={Colors.light.primary} />
       ) : (
@@ -86,6 +92,7 @@ const DeployScreen = () => {
           renderItem={({ item }) => {
             const detail = moduleDetails[item.id];
             const complete = detail ? isModuleComplete(detail) : false;
+            
             return (
               <TouchableOpacity
                 onPress={() => complete && setSelectedModuleId(item.id)}
@@ -105,14 +112,26 @@ const DeployScreen = () => {
           contentContainerStyle={{ paddingBottom: 32 }}
         />
       )}
+      
       {selectedModuleId && isModuleComplete(moduleDetails[selectedModuleId]) && (
         <TouchableOpacity
           style={styles.deployButton}
           onPress={async () => {
+            setLoadingDetails(true);
+      
             try {
-              await generateAndDownload(moduleDetails[selectedModuleId]);
+              // Obtener datos antes de descargar para evitar fallos por caché
+              const freshData = await getModuleFull(selectedModuleId);
+              if (freshData) {
+                await generateAndDownload(freshData);
+              } else {
+                throw new Error("No se pudieron obtener los datos");
+              }
+      
             } catch (e) {
               alert('Error al descargar el módulo');
+            } finally {
+              setLoadingDetails(false);
             }
           }}
         >
