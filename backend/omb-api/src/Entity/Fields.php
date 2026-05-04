@@ -20,7 +20,7 @@ class Fields
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      *
-     * @Groups({"fields:read", "view_fields:read"})
+     * @Groups({"fields:read"})
      */
     private $id;
 
@@ -29,7 +29,7 @@ class Fields
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      *
-     * @Groups({"fields:read", "view_fields:read"})
+     * @Groups({"fields:read"})
      */
     private $name;
 

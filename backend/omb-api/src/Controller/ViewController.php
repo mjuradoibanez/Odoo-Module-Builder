@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Fields;
 use App\Entity\Models;
 use App\Entity\Views;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;

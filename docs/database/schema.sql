@@ -84,19 +84,6 @@ CREATE TABLE views (
 );
 
 -- -----------------------------
--- Tabla view_fields (pendiente de eliminar)
--- -----------------------------
-DROP TABLE IF EXISTS view_fields;
-CREATE TABLE view_fields (
-  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  view_id INT,
-  field_id INT,
-  position INT DEFAULT 0,
-  CONSTRAINT fk_view_fields_view FOREIGN KEY (view_id) REFERENCES views(id) ON DELETE CASCADE,
-  CONSTRAINT fk_view_fields_field FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
-);
-
--- -----------------------------
 -- Tabla deployments
 -- -----------------------------
 DROP TABLE IF EXISTS deployments;

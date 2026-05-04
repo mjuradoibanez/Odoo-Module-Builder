@@ -51,15 +51,6 @@ INSERT INTO views (type, name, model_id) VALUES
 ('form', 'curso_form', 2);
 
 -- -----------------------------
--- View Fields
--- -----------------------------
-INSERT INTO view_fields (view_id, field_id, position) VALUES
-(1, 1, 1), -- alumno_list - nombre
-(1, 2, 2), -- alumno_list - edad
-(2, 1, 1), -- alumno_form - nombre
-(2, 2, 2); -- alumno_form - edad
-
--- -----------------------------
 -- Deployments
 -- -----------------------------
 INSERT INTO deployments (module_id, status, log) VALUES

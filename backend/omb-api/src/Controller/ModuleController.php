@@ -278,7 +278,7 @@ class ModuleController extends AbstractController
                             $view = null;
                             // Actualizar vista existente
                             if (isset($viewData['id']) && in_array($viewData['id'], $currentViewIds)) {
-                                $view = $viewRepo->find($viewData['id']);
+                                $view = $views->find($viewData['id']);
                                 if ($view) {
                                     $view->setType($viewData['type'] ?? $view->getType());
                                     $view->setName($viewData['name'] ?? $view->getName());
