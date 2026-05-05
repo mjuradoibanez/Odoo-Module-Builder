@@ -759,110 +759,6 @@ const ModuleEditorScreen = () => {
     };
   };
 
-  // Componente reutilizable para los campos del formulario de módulo
-  type ModuleFormFieldsProps = {
-    name: string;
-    setName: (v: string) => void;
-    technicalName: string;
-    setTechnicalName: (v: string) => void;
-    description: string;
-    setDescription: (v: string) => void;
-    category: string;
-    setCategory: (v: string) => void;
-    categoryOptions: string[];
-    isPublic: boolean;
-    setIsPublic: (v: boolean) => void;
-    fieldErrors: { name?: string; technicalName?: string; category?: string };
-    styles: any;
-  };
-
-  const ModuleFormFields: React.FC<ModuleFormFieldsProps> = ({
-    name,
-    setName,
-    technicalName,
-    setTechnicalName,
-    description,
-    setDescription,
-    category,
-    setCategory,
-    categoryOptions,
-    isPublic,
-    setIsPublic,
-    fieldErrors,
-    styles,
-  }) => (
-    <>
-      <Text style={styles.label}>Nombre del módulo *</Text>
-      <TextInput
-        style={[styles.input, fieldErrors.name && styles.inputError]}
-        value={name}
-        onChangeText={setName}
-        placeholder="Ej: Academia"
-        onFocus={() => {
-          if (!isEditing && !technicalName) setSyncTechName(true);
-        }}
-        onBlur={() => setSyncTechName(false)}
-      />
-      {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
-
-      <Text style={styles.label}>Nombre técnico *</Text>
-      <TextInput
-        ref={technicalNameRef}
-        style={fieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
-        value={technicalName}
-        onChangeText={setTechnicalName}
-        placeholder="Ej: academia_modulo"
-        autoCapitalize="none"
-        returnKeyType="done"
-        onFocus={() => {
-          setTechnicalNameFocused(true);
-          if (!isEditing && !name) setSyncName(true);
-        }}
-        onBlur={() => {
-          setTechnicalNameFocused(false);
-          setSyncName(false);
-        }}
-      />
-      {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
-
-      <Text style={styles.label}>Descripción</Text>
-      <TextInput
-        style={[styles.input, { height: 80 }]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Descripción breve del módulo"
-        multiline
-      />
-
-      <Text style={styles.label}>Categoría *</Text>
-      <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : Colors.light.border, borderRadius: 8, marginBottom: 8 }]}>
-        <Picker
-          selectedValue={category}
-          onValueChange={setCategory}
-          style={{ height: 44 }}
-        >
-          {categoryOptions.map((cat: string) => (
-            <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
-          ))}
-        </Picker>
-      </View>
-      
-      {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-        <TouchableOpacity
-          style={[styles.radio, isPublic && styles.radioSelected]}
-          onPress={() => setIsPublic(true)}
-        />
-        <Text style={{ marginRight: 24 }}>Público</Text>
-        <TouchableOpacity
-          style={[styles.radio, !isPublic && styles.radioSelected]}
-          onPress={() => setIsPublic(false)}
-        />
-        <Text>Privado</Text>
-      </View>
-    </>
-  );
-
   // Renderizado condicional para edición
   if (editingId) {
     // EDICIÓN DE MÓDULO Y MODELOS
@@ -1366,5 +1262,95 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 });
+
+type ModuleFormFieldsProps = {
+  name: string;
+  setName: (v: string) => void;
+  technicalName: string;
+  setTechnicalName: (v: string) => void;
+  description: string;
+  setDescription: (v: string) => void;
+  category: string;
+  setCategory: (v: string) => void;
+  categoryOptions: string[];
+  isPublic: boolean;
+  setIsPublic: (v: boolean) => void;
+  fieldErrors: { name?: string; technicalName?: string; category?: string };
+  styles: any;
+};
+
+const ModuleFormFields: React.FC<ModuleFormFieldsProps> = ({
+  name,
+  setName,
+  technicalName,
+  setTechnicalName,
+  description,
+  setDescription,
+  category,
+  setCategory,
+  categoryOptions,
+  isPublic,
+  setIsPublic,
+  fieldErrors,
+  styles,
+}) => (
+  <>
+    <Text style={styles.label}>Nombre del módulo *</Text>
+    <TextInput
+      style={[styles.input, fieldErrors.name && styles.inputError]}
+      value={name}
+      onChangeText={setName}
+      placeholder="Ej: Academia"
+    />
+    {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
+
+    <Text style={styles.label}>Nombre técnico *</Text>
+    <TextInput
+      style={fieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
+      value={technicalName}
+      onChangeText={setTechnicalName}
+      placeholder="Ej: academia_modulo"
+      autoCapitalize="none"
+      returnKeyType="done"
+    />
+    {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
+
+    <Text style={styles.label}>Descripción</Text>
+    <TextInput
+      style={[styles.input, { height: 80 }]}
+      value={description}
+      onChangeText={setDescription}
+      placeholder="Descripción breve del módulo"
+      multiline
+    />
+
+    <Text style={styles.label}>Categoría *</Text>
+    <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : Colors.light.border, borderRadius: 8, marginBottom: 8 }]}>
+      <Picker
+        selectedValue={category}
+        onValueChange={setCategory}
+        style={{ height: 44 }}
+      >
+        {categoryOptions.map((cat: string) => (
+          <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
+        ))}
+      </Picker>
+    </View>
+    
+    {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+      <TouchableOpacity
+        style={[styles.radio, isPublic && styles.radioSelected]}
+        onPress={() => setIsPublic(true)}
+      />
+      <Text style={{ marginRight: 24 }}>Público</Text>
+      <TouchableOpacity
+        style={[styles.radio, !isPublic && styles.radioSelected]}
+        onPress={() => setIsPublic(false)}
+      />
+      <Text>Privado</Text>
+    </View>
+  </>
+);
 
 export default ModuleEditorScreen;

@@ -87,6 +87,20 @@ CREATE TABLE views (
 );
 
 -- -----------------------------
+-- Tabla favorites
+-- -----------------------------
+DROP TABLE IF EXISTS favorites;
+CREATE TABLE favorites (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  user_id INT,
+  module_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_favorites_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
+  CONSTRAINT uq_user_module_favorite UNIQUE (user_id, module_id)
+);
+
+-- -----------------------------
 -- Tabla deployments
 -- -----------------------------
 DROP TABLE IF EXISTS deployments;

@@ -18,6 +18,11 @@ module_full:
   controller: App\Controller\ModuleController::module_full
   methods: [ GET ]
 
+module_duplicate:
+  path: /modules/{id}/duplicate
+  controller: App\Controller\ModuleController::duplicateModule
+  methods: [ POST, OPTIONS ]
+
 modules_user:
   path: /user/{user_id}/modules
   controller: App\Controller\ModuleController::modulesUser
@@ -103,6 +108,17 @@ deployment:
   path: /deployments/{id}
   controller: App\Controller\DeploymentController::deployment
   methods: [ GET, DELETE, OPTIONS ]
+
+# Favorites
+user_favorites:
+  path: /user/{user_id}/favorites
+  controller: App\Controller\FavoriteController::userFavorites
+  methods: [ GET, POST, OPTIONS ]
+
+favorite:
+  path: /favorites/{id}
+  controller: App\Controller\FavoriteController::favorite
+  methods: [ DELETE, OPTIONS ]
 
 # Login
 login:
