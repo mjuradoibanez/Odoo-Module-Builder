@@ -117,6 +117,11 @@ class UserController extends AbstractController
                 $user->setEmail($data['email']);
             }
 
+            // Actualizar username si se envía
+            if (isset($data['username'])) {
+                $user->setUsername($data['username']);
+            }
+
             // Hashear la nueva contraseña si se está cambiando
             if (isset($data['password'])) {
                 $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));

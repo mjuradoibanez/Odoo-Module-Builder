@@ -16,16 +16,6 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                 icon: 'settings-outline',
                 route: '/(stack)/(drawer)/(tabs)/settings' as const,
             },
-            {
-                label: 'Profile',
-                icon: 'person-outline',
-                route: '/(stack)/(drawer)/(tabs)/profile' as const,
-            },
-            {
-                label: 'About',
-                icon: 'information-circle-outline',
-                route: '/(stack)/(drawer)/(tabs)/about' as const,
-            },
         ];
 
         // Ruta activa
