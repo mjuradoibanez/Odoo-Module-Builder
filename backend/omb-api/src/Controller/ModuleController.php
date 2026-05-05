@@ -242,6 +242,15 @@ class ModuleController extends AbstractController
                                     $field->setRelationModel($fieldData['relationModel'] ?? null);
                                     $field->setRelationField($fieldData['relationField'] ?? null);
                                     $field->setRelationModule($fieldData['relationModule'] ?? null);
+                                    if (array_key_exists('defaultValue', $fieldData)) {
+                                        $field->setDefaultValue($fieldData['defaultValue']);
+                                    }
+                                    if (array_key_exists('selectionOptions', $fieldData)) {
+                                        $field->setSelectionOptions($fieldData['selectionOptions']);
+                                    }
+                                    if (array_key_exists('rules', $fieldData)) {
+                                        $field->setRules($fieldData['rules']);
+                                    }
                                 }
                             } else {
                                 // Crear campo nuevo
@@ -254,8 +263,47 @@ class ModuleController extends AbstractController
                                 $field->setRelationModel($fieldData['relationModel'] ?? null);
                                 $field->setRelationField($fieldData['relationField'] ?? null);
                                 $field->setRelationModule($fieldData['relationModule'] ?? null);
+                                $field->setDefaultValue($fieldData['defaultValue'] ?? null);
+                                $field->setSelectionOptions($fieldData['selectionOptions'] ?? null);
+                                $field->setRules($fieldData['rules'] ?? null);
                                 $field->setModel($model);
                                 $entityManager->persist($field);
+                            }
+                        }
+                    }
+
+                    if ($model && isset($modelData['views']) && is_array($modelData['views'])) {
+                        // Procesar vistas
+                        $views = $entityManager->getRepository(Views::class);
+                        $currentViews = $views->findBy(['model' => $model]);
+                        $currentViewIds = array_column($currentViews, 'id'); // IDs de vistas actuales
+                        $sentViewIds = array_column($modelData['views'] ?? [], 'id'); // IDs de vistas enviadas desde el frontend
+
+                        // Eliminar vistas que ya no están
+                        foreach ($currentViews as $curView) {
+                            if (!in_array($curView->getId(), $sentViewIds)) {
+                                $entityManager->remove($curView);
+                            }
+                        }
+
+                        foreach ($modelData['views'] as $viewData) {
+                            $view = null;
+                            // Actualizar vista existente
+                            if (isset($viewData['id']) && in_array($viewData['id'], $currentViewIds)) {
+                                $view = $views->find($viewData['id']);
+                                if ($view) {
+                                    $view->setType($viewData['type'] ?? $view->getType());
+                                    $view->setName($viewData['name'] ?? $view->getName());
+                                    $view->setConfiguration($viewData['configuration'] ?? null);
+                                }
+                            // Crear nueva vista
+                            } else {
+                                $view = new Views();
+                                $view->setType($viewData['type'] ?? 'list');
+                                $view->setName($viewData['name'] ?? '');
+                                $view->setConfiguration($viewData['configuration'] ?? null);
+                                $view->setModel($model);
+                                $entityManager->persist($view);
                             }
                         }
                     }
@@ -345,8 +393,11 @@ class ModuleController extends AbstractController
                         'unique' => $field->getUniqueField(),
                         'relationModel' => $field->getRelationModel(),
                         'relationField' => $field->getRelationField(),
-                           // Solo incluir relationModule si el tipo es relacional y tiene valor
-                           'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
+                        'defaultValue' => $field->getDefaultValue(),
+                        'selectionOptions' => $field->getSelectionOptions(),
+                        'rules' => $field->getRules(),
+                        // Solo incluir relationModule si el tipo es relacional y tiene valor
+                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many', 'one2one']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {
@@ -354,6 +405,7 @@ class ModuleController extends AbstractController
                         'id' => $view->getId(),
                         'type' => $view->getType(),
                         'name' => $view->getName(),
+                        'configuration' => $view->getConfiguration(),
                     ];
                 }, $views),
             ];

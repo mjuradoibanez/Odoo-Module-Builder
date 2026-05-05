@@ -1,6 +1,7 @@
 package DTO;
 
 import java.util.List;
+import java.util.Map;
 
 public class ModuleRequest {
     public int id;
@@ -41,11 +42,15 @@ public class ModuleRequest {
         public String relationModel;
         public String relationField; // Para one2many: campo inverso
         public String relationModule; // Módulo al que pertenece el modelo relacionado
+        public String defaultValue;
+        public List<Map<String, String>> selectionOptions;
+        public List<Map<String, Object>> rules;
     }
 
     public static class ViewDTO {
         public int id;
         public String type;
         public String name;
+        public Map<String, Object> configuration;
     }
 }

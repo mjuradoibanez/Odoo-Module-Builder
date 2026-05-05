@@ -1,0 +1,201 @@
+<odoo>
+  <data>
+    <record id="view_libro_list" model="ir.ui.view">
+      <field name="name">libro.list</field>
+      <field name="model">biblioteca.libro</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="titulo"/>
+          <field name="isbn"/>
+          <field name="fecha_publicacion"/>
+          <field name="autor_id"/>
+          <field name="categoria_id"/>
+          <field name="disponible"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_libro_form" model="ir.ui.view">
+      <field name="name">libro.form</field>
+      <field name="model">biblioteca.libro</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="titulo" required="1"/>
+            <field name="isbn"/>
+            <field name="fecha_publicacion"/>
+            <field name="autor_id"/>
+            <field name="categoria_id"/>
+            <field name="disponible"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_libro_search" model="ir.ui.view">
+      <field name="name">libro.search</field>
+      <field name="model">biblioteca.libro</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="titulo"/>
+          <field name="autor_id"/>
+          <field name="disponible"/>
+        </search>
+      </field>
+    </record>
+    <record id="view_libro_kanban" model="ir.ui.view">
+      <field name="name">libro.kanban</field>
+      <field name="model">biblioteca.libro</field>
+      <field name="arch" type="xml">
+        <kanban default_group_by="autor_id">
+          <templates>
+            <t t-name="card">
+              <div class="oe_kanban_global_click">
+                <div class="oe_kanban_details">
+                  <strong class="o_kanban_record_title">
+                    <field name="titulo"/>
+                  </strong>
+                </div>
+              </div>
+            </t>
+          </templates>
+        </kanban>
+      </field>
+    </record>
+    <record id="view_autor_list" model="ir.ui.view">
+      <field name="name">autor.list</field>
+      <field name="model">biblioteca.autor</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="fecha_nacimiento"/>
+          <field name="nacionalidad"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_autor_form" model="ir.ui.view">
+      <field name="name">autor.form</field>
+      <field name="model">biblioteca.autor</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="fecha_nacimiento"/>
+            <field name="nacionalidad"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_categoria_list" model="ir.ui.view">
+      <field name="name">categoria.list</field>
+      <field name="model">biblioteca.categoria</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="descripcion"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_categoria_form" model="ir.ui.view">
+      <field name="name">categoria.form</field>
+      <field name="model">biblioteca.categoria</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="descripcion"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_prestamo_list" model="ir.ui.view">
+      <field name="name">prestamo.list</field>
+      <field name="model">biblioteca.prestamo</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="libro_id"/>
+          <field name="usuario"/>
+          <field name="fecha_inicio"/>
+          <field name="fecha_fin"/>
+          <field name="devuelto"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_prestamo_form" model="ir.ui.view">
+      <field name="name">prestamo.form</field>
+      <field name="model">biblioteca.prestamo</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="libro_id"/>
+            <field name="usuario"/>
+            <field name="fecha_inicio" required="1"/>
+            <field name="fecha_fin"/>
+            <field name="devuelto"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_prestamo_calendar" model="ir.ui.view">
+      <field name="name">prestamo.calendar</field>
+      <field name="model">biblioteca.prestamo</field>
+      <field name="arch" type="xml">
+        <calendar string="Calendar view" date_start="fecha_inicio" date_stop="fecha_fin">
+          <field name="libro_id"/>
+        </calendar>
+      </field>
+    </record>
+    <record id="view_prestamo_search" model="ir.ui.view">
+      <field name="name">prestamo.search</field>
+      <field name="model">biblioteca.prestamo</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="usuario"/>
+          <field name="libro_id"/>
+        </search>
+      </field>
+    </record>
+    <record id="view_prestamo_kanban" model="ir.ui.view">
+      <field name="name">prestamo.kanban</field>
+      <field name="model">biblioteca.prestamo</field>
+      <field name="arch" type="xml">
+        <kanban default_group_by="usuario">
+          <templates>
+            <t t-name="card">
+              <div class="oe_kanban_global_click">
+                <div class="oe_kanban_details">
+                  <strong class="o_kanban_record_title">
+                    <field name="libro_id"/>
+                  </strong>
+                </div>
+              </div>
+            </t>
+          </templates>
+        </kanban>
+      </field>
+    </record>
+    <record id="action_libro" model="ir.actions.act_window">
+      <field name="name">libro</field>
+      <field name="res_model">biblioteca.libro</field>
+      <field name="view_mode">list,form,kanban</field>
+    </record>
+    <record id="action_autor" model="ir.actions.act_window">
+      <field name="name">autor</field>
+      <field name="res_model">biblioteca.autor</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_categoria" model="ir.actions.act_window">
+      <field name="name">categoria</field>
+      <field name="res_model">biblioteca.categoria</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <record id="action_prestamo" model="ir.actions.act_window">
+      <field name="name">prestamo</field>
+      <field name="res_model">biblioteca.prestamo</field>
+      <field name="view_mode">list,form,calendar,kanban</field>
+    </record>
+    <menuitem id="menu_root_biblioteca" name="gestion de biblioteca" sequence="1"/>
+    <menuitem id="menu_libro" name="libro" action="action_libro" parent="menu_root_biblioteca"/>
+    <menuitem id="menu_autor" name="autor" action="action_autor" parent="menu_root_biblioteca"/>
+    <menuitem id="menu_categoria" name="categoria" action="action_categoria" parent="menu_root_biblioteca"/>
+    <menuitem id="menu_prestamo" name="prestamo" action="action_prestamo" parent="menu_root_biblioteca"/>
+  </data>
+</odoo>

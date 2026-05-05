@@ -65,6 +65,9 @@ CREATE TABLE fields (
   relation_model VARCHAR(255),
   relation_field VARCHAR(255),
   relation_module VARCHAR(255),
+  default_value VARCHAR(255),
+  selection_options JSON,
+  rules JSON, -- Para validaciones de campos (constraints, avisos, etc.)
   model_id INT,
   CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
   CONSTRAINT uq_technical_name_field UNIQUE (technical_name, model_id)
@@ -78,21 +81,9 @@ CREATE TABLE views (
   id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
   type VARCHAR(255) NOT NULL,
   name VARCHAR(255),
+  configuration JSON, -- Configuraciones de las vistas
   model_id INT,
   CONSTRAINT fk_views_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
-);
-
--- -----------------------------
--- Tabla view_fields
--- -----------------------------
-DROP TABLE IF EXISTS view_fields;
-CREATE TABLE view_fields (
-  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
-  view_id INT,
-  field_id INT,
-  position INT DEFAULT 0,
-  CONSTRAINT fk_view_fields_view FOREIGN KEY (view_id) REFERENCES views(id) ON DELETE CASCADE,
-  CONSTRAINT fk_view_fields_field FOREIGN KEY (field_id) REFERENCES fields(id) ON DELETE CASCADE
 );
 
 -- -----------------------------

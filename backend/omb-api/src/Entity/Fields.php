@@ -20,7 +20,7 @@ class Fields
      * @ORM\Id
      * @ORM\GeneratedValue(strategy="IDENTITY")
      *
-     * @Groups({"fields:read", "view_fields:read"})
+     * @Groups({"fields:read"})
      */
     private $id;
 
@@ -29,7 +29,7 @@ class Fields
      *
      * @ORM\Column(name="name", type="string", length=255, nullable=false)
      *
-     * @Groups({"fields:read", "view_fields:read"})
+     * @Groups({"fields:read"})
      */
     private $name;
 
@@ -95,6 +95,33 @@ class Fields
      * @Groups({"fields:read"})
      */
     private $relationModule;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="default_value", type="string", length=255, nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $defaultValue;
+
+    /**
+     * @var array|null
+     *
+     * @ORM\Column(name="selection_options", type="json", nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $selectionOptions;
+
+    /**
+     * @var array|null
+     *
+     * @ORM\Column(name="rules", type="json", nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $rules;
     
     /**
      * @var Models
@@ -207,5 +234,35 @@ class Fields
     public function setModel(Models $model): void
     {
         $this->model = $model;
+    }
+
+    public function getDefaultValue(): ?string
+    {
+        return $this->defaultValue;
+    }
+
+    public function setDefaultValue(?string $defaultValue): void
+    {
+        $this->defaultValue = $defaultValue;
+    }
+
+    public function getSelectionOptions(): ?array
+    {
+        return $this->selectionOptions;
+    }
+
+    public function setSelectionOptions(?array $selectionOptions): void
+    {
+        $this->selectionOptions = $selectionOptions;
+    }
+
+    public function getRules(): ?array
+    {
+        return $this->rules;
+    }
+
+    public function setRules(?array $rules): void
+    {
+        $this->rules = $rules;
     }
 }

@@ -1,9 +1,10 @@
 {
-    'name': 'otrosmod',
+    'name': 'gestion restaurante',
     'version': '1.0',
-    'author': 'admin',
+    'author': 'usuario',
     'category': 'otra',
-    'depends': ['calendar', 'base'],
+    'description': 'Prueba de creación de modulo completo - Modelo de Examen Odoo',
+    'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml'

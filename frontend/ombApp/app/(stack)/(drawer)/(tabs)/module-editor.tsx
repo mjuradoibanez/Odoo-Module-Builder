@@ -1,5 +1,6 @@
 import { ModuleEditSummaryModal } from '@/components/shared/ModuleEditSummaryModal';
 import ModelFieldsEditor from '@/components/model/ModelFieldsEditor';
+import ModelViewsEditor from '@/components/model/ModelViewsEditor';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { Colors } from '@/constants/theme';
@@ -12,6 +13,8 @@ import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
 import { useUserModels } from '@/presentation/hooks/useUserModels';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { checkDependencies } from '@/core/helpers/checkDependencies';
+import { getModuleFull } from '@/core/actions/get-module-full';
 import { ombApi } from '@/core/auth/api/ombApi';
 
 // Pantalla de creación y edición de módulos
@@ -110,6 +113,7 @@ const ModuleEditorScreen = () => {
   // Estado local de modelos y campos para manejar cambios antes de guardar
   const [localModels, setLocalModels] = useState<any[]>([]); // [{id, name, technicalName, ...}]
   const [modelFieldsMap, setModelFieldsMap] = useState<{ [modelId: number]: any[] }>({});
+  const [modelViewsMap, setModelViewsMap] = useState<{ [modelId: number]: any[] }>({});
 
   // Memoizar los modelos propios para el selector de relaciones (incluye modelos locales y guardados)
   const memoizedOwnModels = React.useMemo(() => {
@@ -181,6 +185,17 @@ const ModuleEditorScreen = () => {
         const of = origFields.find((of: any) => of.id === f.id);
         if (!of || f.name !== of.name || f.technicalName !== of.technicalName || f.type !== of.type) return true;
       }
+
+      // Vistas
+      const views = modelViewsMap[m.id] || [];
+      const origViews = (om.views || []);
+
+      if (views.length !== origViews.length) return true;
+      for (let j = 0; j < views.length; j++) {
+        const v = views[j];
+        const ov = origViews.find((ov: any) => ov.id === v.id);
+        if (!ov || v.name !== ov.name || v.type !== ov.type || JSON.stringify(v.configuration) !== JSON.stringify(ov.configuration)) return true;
+      }
     }
     return false;
   }, [name, technicalName, description, category, isPublic, localModels, modelFieldsMap, moduleFull]);
@@ -194,7 +209,7 @@ const ModuleEditorScreen = () => {
 
       for (const f of fields) {
         if (
-          ['many2one', 'one2many', 'many2many'].includes(f.type) &&
+          ['many2one', 'one2many', 'many2many', 'one2one'].includes(f.type) &&
           f.relationField
         ) {
           // Buscamos el modelo destino de la relación
@@ -263,6 +278,24 @@ const ModuleEditorScreen = () => {
     }));
   };
 
+  // Handlers para vistas de modelo
+  const handleAddView = (modelId: number, view: any) => {
+    setModelViewsMap(prev => {
+      const currentViews = prev[modelId] || [];
+      return {
+        ...prev,
+        [modelId]: [...currentViews, view],
+      };
+    });
+  };
+
+  const handleDeleteView = (modelId: number, viewId: any) => {
+    setModelViewsMap(prev => ({
+      ...prev,
+      [modelId]: (prev[modelId] || []).filter(v => v.id !== viewId),
+    }));
+  };
+
   // Cancela la edición/creación de modelo
   const handleCancelModel = () => {
     setEditingModelId(null);
@@ -282,11 +315,15 @@ const ModuleEditorScreen = () => {
     setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
 
     const fieldsMap: { [modelId: number]: any[] } = {};
+    const viewsMap: { [modelId: number]: any[] } = {};
+    
     (moduleFull.models || []).forEach((m: any) => {
       fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
+      viewsMap[m.id] = m.views ? m.views.map((v: any) => ({ ...v })) : [];
     });
 
     setModelFieldsMap(fieldsMap);
+    setModelViewsMap(viewsMap);
     setEditingModelId(null);
     setModelForm({ name: '', technicalName: '' });
     setModelFieldErrors({});
@@ -299,13 +336,20 @@ const ModuleEditorScreen = () => {
     if (editingId && moduleFull) {
       setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
       const fieldsMap: { [modelId: number]: any[] } = {};
+      const viewsMap: { [modelId: number]: any[] } = {};
+      
       (moduleFull.models || []).forEach((m: any) => {
         fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
+        viewsMap[m.id] = m.views ? m.views.map((v: any) => ({ ...v })) : [];
       });
+      
       setModelFieldsMap(fieldsMap);
+      setModelViewsMap(viewsMap);
+   
     } else if (!editingId) {
       setLocalModels([]);
       setModelFieldsMap({});
+      setModelViewsMap({});
     }
   }, [editingId, moduleFull]);
 
@@ -325,6 +369,7 @@ const ModuleEditorScreen = () => {
       const tempId = Math.min(0, ...localModels.map(m => m.id ?? 0), ...Object.keys(modelFieldsMap).map(Number)) - 1;
       setLocalModels(prev => [...prev, { id: tempId, ...modelForm }]);
       setModelFieldsMap(prev => ({ ...prev, [tempId]: [] }));
+      setModelViewsMap(prev => ({ ...prev, [tempId]: [] }));
       setEditingModelId(null);
       setModelForm({ name: '', technicalName: '' });
       setModelFieldErrors({});
@@ -386,7 +431,8 @@ const ModuleEditorScreen = () => {
       author: user.username,
       models: localModels.map(m => ({
         ...m,
-        fields: modelFieldsMap[m.id] || []
+        fields: modelFieldsMap[m.id] || [],
+        views: modelViewsMap[m.id] || []
       })),
     });
     if (ok === true) {
@@ -426,16 +472,18 @@ const ModuleEditorScreen = () => {
       setName(moduleFull.name || '');
       setTechnicalName(moduleFull.technicalName || '');
       setDescription(moduleFull.description || '');
+
       // Normaliza la categoría solo si es válida, si no, usa 'otra'
       const cat = (moduleFull.category || '').toLowerCase();
       setCategory(categoryOptions.includes(cat) ? cat : 'otra');
       setIsPublic(moduleFull.isPublic === true);
+   
     } else if (!editingId) {
       setName('');
       setTechnicalName('');
       setDescription('');
       setCategory('otra');
-      setIsPublic(true);
+      setIsPublic(false);
       setSuccessMessage('');
       setRedirectMessage('');
     }
@@ -445,8 +493,10 @@ const ModuleEditorScreen = () => {
   const validate = () => {
     const errors: { name?: string; technicalName?: string; category?: string } = {};
     if (!name.trim()) errors.name = 'El nombre es obligatorio';
+   
     if (!technicalName.trim()) errors.technicalName = 'El nombre técnico es obligatorio';
     else if (!/^([a-z_]+)$/.test(technicalName)) errors.technicalName = 'Solo minúsculas y guiones bajos en el nombre técnico';
+   
     if (!category) errors.category = 'La categoría es obligatoria';
     setFieldErrors(errors);
     return Object.values(errors).length > 0 ? errors : null;
@@ -493,6 +543,7 @@ const ModuleEditorScreen = () => {
   // Construye un resumen de los cambios para mostrar en el modal antes de guardar
   const buildModuleSummary = () => {
     if (!moduleFull) return null;
+  
     // Normalización para comparación
     const normalizeString = (v: any) => (v ?? '').trim();
     const normalizeCategory = (cat: any) => {
@@ -501,6 +552,7 @@ const ModuleEditorScreen = () => {
       if (c === 'otros' || c === 'otra') return 'otra';
       return c;
     };
+   
     const descNow = normalizeString(description);
     const descOrig = normalizeString(moduleFull.description);
     const catNow = normalizeCategory(category);
@@ -565,6 +617,7 @@ const ModuleEditorScreen = () => {
         });
       }
     }
+   
     // 2. Detectar modelos nuevos y editados (están en local pero no en original)
     for (const id of localModelIds) {
       const localModel = localModels.find(m => m.id === id);
@@ -583,7 +636,14 @@ const ModuleEditorScreen = () => {
             type: f.type,
             changeType: 'new',
           })),
+          views: (modelViewsMap[id] || []).map(v => ({
+            id: v.id,
+            name: v.name,
+            type: v.type,
+            changeType: 'new',
+          })),
         });
+
       } else {
         // Si ha sido cambiado
         const isEdited = (localModel.name !== origModel.name) || (localModel.technicalName !== origModel.technicalName);
@@ -593,6 +653,7 @@ const ModuleEditorScreen = () => {
         const origFieldIds = origFields.map((f: any) => f.id);
         const localFieldIds = localFields.map((f: any) => f.id);
         const fieldsSummary = [];
+
         // Campos borrados
         for (const ofield of origFields) {
           if (!localFieldIds.includes(ofield.id)) {
@@ -605,6 +666,7 @@ const ModuleEditorScreen = () => {
             });
           }
         }
+
         // Campos nuevos
         for (const lfield of localFields) {
           const ofield = origFields.find((f: any) => f.id === lfield.id);
@@ -629,13 +691,61 @@ const ModuleEditorScreen = () => {
             });
           }
         }
-        models.push({
-          id,
-          name: localModel.name,
-          technicalName: localModel.technicalName,
-          changeType: isEdited ? 'edit' : (fieldsSummary.some(f => f.changeType !== 'unchanged') ? 'edit' : 'unchanged'),
-          fields: fieldsSummary,
-        });
+
+        // 3. Vistas cambiadas
+        const origViews = origModel.views || [];
+        const localViews = modelViewsMap[id] || [];
+        const origViewIds = origViews.map((v: any) => v.id);
+        const localViewIds = localViews.map((v: any) => v.id);
+        const viewsSummary = [];
+
+        // Vistas borradas
+        for (const oview of origViews) {
+          if (!localViewIds.includes(oview.id)) {
+            viewsSummary.push({
+              id: oview.id,
+              name: oview.name,
+              type: oview.type,
+              changeType: 'delete',
+            });
+          }
+        }
+        
+        // Vistas nuevas o editadas
+        for (const lview of localViews) {
+          const oview = origViews.find((v: any) => v.id === lview.id);
+
+          if (!oview) {
+            viewsSummary.push({
+              id: lview.id,
+              name: lview.name,
+              type: lview.type,
+              changeType: 'new',
+            });
+          
+          } else {
+            const vEdited = (lview.name !== oview.name) || (lview.type !== oview.type) || (JSON.stringify(lview.configuration) !== JSON.stringify(oview.configuration));
+            if (vEdited) {
+              viewsSummary.push({
+                id: lview.id,
+                name: lview.name,
+                type: lview.type,
+                changeType: 'edit',
+              });
+            }
+          }
+        }
+
+        if (isEdited || fieldsSummary.length > 0 || viewsSummary.length > 0) {
+          models.push({
+            id,
+            name: localModel.name,
+            technicalName: localModel.technicalName,
+            changeType: isEdited ? 'edit' : 'unchanged',
+            fields: fieldsSummary,
+            views: viewsSummary,
+          });
+        }
       }
     }
 
@@ -863,6 +973,14 @@ const ModuleEditorScreen = () => {
                         )}
                       />
 
+                      <ModelViewsEditor
+                        views={modelViewsMap[model.id] || []}
+                        onAddView={(v: any) => handleAddView(model.id, v)}
+                        onDeleteView={(id: any) => handleDeleteView(model.id, id)}
+                        modelFields={modelFieldsMap[model.id] || []}
+                        editable={true}
+                      />
+
                       {!showModelFieldEdit && (
                         <>
                           <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
@@ -900,8 +1018,51 @@ const ModuleEditorScreen = () => {
                         <TouchableOpacity
                           style={{ alignSelf: 'flex-end' }}
                           onPress={async () => {
-                            setGeneralError('No se pudo comprobar dependencias porque la lista de módulos no está disponible.');
-                            return;
+                            // Obtener todos los módulos completos para comprobar dependencias
+                            try {
+                              const allModulesFull = [];
+                              const allModulesResponse = await ombApi.get('/modules');
+                              const allModules = Array.isArray(allModulesResponse) ? allModulesResponse : (allModulesResponse?.data || []);
+                              for (const mod of allModules) {
+                                const modFull = await getModuleFull(mod.id);
+                                if (modFull) allModulesFull.push(modFull);
+                              }
+
+                              const modelTechnicalName = model.technicalName;
+                              const { blockList, circularIds } = checkDependencies(
+                                allModulesFull,
+                                { type: 'model', id: model.id, technicalName, modelTechnicalName }
+                              );
+
+                              if (blockList.length > 0 || circularIds) {
+                                const uniqueBlocks = blockList.filter((item, idx, arr) =>
+                                  arr.findIndex(x => x.moduleName === item.moduleName && x.modelName === item.modelName && x.fieldName === item.fieldName && x.fieldType === item.fieldType) === idx
+                                );
+                                setBlockRelations(uniqueBlocks);
+                                if (circularIds) {
+                                  setDeleteBothIds(circularIds);
+                                } else {
+                                  setDeleteBothIds(null);
+                                }
+                                setShowBlockModal(true);
+                                return;
+                              }
+                            } catch (e) {
+                              // Si falla la comprobación, permitir eliminar igualmente
+                            }
+
+                            // Sin bloqueos: eliminar modelo localmente
+                            setLocalModels(prev => prev.filter(m => m.id !== model.id));
+                            setModelFieldsMap(prev => {
+                              const newMap = { ...prev };
+                              delete newMap[model.id];
+                              return newMap;
+                            });
+                            setModelViewsMap(prev => {
+                              const newMap = { ...prev };
+                              delete newMap[model.id];
+                              return newMap;
+                            });
                           }}
                         >
                           <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar modelo</Text>
@@ -913,6 +1074,12 @@ const ModuleEditorScreen = () => {
                         onAddField={() => { }}
                         onEditField={() => { }}
                         onDeleteField={() => { }}
+                        editable={false}
+                      />
+
+                      <ModelViewsEditor
+                        views={modelViewsMap[model.id] || []}
+                        modelFields={modelFieldsMap[model.id] || []}
                         editable={false}
                       />
                     </>

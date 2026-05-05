@@ -92,18 +92,7 @@ views_model:
   path: /models/{id}/views
   controller: App\Controller\ViewController::viewsModel
   methods: [ GET ]
-
-# Views-fields
-viewFields:
-  path: /viewFields
-  controller: App\Controller\ViewFieldController::viewFields
-  methods: [ GET, POST, OPTIONS ]
-
-viewField:
-  path: /viewFields/{id}
-  controller: App\Controller\ViewFieldController::viewField
-  methods: [ DELETE, OPTIONS ]
-
+  
 # Deployments
 deployments:
   path: /deployments

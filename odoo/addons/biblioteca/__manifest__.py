@@ -1,9 +1,8 @@
 {
-    'name': 'academia',
+    'name': 'gestion de biblioteca',
     'version': '1.0',
-    'author': 'Admin',
-    'category': 'educacion',
-    'description': 'Módulo de ejemplo con relaciones reales',
+    'author': 'usuario',
+    'category': 'otra',
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',

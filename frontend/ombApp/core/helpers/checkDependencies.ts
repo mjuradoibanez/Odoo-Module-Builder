@@ -12,7 +12,7 @@ export function checkDependencies(allModules: any[], target: { type: 'module'|'m
       for (const field of model.fields) {
         // Relación a modelo: formato 'modulo.technicalName.modelo.technicalName'
         if (
-          (field.type === 'relation' || field.type === 'many2one' || field.type === 'many2many' || field.type === 'one2many') &&
+          (field.type === 'relation' || field.type === 'many2one' || field.type === 'many2many' || field.type === 'one2many' || field.type === 'one2one') &&
           field.relationModel
         ) {
           if (target.type === 'module' && target.models) {
