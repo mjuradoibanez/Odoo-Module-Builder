@@ -113,6 +113,15 @@ class Fields
      * @Groups({"fields:read"})
      */
     private $selectionOptions;
+
+    /**
+     * @var array|null
+     *
+     * @ORM\Column(name="rules", type="json", nullable=true)
+     *
+     * @Groups({"fields:read"})
+     */
+    private $rules;
     
     /**
      * @var Models
@@ -245,5 +254,15 @@ class Fields
     public function setSelectionOptions(?array $selectionOptions): void
     {
         $this->selectionOptions = $selectionOptions;
+    }
+
+    public function getRules(): ?array
+    {
+        return $this->rules;
+    }
+
+    public function setRules(?array $rules): void
+    {
+        $this->rules = $rules;
     }
 }

@@ -248,6 +248,9 @@ class ModuleController extends AbstractController
                                     if (array_key_exists('selectionOptions', $fieldData)) {
                                         $field->setSelectionOptions($fieldData['selectionOptions']);
                                     }
+                                    if (array_key_exists('rules', $fieldData)) {
+                                        $field->setRules($fieldData['rules']);
+                                    }
                                 }
                             } else {
                                 // Crear campo nuevo
@@ -262,6 +265,7 @@ class ModuleController extends AbstractController
                                 $field->setRelationModule($fieldData['relationModule'] ?? null);
                                 $field->setDefaultValue($fieldData['defaultValue'] ?? null);
                                 $field->setSelectionOptions($fieldData['selectionOptions'] ?? null);
+                                $field->setRules($fieldData['rules'] ?? null);
                                 $field->setModel($model);
                                 $entityManager->persist($field);
                             }
@@ -391,8 +395,9 @@ class ModuleController extends AbstractController
                         'relationField' => $field->getRelationField(),
                         'defaultValue' => $field->getDefaultValue(),
                         'selectionOptions' => $field->getSelectionOptions(),
+                        'rules' => $field->getRules(),
                         // Solo incluir relationModule si el tipo es relacional y tiene valor
-                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
+                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many', 'one2one']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {

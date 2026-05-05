@@ -1,0 +1,37 @@
+<odoo>
+  <data>
+    <record id="view_comprobando_list" model="ir.ui.view">
+      <field name="name">comprobando.list</field>
+      <field name="model">gestion_restaurante.comprobando</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="edad"/>
+          <field name="fecha_nacimiento"/>
+          <field name="animal_favorito"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_comprobando_form" model="ir.ui.view">
+      <field name="name">comprobando.form</field>
+      <field name="model">gestion_restaurante.comprobando</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="edad" required="1"/>
+            <field name="fecha_nacimiento"/>
+            <field name="animal_favorito"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_comprobando" model="ir.actions.act_window">
+      <field name="name">comprobando</field>
+      <field name="res_model">gestion_restaurante.comprobando</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_root_gestion_restaurante" name="gestion restaurante" sequence="1"/>
+    <menuitem id="menu_comprobando" name="comprobando" action="action_comprobando" parent="menu_root_gestion_restaurante"/>
+  </data>
+</odoo>

@@ -44,6 +44,7 @@ public class ModuleRequest {
         public String relationModule; // Módulo al que pertenece el modelo relacionado
         public String defaultValue;
         public List<Map<String, String>> selectionOptions;
+        public List<Map<String, Object>> rules;
     }
 
     public static class ViewDTO {

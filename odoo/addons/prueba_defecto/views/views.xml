@@ -6,11 +6,11 @@
       <field name="arch" type="xml">
         <list>
           <field name="txt"/>
-          <field name="int"/>
-          <field name="dec"/>
+          <field name="f_int"/>
+          <field name="fec"/>
           <field name="bool"/>
-          <field name="fecha"/>
           <field name="select"/>
+          <field name="fecha_limite"/>
         </list>
       </field>
     </record>
@@ -21,11 +21,11 @@
         <form>
           <group>
             <field name="txt" required="1"/>
-            <field name="int"/>
-            <field name="dec"/>
+            <field name="f_int"/>
+            <field name="fec"/>
             <field name="bool"/>
-            <field name="fecha"/>
             <field name="select"/>
+            <field name="fecha_limite"/>
           </group>
         </form>
       </field>

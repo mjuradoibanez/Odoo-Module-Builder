@@ -13,6 +13,8 @@ import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
 import { useUserModels } from '@/presentation/hooks/useUserModels';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { checkDependencies } from '@/core/helpers/checkDependencies';
+import { getModuleFull } from '@/core/actions/get-module-full';
 import { ombApi } from '@/core/auth/api/ombApi';
 
 // Pantalla de creación y edición de módulos
@@ -207,7 +209,7 @@ const ModuleEditorScreen = () => {
 
       for (const f of fields) {
         if (
-          ['many2one', 'one2many', 'many2many'].includes(f.type) &&
+          ['many2one', 'one2many', 'many2many', 'one2one'].includes(f.type) &&
           f.relationField
         ) {
           // Buscamos el modelo destino de la relación
@@ -1016,8 +1018,51 @@ const ModuleEditorScreen = () => {
                         <TouchableOpacity
                           style={{ alignSelf: 'flex-end' }}
                           onPress={async () => {
-                            setGeneralError('No se pudo comprobar dependencias porque la lista de módulos no está disponible.');
-                            return;
+                            // Obtener todos los módulos completos para comprobar dependencias
+                            try {
+                              const allModulesFull = [];
+                              const allModulesResponse = await ombApi.get('/modules');
+                              const allModules = Array.isArray(allModulesResponse) ? allModulesResponse : (allModulesResponse?.data || []);
+                              for (const mod of allModules) {
+                                const modFull = await getModuleFull(mod.id);
+                                if (modFull) allModulesFull.push(modFull);
+                              }
+
+                              const modelTechnicalName = model.technicalName;
+                              const { blockList, circularIds } = checkDependencies(
+                                allModulesFull,
+                                { type: 'model', id: model.id, technicalName, modelTechnicalName }
+                              );
+
+                              if (blockList.length > 0 || circularIds) {
+                                const uniqueBlocks = blockList.filter((item, idx, arr) =>
+                                  arr.findIndex(x => x.moduleName === item.moduleName && x.modelName === item.modelName && x.fieldName === item.fieldName && x.fieldType === item.fieldType) === idx
+                                );
+                                setBlockRelations(uniqueBlocks);
+                                if (circularIds) {
+                                  setDeleteBothIds(circularIds);
+                                } else {
+                                  setDeleteBothIds(null);
+                                }
+                                setShowBlockModal(true);
+                                return;
+                              }
+                            } catch (e) {
+                              // Si falla la comprobación, permitir eliminar igualmente
+                            }
+
+                            // Sin bloqueos: eliminar modelo localmente
+                            setLocalModels(prev => prev.filter(m => m.id !== model.id));
+                            setModelFieldsMap(prev => {
+                              const newMap = { ...prev };
+                              delete newMap[model.id];
+                              return newMap;
+                            });
+                            setModelViewsMap(prev => {
+                              const newMap = { ...prev };
+                              delete newMap[model.id];
+                              return newMap;
+                            });
                           }}
                         >
                           <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar modelo</Text>

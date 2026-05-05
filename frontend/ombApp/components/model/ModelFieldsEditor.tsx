@@ -23,9 +23,10 @@ const RELATION_SUBTYPES = [
   { label: 'Muchos a uno', value: 'many2one' },
   { label: 'Uno a muchos', value: 'one2many' },
   { label: 'Muchos a muchos', value: 'many2many' },
+  { label: 'Uno a uno', value: 'one2one' },
 ];
 
-//Obtiene el nombre completo del modelo (módulo.técnico o solo técnico)
+//Obtiene el nombre completo del modelo (módulo.n_técnico o solo n_técnico)
 const getFullModelName = (m: any) => {
   if (!m) return '';
   if (m.module && m.module.technicalName) return `${m.module.technicalName}.${m.technicalName}`;
@@ -44,6 +45,7 @@ const INITIAL_FIELD = {
   relationSubtype: 'many2one',
   defaultValue: '',
   selectionOptions: [] as { key: string; label: string }[],
+  rules: [] as { type: string; value: any; label: string }[],
 };
 
 // VALIDACIÓN
@@ -59,32 +61,77 @@ const validateField = (field: any) => {
   }
 
   if (!field.type) errors.type = 'El tipo es obligatorio';
+
+  // Validar reglas/constraints
+  if (field.rules && field.rules.length > 0) {
+    const ruleErrors: string[] = [];
+    field.rules.forEach((rule: any, index: number) => {
+      const ruleType = rule.type;
+      const ruleValue = rule.value;
+
+      // Reglas que requieren valor numérico
+      if (['number_min', 'number_max', 'warn_num_less', 'warn_num_greater', 'char_min_len', 'char_max_len', 'warn_date_soon'].includes(ruleType)) {
+        if (ruleValue === '' || ruleValue === null || ruleValue === undefined || isNaN(Number(ruleValue))) {
+          ruleErrors.push(`Regla #${index + 1}: "${rule.label}" requiere un valor numérico válido`);
+        }
+      }
+
+      // Reglas que requieren un campo de referencia (Picker)
+      if (['date_after_field', 'date_before_field'].includes(ruleType)) {
+        if (!ruleValue || ruleValue.toString().trim() === '') {
+          ruleErrors.push(`Regla #${index + 1}: "${rule.label}" requiere seleccionar un campo`);
+        }
+      }
+
+      // Reglas que requieren un valor de selección (clave)
+      if (['warn_sel_is'].includes(ruleType)) {
+        if (!ruleValue || ruleValue.toString().trim() === '') {
+          ruleErrors.push(`Regla #${index + 1}: "${rule.label}" requiere un valor de selección`);
+        }
+      }
+
+      // Reglas que requieren una fecha fija
+      if (['date_after_fixed', 'date_before_fixed'].includes(ruleType)) {
+        if (!ruleValue || ruleValue.toString().trim() === '') {
+          ruleErrors.push(`Regla #${index + 1}: "${rule.label}" requiere una fecha válida`);
+        }
+      }
+    });
+
+    if (ruleErrors.length > 0) {
+      errors.rules = ruleErrors;
+    }
+  }
+
   return Object.keys(errors).length > 0 ? errors : null;
 };
 
 
-// COMPONENTE FORM
 const FieldForm = ({
   form,
   setForm,
   errors,
   touched,
   setTouched,
+  allFields = [],
 }: {
   form: any;
   setForm: Dispatch<SetStateAction<any>>;
   errors: any;
   touched: boolean;
   setTouched: Dispatch<SetStateAction<boolean>>;
+  allFields?: any[];
 }) => {
   // Detecta cambios en cualquier campo
   useEffect(() => {
     setTouched(true);
   }, [form]);
 
-  // Sincronización controlada por foco para campos
+  // Sincronización controlada por foco para campos nombre y opciones del select
   const [syncTechName, setSyncTechName] = useState(false);
   const [syncName, setSyncName] = useState(false);
+  const [syncOptLabel, setSyncOptLabel] = useState(false);
+  const [syncOptKey, setSyncOptKey] = useState(false);
 
   // Es un campo nuevo si no tiene id o es negativo
   const isNew = !form.id || (typeof form.id === 'number' && form.id <= 0);
@@ -106,6 +153,27 @@ const FieldForm = ({
       }));
     }
   }, [form.technicalName, isNew, syncName]);
+
+  // Sincronización: clave - etiqueta (convierte guiones bajos a espacios y capitaliza)
+  useEffect(() => {
+    if (syncOptLabel && form._newOptKey) {
+      const label = form._newOptKey
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c: string) => c.toUpperCase());
+      setForm((prev: any) => ({ ...prev, _newOptLabel: label }));
+    }
+  }, [form._newOptKey, syncOptLabel]);
+
+  // Sincronización: etiqueta - clave (convierte espacios a guiones bajos y minúsculas)
+  useEffect(() => {
+    if (syncOptKey && form._newOptLabel) {
+      const key = form._newOptLabel
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_]/g, '');
+      setForm((prev: any) => ({ ...prev, _newOptKey: key }));
+    }
+  }, [form._newOptLabel, syncOptKey]);
 
   // Hook para cargar los campos del modelo relacionado seleccionado
   let selectedOwnModelId: number | undefined = undefined;
@@ -283,29 +351,60 @@ const FieldForm = ({
           
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             <TextInput
-              style={[styles.input, { flex: 1 }]}
+              style={[styles.input, { flex: 1 }, form._newOptKeyError && styles.inputError]}
               placeholder="Clave (ej: 0)"
               value={form._newOptKey || ''}
-              onChangeText={(v) => setForm((f: any) => ({ ...f, _newOptKey: v }))}
+              onChangeText={(v) => {
+                // Solo permitir minúsculas, números y guiones bajos (snake_case)
+                const filtered = v.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                // Validar formato
+                let error = '';
+                if (filtered && !/^[a-z0-9_]+$/.test(filtered)) {
+                  error = 'Solo minúsculas, números y _';
+                }
+                if (filtered && (filtered.startsWith('_') || filtered.endsWith('_'))) {
+                  error = 'No puede empezar/terminar con _';
+                }
+                // Comprobar unicidad
+                if (filtered && (form.selectionOptions || []).some((opt: any) => opt.key === filtered)) {
+                  error = 'Esta clave ya existe';
+                }
+                setForm((f: any) => ({ ...f, _newOptKey: filtered, _newOptKeyError: error }));
+              }}
+              onFocus={() => {
+                if (!form._newOptLabel) setSyncOptLabel(true);
+              }}
+              onBlur={() => setSyncOptLabel(false)}
             />
             <TextInput
               style={[styles.input, { flex: 2 }]}
               placeholder="Etiqueta (ej: Bajo)"
               value={form._newOptLabel || ''}
               onChangeText={(v) => setForm((f: any) => ({ ...f, _newOptLabel: v }))}
+              onFocus={() => {
+                if (!form._newOptKey) setSyncOptKey(true);
+              }}
+              onBlur={() => setSyncOptKey(false)}
             />
             
-            <TouchableOpacity 
-              style={{ backgroundColor: Colors.light.primary, padding: 10, borderRadius: 6, justifyContent: 'center' }}
+            <TouchableOpacity
+              style={{
+                backgroundColor: form._newOptKey && form._newOptLabel && !form._newOptKeyError ? Colors.light.primary : '#bbb',
+                padding: 10, borderRadius: 6, justifyContent: 'center'
+              }}
+              disabled={!form._newOptKey || !form._newOptLabel || !!form._newOptKeyError}
               onPress={() => {
-                if (!form._newOptKey || !form._newOptLabel) return;
+                if (!form._newOptKey || !form._newOptLabel || form._newOptKeyError) return;
                 const newOpts = [...(form.selectionOptions || []), { key: form._newOptKey, label: form._newOptLabel }];
-                setForm((f: any) => ({ ...f, selectionOptions: newOpts, _newOptKey: '', _newOptLabel: '' }));
+                setForm((f: any) => ({ ...f, selectionOptions: newOpts, _newOptKey: '', _newOptLabel: '', _newOptKeyError: '' }));
               }}
             >
               <Text style={{ color: '#fff' }}>+</Text>
             </TouchableOpacity>
           </View>
+          {form._newOptKeyError && (
+            <Text style={[styles.error, { marginTop: 4 }]}>{form._newOptKeyError}</Text>
+          )}
 
           <Text style={[styles.label, { marginTop: 16 }]}>Valor por defecto</Text>
           <View style={[styles.input, { padding: 0 }]}>
@@ -319,6 +418,165 @@ const FieldForm = ({
               ))}
             </Picker>
           </View>
+        </View>
+      )}
+
+      {/* GESTIÓN DE REGLAS DE NEGOCIO */}
+      {['integer', 'float', 'date', 'char', 'selection'].includes(form.type) && (
+        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#f0f4f8', borderRadius: 8 }}>
+          <Text style={[styles.label, { fontWeight: 'bold' }]}>Validaciones y Reglas</Text>
+          
+          {(form.rules || []).map((rule: any, index: number) => (
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ flex: 1 }}>{`• ${rule.label} ${rule.value || ''}`}</Text>
+              <TouchableOpacity onPress={() => {
+                const newRules = [...form.rules];
+                newRules.splice(index, 1);
+                setForm((f: any) => ({ ...f, rules: newRules }));
+              }}>
+                <Text style={{ color: 'red', marginLeft: 10 }}>Eliminar</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+
+          {/* Mostrar errores de validación de reglas */}
+          {errors.rules && errors.rules.length > 0 && (
+            <View style={{ marginTop: 6 }}>
+              {errors.rules.map((err: string, i: number) => (
+                <Text key={i} style={styles.error}>{err}</Text>
+              ))}
+            </View>
+          )}
+
+          {/* Configuración de nuevas reglas */}
+          <View style={{ marginTop: 10, borderTopWidth: 1, borderColor: '#ccc', paddingTop: 10 }}>
+            <Text style={{ fontSize: 12, color: '#666' }}>Añadir nueva regla:</Text>
+            <View style={[styles.input, { padding: 0, marginTop: 4 }]}>
+              <Picker
+                selectedValue=""
+                onValueChange={(type) => {
+                  if (!type) return;
+                  let label = "";
+                  let value: any = "";
+                  
+                  if (type === 'number_min') label = "Valor mínimo";
+                  if (type === 'number_max') label = "Valor máximo";
+                  if (type === 'date_no_future') label = "No permitir fechas futuras";
+                  if (type === 'date_no_past') label = "No permitir fechas pasadas";
+                  if (type === 'date_after_field') label = "Posterior al campo";
+                  if (type === 'date_before_field') label = "Anterior al campo";
+                  if (type === 'char_min_len') label = "Longitud mínima";
+                  if (type === 'char_max_len') label = "Longitud máxima";
+                  if (type === 'warn_sel_is') label = "Aviso si se selecciona";
+
+                  const newRule = { type, value, label };
+                  setForm((f: any) => ({ ...f, rules: [...(f.rules || []), newRule] }));
+                }}
+              >
+                <Picker.Item label="Selecciona una validación..." value="" />
+                {(form.type === 'integer' || form.type === 'float') && (
+                  <>
+                    <Picker.Item label="Valor mínimo (>= X)" value="number_min" />
+                    <Picker.Item label="Valor máximo (<= X)" value="number_max" />
+                  </>
+                )}
+                {form.type === 'date' && (
+                  <>
+                    <Picker.Item label="Prevenir fechas futuras" value="date_no_future" />
+                    <Picker.Item label="Prevenir fechas pasadas" value="date_no_past" />
+                    <Picker.Item label="Después de otro campo..." value="date_after_field" />
+                    <Picker.Item label="Antes de otro campo..." value="date_before_field" />
+                  </>
+                )}
+                {form.type === 'char' && (
+                  <>
+                    <Picker.Item label="Longitud mínima de caracteres" value="char_min_len" />
+                    <Picker.Item label="Longitud máxima de caracteres" value="char_max_len" />
+                  </>
+                )}
+                {form.type === 'selection' && (
+                  <>
+                    <Picker.Item label="Aviso si se selecciona una opción..." value="warn_sel_is" />
+                  </>
+                )}
+              </Picker>
+            </View>
+          </View>
+
+          {/* Configuración de valores para las reglas añadidas */}
+          {(form.rules || []).map((rule: any, index: number) => {
+            if (['date_no_future', 'date_no_past'].includes(rule.type)) return null; // Reglas sin valor adicional
+            return (
+              <View key={index} style={{ marginTop: 8, padding: 6, backgroundColor: '#fff', borderRadius: 4 }}>
+                <Text style={{ fontSize: 12 }}>Configura {rule.label}:</Text>
+                
+                {rule.type.includes('field') ? (
+                  <View style={[styles.input, { padding: 0 }]}>
+                    <Picker
+                      selectedValue={rule.value}
+                      onValueChange={(v) => {
+                         const newRules = [...form.rules];
+                         newRules[index].value = v;
+                         setForm((f: any) => ({ ...f, rules: newRules }));
+                      }}
+                    >
+                      <Picker.Item label="Selecciona campo..." value="" />
+                      {allFields
+                         ? allFields.filter((f: any) => f.type === 'date' && f.technicalName !== form.technicalName).map((f: any) => (
+                             <Picker.Item key={f.technicalName} label={f.name || f.technicalName} value={f.technicalName} />
+                           ))
+                         : null
+                      }
+                    </Picker>
+                  </View>
+                  
+                ) : rule.type === 'warn_sel_is' ? (
+                  <View style={[styles.input, { padding: 0 }]}>
+                    <Picker
+                      selectedValue={rule.value}
+                      onValueChange={(v) => {
+                         const newRules = [...form.rules];
+                         newRules[index].value = v;
+                         setForm((f: any) => ({ ...f, rules: newRules }));
+                      }}
+                    >
+                      <Picker.Item label="Selecciona opción a vigilar..." value="" />
+                      {(form.selectionOptions || []).map((opt: any) => (
+                        <Picker.Item key={opt.key} label={opt.label} value={opt.key} />
+                      ))}
+                    </Picker>
+                  </View>
+                  
+                ) : (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Valor"
+                    keyboardType={['number_min', 'number_max', 'char_min_len', 'char_max_len'].includes(rule.type) ? 'numeric' : 'default'}
+                    value={String(rule.value || '')}
+                    onChangeText={(v) => {
+                      const newRules = [...form.rules];
+                      // Validación numérica para reglas que requieren números
+                      if (['number_min', 'number_max', 'char_min_len', 'char_max_len'].includes(rule.type)) {
+                        if (/^-?\d*$/.test(v)) {
+                          newRules[index].value = v;
+                          setForm((f: any) => ({ ...f, rules: newRules }));
+                        }
+                      } else if (rule.type === 'warn_num_less' || rule.type === 'warn_num_greater') {
+                        // Permitir decimales (convertir coma a punto)
+                        if (/^-?\d*(\.|,)?\d*$/.test(v)) {
+                          newRules[index].value = v.replace(',', '.');
+                          setForm((f: any) => ({ ...f, rules: newRules }));
+                        }
+                      } else {
+                        newRules[index].value = v;
+                        setForm((f: any) => ({ ...f, rules: newRules }));
+                      }
+                    }}
+                  />
+                )}
+              </View>
+            );
+          })}
         </View>
       )}
 
@@ -472,11 +730,12 @@ export default function ModelFieldsEditor({
       type: fieldToProcess.type === 'relation' ? fieldToProcess.relationSubtype : fieldToProcess.type,
       relationModel: fieldToProcess.relationModel,
       defaultValue: fieldToProcess.type === 'relation' ? null : fieldToProcess.defaultValue,
-      selectionOptions: fieldToProcess.type === 'selection' ? fieldToProcess.selectionOptions : null
+      selectionOptions: fieldToProcess.type === 'selection' ? fieldToProcess.selectionOptions : null,
+      rules: fieldToProcess.rules || []
     };
 
     // Solo añadir relationModule si es relacional
-    if (["many2one", "one2many", "many2many"].includes(fieldToSave.type) && relationModule) {
+    if (["many2one", "one2many", "many2many", "one2one"].includes(fieldToSave.type) && relationModule) {
       fieldToSave.relationModule = relationModule;
     }
 
@@ -506,7 +765,7 @@ export default function ModelFieldsEditor({
     let relationField = field.relationField || '';
 
     // Detectar si es relación
-    if (["many2one", "one2many", "many2many"].includes(field.type)) {
+    if (["many2one", "one2many", "many2many", "one2one"].includes(field.type)) {
       parsedType = "relation";
       relationSubtype = field.type;
     }
@@ -519,6 +778,7 @@ export default function ModelFieldsEditor({
       relationModel,
       relationField,
       availableOwnModels: ownModels,
+      rules: field.rules || [],
     });
 
     setTouched(false);
@@ -554,6 +814,7 @@ export default function ModelFieldsEditor({
                   errors={errors}
                   touched={touched}
                   setTouched={setTouched}
+                  allFields={fields}
                 />
                 <TouchableOpacity style={styles.button} onPress={handleSaveEdit}>
                   <Text style={styles.buttonText}>Guardar</Text>
@@ -569,6 +830,9 @@ export default function ModelFieldsEditor({
                 <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
                 {field.defaultValue && (
                   <Text style={{ color: '#27ae60', marginLeft: 6 }}>{`[Def: ${field.defaultValue}]`}</Text>
+                )}
+                {field.rules && field.rules.length > 0 && (
+                  <Text style={{ color: '#f39c12', marginLeft: 6 }}>{`[Reglas: ${field.rules.length}]`}</Text>
                 )}
                 <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
               </View>
@@ -612,6 +876,7 @@ export default function ModelFieldsEditor({
             errors={errors}
             touched={touched}
             setTouched={setTouched}
+            allFields={fields}
           />
           <TouchableOpacity style={styles.button} onPress={handleAdd}>
             <Text style={styles.buttonText}>Añadir campo</Text>
