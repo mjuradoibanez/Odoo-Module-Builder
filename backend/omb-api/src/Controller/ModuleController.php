@@ -11,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
 class ModuleController extends AbstractController
 {
@@ -506,5 +507,114 @@ class ModuleController extends AbstractController
         $response->headers->set('Content-Type', 'application/zip');
         $response->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
         return $response;
+    }
+
+    public function duplicateModule(Request $request, SerializerInterface $serializer)
+    {
+        $id = $request->get('id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        // Obtener el módulo original
+        $originalModule = $entityManager
+            ->getRepository(Modules::class)
+            ->find($id);
+
+        if (!$originalModule) {
+            return new Response("Module not found", 404);
+        }
+
+        // Obtener el usuario destino del body
+        $data = json_decode($request->getContent(), true);
+        if (!$data || empty($data['user_id'])) {
+            return new Response("Missing user_id", 400);
+        }
+
+        $targetUser = $entityManager
+            ->getRepository(Users::class)
+            ->find($data['user_id']);
+
+        if (!$targetUser) {
+            return new Response("User not found", 404);
+        }
+
+        // Verificar que el usuario no tenga ya un módulo con el mismo technical_name
+        $existing = $entityManager
+            ->getRepository(Modules::class)
+            ->findOneBy([
+                'technicalName' => $originalModule->getTechnicalName(),
+                'user' => $targetUser
+            ]);
+
+        if ($existing) {
+            return new Response("You already have a module with the same technical name. Rename it first.", 409);
+        }
+
+        // --- Duplicar el módulo ---
+        $newModule = new Modules();
+        $newModule->setName($originalModule->getName());
+        $newModule->setTechnicalName($originalModule->getTechnicalName());
+        $newModule->setDescription($originalModule->getDescription());
+        $newModule->setVersion($originalModule->getVersion());
+        $newModule->setAuthor($originalModule->getAuthor());
+        $newModule->setCategory($originalModule->getCategory());
+        $newModule->setIsPublic(false); // La copia es privada por defecto
+        $newModule->setUser($targetUser);
+
+        $entityManager->persist($newModule);
+        $entityManager->flush(); // Para obtener el ID
+
+        // --- Duplicar modelos, campos y vistas ---
+        $modelRepo = $entityManager->getRepository(Models::class);
+        $fieldRepo = $entityManager->getRepository(Fields::class);
+        $viewRepo = $entityManager->getRepository(Views::class);
+
+        $originalModels = $modelRepo->findBy(['module' => $originalModule]);
+
+        foreach ($originalModels as $origModel) {
+            // Crear nuevo modelo
+            $newModel = new Models();
+            $newModel->setName($origModel->getName());
+            $newModel->setTechnicalName($origModel->getTechnicalName());
+            $newModel->setModule($newModule);
+            $entityManager->persist($newModel);
+            $entityManager->flush(); // Para obtener el ID
+
+            // Duplicar campos
+            $originalFields = $fieldRepo->findBy(['model' => $origModel]);
+            foreach ($originalFields as $origField) {
+                $newField = new Fields();
+                $newField->setName($origField->getName());
+                $newField->setTechnicalName($origField->getTechnicalName());
+                $newField->setType($origField->getType());
+                $newField->setRequired($origField->getRequired());
+                $newField->setUniqueField($origField->getUniqueField());
+                $newField->setRelationModel($origField->getRelationModel());
+                $newField->setRelationField($origField->getRelationField());
+                $newField->setRelationModule($origField->getRelationModule());
+                $newField->setDefaultValue($origField->getDefaultValue());
+                $newField->setSelectionOptions($origField->getSelectionOptions());
+                $newField->setRules($origField->getRules());
+                $newField->setModel($newModel);
+                $entityManager->persist($newField);
+            }
+
+            // Duplicar vistas
+            $originalViews = $viewRepo->findBy(['model' => $origModel]);
+            foreach ($originalViews as $origView) {
+                $newView = new Views();
+                $newView->setType($origView->getType());
+                $newView->setName($origView->getName());
+                $newView->setConfiguration($origView->getConfiguration());
+                $newView->setModel($newModel);
+                $entityManager->persist($newView);
+            }
+        }
+
+        $entityManager->flush();
+
+        // Devolver el módulo duplicado
+        $json = $serializer->serialize($newModule, 'json', ['groups' => 'modules:read']);
+
+        return new Response($json, 201, ['Content-Type' => 'application/json']);
     }
 }
