@@ -122,8 +122,15 @@ class UserController extends AbstractController
                 $user->setUsername($data['username']);
             }
 
-            // Hashear la nueva contraseña si se está cambiando
+            // Cambiar contraseña: requiere la contraseña actual para verificar
             if (isset($data['password'])) {
+                $currentPassword = $data['currentPassword'] ?? null;
+                if (!$currentPassword) {
+                    return new Response("Current password is required", 400);
+                }
+                if (!password_verify($currentPassword, $user->getPassword())) {
+                    return new Response("Current password is incorrect", 401);
+                }
                 $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
             }
 

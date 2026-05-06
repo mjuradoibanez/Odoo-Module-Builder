@@ -9,6 +9,9 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
   useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,12 +87,188 @@ const SettingsSection = ({ title, children }: { title: string; children: React.R
   </View>
 );
 
+// Modal para cambiar contraseña
+const ChangePasswordModal = ({
+  visible,
+  onClose,
+  onSubmit,
+  isSubmitting,
+  serverError,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (currentPassword: string, newPassword: string) => Promise<void>;
+  isSubmitting: boolean;
+  serverError: string | null;
+}) => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  // Estados para mostrar/ocultar cada campo
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  // Mostrar error del servidor cuando llega
+  const displayError = serverError || error;
+
+  const handleSubmit = async () => {
+    setError(null);
+
+    if (!currentPassword) {
+      setError('Introduce tu contraseña actual');
+      return;
+    }
+    if (!newPassword) {
+      setError('Introduce la nueva contraseña');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('Las contraseñas nuevas no coinciden');
+      return;
+    }
+
+    await onSubmit(currentPassword, newPassword);
+  };
+
+  const handleClose = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setError(null);
+    setShowCurrent(false);
+    setShowNew(false);
+    setShowConfirm(false);
+    onClose();
+  };
+
+  // Componente de input con ojo
+  const PasswordField = ({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    showPassword,
+    onToggleShow,
+    autoFocus,
+  }: {
+    label: string;
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder: string;
+    showPassword: boolean;
+    onToggleShow: () => void;
+    autoFocus?: boolean;
+  }) => (
+    <>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.passwordInputContainer}>
+        <TextInput
+          style={styles.passwordInput}
+          value={value}
+          onChangeText={onChangeText}
+          secureTextEntry={!showPassword}
+          placeholder={placeholder}
+          placeholderTextColor={Colors.light.icon}
+          autoFocus={autoFocus}
+        />
+        <TouchableOpacity onPress={onToggleShow} style={styles.eyeButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons
+            name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+            size={22}
+            color={Colors.light.icon}
+          />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Cambiar contraseña</Text>
+            <TouchableOpacity onPress={handleClose}>
+              <Ionicons name="close" size={24} color={Colors.light.icon} />
+            </TouchableOpacity>
+          </View>
+
+          {displayError && (
+            <View style={styles.modalError}>
+              <Ionicons name="alert-circle" size={18} color="#e74c3c" />
+              <Text style={styles.modalErrorText}>{displayError}</Text>
+            </View>
+          )}
+
+          <PasswordField
+            label="Contraseña actual"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            placeholder="Tu contraseña actual"
+            showPassword={showCurrent}
+            onToggleShow={() => setShowCurrent(!showCurrent)}
+            autoFocus
+          />
+
+          <PasswordField
+            label="Nueva contraseña"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            placeholder="Mínimo 6 caracteres"
+            showPassword={showNew}
+            onToggleShow={() => setShowNew(!showNew)}
+          />
+
+          <PasswordField
+            label="Confirmar nueva contraseña"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Repite la nueva contraseña"
+            showPassword={showConfirm}
+            onToggleShow={() => setShowConfirm(!showConfirm)}
+          />
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={handleClose}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.modalCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalSubmitButton}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.modalSubmitText}>Guardar</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+};
+
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
   const user = useAuthStore((state) => state.user);
-  const login = useAuthStore((state) => state.login);
-  const { update, isUpdating } = useUpdateUser();
+  const { update, isUpdating, error: updateError } = useUpdateUser();
 
   // Estados locales de configuración
   const [darkModeEnabled, setDarkModeEnabled] = useState(false);
@@ -97,6 +276,9 @@ export default function SettingsScreen() {
   // Estado para edición de username
   const [editingUsername, setEditingUsername] = useState(false);
   const [usernameDraft, setUsernameDraft] = useState('');
+
+  // Estado para modal de cambio de contraseña
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const startEditingUsername = () => {
     setUsernameDraft(user?.username || '');
@@ -118,12 +300,29 @@ export default function SettingsScreen() {
 
     const updatedUser = await update(user.id, { username: trimmed });
     if (updatedUser) {
-      // Actualizar el store de auth con el nuevo username
       useAuthStore.setState({ user: updatedUser });
       setEditingUsername(false);
     } else {
       Alert.alert('Error', 'No se pudo actualizar el nombre de usuario');
     }
+  };
+
+  const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user?.id) return;
+
+    const updatedUser = await update(user.id, {
+      currentPassword,
+      password: newPassword,
+    });
+
+    if (updatedUser) {
+      setShowPasswordModal(false);
+      Alert.alert('Contraseña actualizada', 'Tu contraseña se ha cambiado correctamente.');
+    }
+  };
+
+  const openPasswordModal = () => {
+    setShowPasswordModal(true);
   };
 
   const handleDeleteAccount = () => {
@@ -140,7 +339,6 @@ export default function SettingsScreen() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return null;
     const date = new Date(dateStr);
-    // Verificar si la fecha es válida
     if (isNaN(date.getTime())) return null;
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -226,7 +424,7 @@ export default function SettingsScreen() {
             icon="lock-closed-outline"
             label="Cambiar contraseña"
             description="Actualiza tu contraseña de acceso"
-            onPress={() => {}}
+            onPress={openPasswordModal}
           />
           <View style={styles.separator} />
           <SettingAction
@@ -263,6 +461,15 @@ export default function SettingsScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Modal de cambio de contraseña */}
+      <ChangePasswordModal
+        visible={showPasswordModal}
+        onClose={() => setShowPasswordModal(false)}
+        onSubmit={handleChangePassword}
+        isSubmitting={isUpdating}
+        serverError={updateError}
+      />
     </View>
   );
 }
@@ -411,5 +618,116 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.light.background,
     marginHorizontal: 16,
+  },
+  // Modal de cambio de contraseña
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: Colors.light.card,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.light.primary,
+  },
+  modalError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fde8e8',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
+  modalErrorText: {
+    color: '#e74c3c',
+    fontSize: 14,
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 6,
+    marginTop: 8,
+  },
+  modalInput: {
+    backgroundColor: Colors.light.background,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: Colors.light.text,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.light.background,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: Colors.light.text,
+  },
+  eyeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 24,
+  },
+  modalCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.light.background,
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.light.icon,
+  },
+  modalSubmitButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    backgroundColor: Colors.light.primary,
+    minWidth: 90,
+    alignItems: 'center',
+  },
+  modalSubmitText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

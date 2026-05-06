@@ -5,15 +5,10 @@ export interface UpdateUserDto {
   username?: string;
   email?: string;
   password?: string;
+  currentPassword?: string;
 }
 
-export const updateUser = async (userId: number, data: UpdateUserDto): Promise<User | null> => {
-  try {
-    const response = await ombApi.put<User>(`/user/${userId}`, data);
-    return response.data;
-    
-  } catch (error: any) {
-    console.log('UPDATE USER ERROR:', error?.response?.data);
-    return null;
-  }
+export const updateUser = async (userId: number, data: UpdateUserDto): Promise<User> => {
+  const response = await ombApi.put<User>(`/users/${userId}`, data);
+  return response.data;
 };
