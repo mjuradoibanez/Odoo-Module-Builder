@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { updateUser, UpdateUserDto } from '@/core/actions/update-user';
 import { User } from '@/core/interface/user';
 
+// Traduccioens de mensajes de la API
 const ERROR_TRANSLATIONS: Record<string, string> = {
   'Current password is incorrect': 'La contraseña actual no es correcta',
   'Current password is required': 'La contraseña actual es obligatoria',

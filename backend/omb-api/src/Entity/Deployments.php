@@ -56,7 +56,7 @@ class Deployments
      *
      * @ORM\ManyToOne(targetEntity="Modules")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="module_id", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="module_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      *
      * @Groups({"deployments:read"})

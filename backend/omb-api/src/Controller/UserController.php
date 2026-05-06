@@ -149,6 +149,7 @@ class UserController extends AbstractController
                 return new Response("User not found", 404);
             }
 
+            // Las entidades relacionadas tienen onDelete="CASCADE" así que no hace falta borrarlo todo manualmente
             $entityManager->remove($user);
             $entityManager->flush();
 
