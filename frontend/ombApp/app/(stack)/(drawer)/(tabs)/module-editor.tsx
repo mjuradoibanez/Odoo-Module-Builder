@@ -3,7 +3,8 @@ import ModelFieldsEditor from '@/components/model/ModelFieldsEditor';
 import ModelViewsEditor from '@/components/model/ModelViewsEditor';
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, useWindowDimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { useCreateModule } from '@/presentation/hooks/useCreateModule';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { moduleCategoryIcons } from '@/core/constants/moduleCategoryIcons';
@@ -19,6 +20,8 @@ import { ombApi } from '@/core/auth/api/ombApi';
 
 // Pantalla de creación y edición de módulos
 const ModuleEditorScreen = () => {
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
   const user = useAuthStore(state => state.user);
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
@@ -115,9 +118,9 @@ const ModuleEditorScreen = () => {
   const [modelFieldsMap, setModelFieldsMap] = useState<{ [modelId: number]: any[] }>({});
   const [modelViewsMap, setModelViewsMap] = useState<{ [modelId: number]: any[] }>({});
 
-  // Memoizar los modelos propios para el selector de relaciones (incluye modelos locales y guardados)
+  // Selector de relaciones (necesita todos los modelos para mostrar opciones de relación)
   const memoizedOwnModels = React.useMemo(() => {
-    // 1. Modelos guardados (excluyendo los del módulo actual que ya están en localModels)
+    // 1. Modelos guardados del usuario
     const savedModels = userModels
       .filter(m => !m.module || m.module.technicalName !== technicalName)
       .map(m => ({
@@ -128,7 +131,7 @@ const ModuleEditorScreen = () => {
         fields: []
       }));
 
-    // 2. Modelos locales del módulo actual
+    // 2. Modelos locales del modulo actual (en edición)
     const currentLocalModels = localModels.map(m => ({
       id: m.id,
       technicalName: m.technicalName,
@@ -159,6 +162,8 @@ const ModuleEditorScreen = () => {
   // Detecta si hay cambios en el formulario respecto a los datos originales
   const hasChanged = React.useMemo(() => {
     if (!moduleFull) return false;
+
+    // Datos básicos del módulo
     if (
       name !== moduleFull.name ||
       technicalName !== moduleFull.technicalName ||
@@ -175,6 +180,7 @@ const ModuleEditorScreen = () => {
       const m = localModels[i];
       const om = origModels.find((om: any) => om.id === m.id);
 
+      // El nuevo es igual al original
       if (!om || m.name !== om.name || m.technicalName !== om.technicalName) return true;
       const fields = modelFieldsMap[m.id] || [];
       const origFields = (om.fields || []);
@@ -199,48 +205,6 @@ const ModuleEditorScreen = () => {
     }
     return false;
   }, [name, technicalName, description, category, isPublic, localModels, modelFieldsMap, moduleFull]);
-
-  // Detecta si hay relaciones rotas
-  const findBrokenRelations = () => {
-    const errors: string[] = [];
-
-    for (const m of localModels) {
-      const fields = modelFieldsMap[m.id] || [];
-
-      for (const f of fields) {
-        if (
-          ['many2one', 'one2many', 'many2many', 'one2one'].includes(f.type) &&
-          f.relationField
-        ) {
-          // Buscamos el modelo destino de la relación
-          const targetModelFull = f.relationModel;
-
-          // Buscamos en localModels (los que tenemos en esta pantalla)
-          const targetModel = localModels.find(lm => {
-            const full = lm.module && lm.module.technicalName ? `${lm.module.technicalName}.${lm.technicalName}` : lm.technicalName;
-            return full === targetModelFull;
-          });
-
-          if (targetModel) {
-            const targetFields = modelFieldsMap[targetModel.id] || [];
-            const exists = targetFields.some(
-              field => field.technicalName === f.relationField
-            );
-
-            if (!exists) {
-              errors.push(
-                `Modelo "${m.name}" → Campo "${f.name}" apunta al campo "${f.relationField}" en el modelo "${targetModel.name}" que no existe`
-              );
-            }
-          }
-          // Si el modelo destino no está en localModels, es un modelo de otro módulo o estándar de Odoo.
-          // En ese caso no validamos la existencia del campo aquí ya que no tenemos cargados sus campos.
-        }
-      }
-    }
-
-    return errors;
-  };
 
   // Handlers para campos de modelo
   const handleAddField = (modelId: number, field: any) => {
@@ -301,451 +265,307 @@ const ModuleEditorScreen = () => {
     setEditingModelId(null);
     setModelForm({ name: '', technicalName: '' });
     setModelFieldErrors({});
-    setShowModuleEditError(null);
   };
 
-  // Resetea el formulario de edición de módulo a los valores originales
-  const resetForm = () => {
-    if (!moduleFull) return;
-    setName(moduleFull.name || '');
-    setTechnicalName(moduleFull.technicalName || '');
-    setDescription(moduleFull.description || '');
-    setCategory(moduleFull.category || 'otra');
-    setIsPublic(moduleFull.isPublic === true);
-    setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
-
-    const fieldsMap: { [modelId: number]: any[] } = {};
-    const viewsMap: { [modelId: number]: any[] } = {};
-    
-    (moduleFull.models || []).forEach((m: any) => {
-      fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
-      viewsMap[m.id] = m.views ? m.views.map((v: any) => ({ ...v })) : [];
-    });
-
-    setModelFieldsMap(fieldsMap);
-    setModelViewsMap(viewsMap);
-    setEditingModelId(null);
-    setModelForm({ name: '', technicalName: '' });
-    setModelFieldErrors({});
-    setShowModuleEditError(null);
-    setGeneralError(null);
-  };
-
-  // Inicializa modelos y campos locales cuando se carga moduleFull
-  useEffect(() => {
-    if (editingId && moduleFull) {
-      setLocalModels(moduleFull.models ? moduleFull.models.map((m: any) => ({ ...m })) : []);
-      const fieldsMap: { [modelId: number]: any[] } = {};
-      const viewsMap: { [modelId: number]: any[] } = {};
-      
-      (moduleFull.models || []).forEach((m: any) => {
-        fieldsMap[m.id] = m.fields ? m.fields.map((f: any) => ({ ...f })) : [];
-        viewsMap[m.id] = m.views ? m.views.map((v: any) => ({ ...v })) : [];
-      });
-      
-      setModelFieldsMap(fieldsMap);
-      setModelViewsMap(viewsMap);
-   
-    } else if (!editingId) {
-      setLocalModels([]);
-      setModelFieldsMap({});
-      setModelViewsMap({});
-    }
-  }, [editingId, moduleFull]);
-
-  // Valida y actualiza el estado local, no la API
+  // Guarda el modelo (nuevo o editado)
   const handleSaveModel = () => {
-    const errors = validateModel();
-    if (errors) return;
-    if (!editingId) return;
-    if (editingModelId) {
-      // Edición local de modelo existente
-      setLocalModels(prev => prev.map(m => m.id === editingModelId ? { ...m, ...modelForm } : m));
-      setEditingModelId(null);
-      setModelForm({ name: '', technicalName: '' });
-      setModelFieldErrors({});
-    } else {
-      // Crear modelo localmente (asigna id temporal negativo)
-      const tempId = Math.min(0, ...localModels.map(m => m.id ?? 0), ...Object.keys(modelFieldsMap).map(Number)) - 1;
-      setLocalModels(prev => [...prev, { id: tempId, ...modelForm }]);
-      setModelFieldsMap(prev => ({ ...prev, [tempId]: [] }));
-      setModelViewsMap(prev => ({ ...prev, [tempId]: [] }));
-      setEditingModelId(null);
-      setModelForm({ name: '', technicalName: '' });
-      setModelFieldErrors({});
+    const err = validateModel();
+    if (err) return;
+
+    if (editingModelId === 0) {
+      // Crear nuevo modelo local
+      const newId = -Math.floor(Math.random() * 100000);
+      const newModel = {
+        id: newId,
+        name: modelForm.name,
+        technicalName: modelForm.technicalName,
+      };
+      setLocalModels(prev => [...prev, newModel]);
+      setModelFieldsMap(prev => ({ ...prev, [newId]: [] }));
+      setModelViewsMap(prev => ({ ...prev, [newId]: [] }));
+      handleCancelModel();
+
+    } else if (editingModelId !== null) {
+      // Editar modelo existente
+      const hasModelChanges = localModels.some(m =>
+        m.id === editingModelId &&
+        (m.name !== modelForm.name || m.technicalName !== modelForm.technicalName)
+      );
+
+      if (!hasModelChanges) {
+        // Verificar si hay cambios en campos o vistas
+        const fields = modelFieldsMap[editingModelId] || [];
+        const views = modelViewsMap[editingModelId] || [];
+        const origModel = moduleFull?.models?.find((m: any) => m.id === editingModelId);
+        const origFields = origModel?.fields || [];
+        const origViews = origModel?.views || [];
+
+        const fieldsChanged = fields.length !== origFields.length ||
+          fields.some((f: any, idx: number) => {
+            const of = origFields[idx];
+            return !of || f.name !== of.name || f.technicalName !== of.technicalName || f.type !== of.type;
+          });
+
+        const viewsChanged = views.length !== origViews.length ||
+          views.some((v: any, idx: number) => {
+            const ov = origViews[idx];
+            return !ov || v.name !== ov.name || v.type !== ov.type || JSON.stringify(v.configuration) !== JSON.stringify(ov.configuration);
+          });
+
+        if (!fieldsChanged && !viewsChanged) {
+          setModelFieldErrors({ technicalName: 'No hay cambios para aceptar' });
+          return;
+        }
+      }
+
+      setLocalModels(prev =>
+        prev.map(m => m.id === editingModelId ? { ...m, ...modelForm } : m)
+      );
+      handleCancelModel();
     }
   };
 
+  // Inicia la edición de un modelo
   const handleEditModel = (model: any) => {
     setEditingModelId(model.id);
-    setModelForm({
-      name: model.name || '',
-      technicalName: model.technicalName || '',
-    });
+    setModelForm({ name: model.name, technicalName: model.technicalName });
     setModelFieldErrors({});
+    setShowModuleEditError(null);
   };
 
-  // Guardar cambios
-  const handleUpdate = async () => {
-    // Validación de duplicados en technical_name
-    // 1. Duplicados en modelos
-    const modelNames = localModels.map(m => m.technicalName.trim());
-    const modelDup = modelNames.find((name, idx) => modelNames.indexOf(name) !== idx);
-    if (modelDup) {
-      setGeneralError(`Hay modelos con el mismo nombre técnico: '${modelDup}'. Cambia los nombres técnicos para que sean únicos.`);
-      return;
-    }
-    // 2. Duplicados en campos de cada modelo
-    for (const m of localModels) {
-      const fields = modelFieldsMap[m.id] || [];
-      const fieldNames = fields.map(f => f.technicalName.trim());
-      const fieldDup = fieldNames.find((name, idx) => fieldNames.indexOf(name) !== idx);
-      if (fieldDup) {
-        setGeneralError(`En el modelo '${m.name}' hay campos con el mismo nombre técnico: '${fieldDup}'. Cambia los nombres técnicos para que sean únicos.`);
-        return;
-      }
-    }
-
-    if (!hasChanged) {
-      setNoChangesError(true);
-      setTimeout(() => setNoChangesError(false), 2000);
-      return;
-    }
-
-    setNoChangesError(false);
-    const errors = validate();
-    setError('');
-    setFieldErrors({});
-    if (errors) return;
-    if (!user?.id) {
-      setError('No se ha encontrado el usuario autenticado.');
-      return;
-    }
-    const ok = await update(editingId!, {
-      name,
-      technicalName,
-      description,
-      isPublic,
-      category,
-      user_id: user.id,
-      author: user.username,
-      models: localModels.map(m => ({
-        ...m,
-        fields: modelFieldsMap[m.id] || [],
-        views: modelViewsMap[m.id] || []
-      })),
-    });
-    if (ok === true) {
-      setError('');
-      setFieldErrors({});
-      setGeneralError(null);
-      reload && reload();
-      setShowUpdateSuccess(true);
-      // Evento global para recargar listas
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('modules-updated'));
-      }
-      setTimeout(() => {
-        setShowUpdateSuccess(false);
-        if (typeof editingId === 'number' && !isNaN(editingId)) {
-          router.push({ pathname: '/(stack)/(drawer)/(tabs)/modules', params: { id: String(editingId) } });
-        }
-      }, 2000);
-      return;
-    } else if (typeof ok === 'string' && ok.toLowerCase().includes('technicalname already exists')) {
-      setFieldErrors({ technicalName: 'El nombre técnico ya existe en otro módulo.' });
-      setGeneralError(null);
-      setTimeout(() => {
-        if (technicalNameRef.current && typeof technicalNameRef.current.focus === 'function') {
-          technicalNameRef.current.focus();
-          technicalNameRef.current.blur();
-        }
-      }, 100);
-    } else if (typeof ok === 'string') {
-      setGeneralError(ok);
-    }
-  };
-
-  // Cuando se cargan los datos del módulo, inicializa el formulario
-  useEffect(() => {
-    if (editingId && moduleFull) {
-      setName(moduleFull.name || '');
-      setTechnicalName(moduleFull.technicalName || '');
+  // Resetea el formulario de edición a los datos originales
+  const resetForm = () => {
+    if (moduleFull) {
+      setName(moduleFull.name);
+      setTechnicalName(moduleFull.technicalName);
       setDescription(moduleFull.description || '');
-
-      // Normaliza la categoría solo si es válida, si no, usa 'otra'
-      const cat = (moduleFull.category || '').toLowerCase();
-      setCategory(categoryOptions.includes(cat) ? cat : 'otra');
-      setIsPublic(moduleFull.isPublic === true);
-   
-    } else if (!editingId) {
-      setName('');
-      setTechnicalName('');
-      setDescription('');
-      setCategory('otra');
-      setIsPublic(false);
-      setSuccessMessage('');
-      setRedirectMessage('');
+      setCategory(moduleFull.category || 'otra');
+      setIsPublic(moduleFull.isPublic);
+      setLocalModels(moduleFull.models?.map((m: any) => ({ id: m.id, name: m.name, technicalName: m.technicalName })) || []);
+      const fieldsMap: any = {};
+      const viewsMap: any = {};
+      (moduleFull.models || []).forEach((m: any) => {
+        fieldsMap[m.id] = m.fields || [];
+        viewsMap[m.id] = m.views || [];
+      });
+      setModelFieldsMap(fieldsMap);
+      setModelViewsMap(viewsMap);
     }
-  }, [editingId, moduleFull]);
-
-  // Validación básica
-  const validate = () => {
-    const errors: { name?: string; technicalName?: string; category?: string } = {};
-    if (!name.trim()) errors.name = 'El nombre es obligatorio';
-   
-    if (!technicalName.trim()) errors.technicalName = 'El nombre técnico es obligatorio';
-    else if (!/^([a-z_]+)$/.test(technicalName)) errors.technicalName = 'Solo minúsculas y guiones bajos en el nombre técnico';
-   
-    if (!category) errors.category = 'La categoría es obligatoria';
-    setFieldErrors(errors);
-    return Object.values(errors).length > 0 ? errors : null;
   };
 
+  // Carga los datos del módulo cuando se recibe moduleFull
+  useEffect(() => {
+    if (moduleFull) {
+      setName(moduleFull.name);
+      setTechnicalName(moduleFull.technicalName);
+      setDescription(moduleFull.description || '');
+      setCategory(moduleFull.category || 'otra');
+      setIsPublic(moduleFull.isPublic);
+      setLocalModels(moduleFull.models?.map((m: any) => ({ id: m.id, name: m.name, technicalName: m.technicalName })) || []);
+      const fieldsMap: any = {};
+      const viewsMap: any = {};
+      (moduleFull.models || []).forEach((m: any) => {
+        fieldsMap[m.id] = m.fields || [];
+        viewsMap[m.id] = m.views || [];
+      });
+      setModelFieldsMap(fieldsMap);
+      setModelViewsMap(viewsMap);
+    }
+  }, [moduleFull]);
+
+  // Handlers para crear módulo
   const handleCreate = async () => {
-    const errors = validate();
+    const errs: { name?: string; technicalName?: string; category?: string } = {};
+    if (!name.trim()) errs.name = 'El nombre es obligatorio';
+    if (!technicalName.trim()) errs.technicalName = 'El nombre técnico es obligatorio';
+    else if (!/^[a-z_]+$/.test(technicalName)) errs.technicalName = 'Solo minúsculas y guiones bajos';
+    if (!category) errs.category = 'Selecciona una categoría';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+
     setError('');
     setSuccessMessage('');
     setRedirectMessage('');
 
-    if (errors) return;
-    if (!user?.id) {
-      setError('No se ha encontrado el usuario autenticado.');
-      return;
-    }
+    const result = await create({
+      name,
+      technicalName,
+      description,
+      category,
+      isPublic,
+      user_id: user?.id ?? 0,
+    });
 
-    const result = await create({ name, technicalName, description, isPublic, user_id: user.id, author: user.username, category });
-    if (result && result.data && result.data.id) {
-      setError('');
-      setFieldErrors({});
-      setName('');
-      setTechnicalName('');
-      setDescription('');
+    if (result && !result.error) {
       setSuccessMessage('¡Módulo creado correctamente!');
-
-      setRedirectMessage('Serás redirigido a los detalles del módulo en 3 segundos...');
+      setRedirectMessage('Redirigiendo a la lista de módulos...');
       setTimeout(() => {
-        setRedirectMessage('');
-        // Disparar evento global para recargar la lista de módulos
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('modules-updated'));
-        }
-        router.push({ pathname: '/(stack)/(drawer)/(tabs)/modules', params: { id: String(result.data.id) } });
-      }, 3000);
-
-    } else if (result && result.error) {
-      setError(result.error);
-      setSuccessMessage('');
-      setRedirectMessage('');
+        router.push('/(stack)/(drawer)/(tabs)/modules');
+      }, 2000);
+    } else {
+      setError(result?.error || 'Error al crear el módulo');
     }
   };
 
-  // Construye un resumen de los cambios para mostrar en el modal antes de guardar
+  // Handlers para actualizar módulo
+  const handleUpdate = async () => {
+    if (!moduleFull) return;
+
+    const result = await update(moduleFull.id, {
+      name,
+      technicalName,
+      description,
+      category,
+      isPublic,
+      models: localModels.map(m => {
+        const fields = modelFieldsMap[m.id] || [];
+        const views = modelViewsMap[m.id] || [];
+        return {
+          id: m.id,
+          name: m.name,
+          technicalName: m.technicalName,
+          fields,
+          views,
+        };
+      }),
+    });
+
+    if (result === true) {
+      setShowUpdateSuccess(true);
+      setTimeout(() => setShowUpdateSuccess(false), 3000);
+      if (typeof reload === 'function') reload();
+    } else {
+      setGeneralError(typeof result === 'string' ? result : 'Error al guardar los cambios');
+    }
+  };
+
+  // Construye el resumen de cambios para el modal
   const buildModuleSummary = () => {
     if (!moduleFull) return null;
-  
-    // Normalización para comparación
-    const normalizeString = (v: any) => (v ?? '').trim();
-    const normalizeCategory = (cat: any) => {
-      if (!cat) return 'otra';
-      const c = cat.toLowerCase();
-      if (c === 'otros' || c === 'otra') return 'otra';
-      return c;
-    };
-   
-    const descNow = normalizeString(description);
-    const descOrig = normalizeString(moduleFull.description);
-    const catNow = normalizeCategory(category);
-    const catOrig = normalizeCategory(moduleFull.category);
-    const general = [
-      {
-        key: 'name', label: 'Nombre',
-        value: name, prevValue: moduleFull.name,
-        type: name !== moduleFull.name ? 'edit' : 'unchanged',
-      },
-      {
-        key: 'technicalName', label: 'Nombre técnico',
-        value: technicalName, prevValue: moduleFull.technicalName,
-        type: technicalName !== moduleFull.technicalName ? 'edit' : 'unchanged',
-      },
-      {
-        key: 'description', label: 'Descripción',
-        value: description, prevValue: moduleFull.description,
-        type: descNow !== descOrig ? 'edit' : 'unchanged',
-      },
-      {
-        key: 'category', label: 'Categoría',
-        value: category, prevValue: moduleFull.category,
-        type: catNow !== catOrig ? 'edit' : 'unchanged',
-      },
-      {
-        key: 'isPublic', label: 'Público',
-        value: isPublic ? 'Sí' : 'No', prevValue: moduleFull.isPublic ? 'Sí' : 'No',
-        type: isPublic !== moduleFull.isPublic ? 'edit' : 'unchanged',
-      },
-    ];
 
-
-    // Buscar cambios en modelos y campos
-    const originalModels = (moduleFull.models || []);
-    const localModelIds = localModels.map(m => m.id);
-
-    function getLocalModelById(id: any) {
-      const fields = modelFieldsMap[id] || [];
-      if (fields.length > 0 && fields[0].model) {
-        return fields[0].model;
-      }
-      return null;
-    }
+    const general: string[] = [];
+    if (name !== moduleFull.name) general.push(`Nombre: "${moduleFull.name}" → "${name}"`);
+    if (technicalName !== moduleFull.technicalName) general.push(`Nombre técnico: "${moduleFull.technicalName}" → "${technicalName}"`);
+    if (description !== (moduleFull.description || '')) general.push('Descripción modificada');
+    if (category !== (moduleFull.category || 'otra')) general.push(`Categoría: "${moduleFull.category}" → "${category}"`);
+    if (isPublic !== moduleFull.isPublic) general.push(`Visibilidad: ${moduleFull.isPublic ? 'Público' : 'Privado'} → ${isPublic ? 'Público' : 'Privado'}`);
 
     const models: any[] = [];
-    // 1. Detectar modelos borrados (están en original pero no en local)
-    for (const origModel of originalModels) {
-      if (!localModelIds.includes(origModel.id)) {
+    const origModels = moduleFull.models || [];
+
+    // Modelos borrados
+    const localModelIds = localModels.map(m => m.id);
+    for (const om of origModels) {
+      if (!localModelIds.includes(om.id)) {
         models.push({
-          id: origModel.id,
-          name: origModel.name,
-          technicalName: origModel.technicalName,
+          id: om.id,
+          name: om.name,
+          technicalName: om.technicalName,
           changeType: 'delete',
-          fields: (origModel.fields || []).map((f: any) => ({
-            id: f.id,
-            name: f.name,
-            technicalName: f.technicalName,
-            type: f.type,
-            changeType: 'delete',
-          })),
+          fields: [],
+          views: [],
         });
       }
     }
-   
-    // 2. Detectar modelos nuevos y editados (están en local pero no en original)
-    for (const id of localModelIds) {
-      const localModel = localModels.find(m => m.id === id);
-      const origModel = originalModels.find((m: any) => m.id === id);
-      if (!localModel) continue;
-      if (!origModel) {
-        models.push({
-          id,
-          name: localModel.name,
-          technicalName: localModel.technicalName,
-          changeType: 'new',
-          fields: (modelFieldsMap[id] || []).map(f => ({
-            id: f.id,
-            name: f.name,
-            technicalName: f.technicalName,
-            type: f.type,
+
+    // Modelos nuevos o editados
+    for (const localModel of localModels) {
+      const origModel = origModels.find((m: any) => m.id === localModel.id);
+      const isEdited = !origModel ||
+        localModel.name !== origModel.name ||
+        localModel.technicalName !== origModel.technicalName;
+
+      const fieldsSummary: any[] = [];
+      const localFields = modelFieldsMap[localModel.id] || [];
+      const origFields = origModel?.fields || [];
+      const localFieldIds = localFields.map((f: any) => f.id);
+
+      // Campos borrados
+      for (const of2 of origFields) {
+        if (!localFieldIds.includes(of2.id)) {
+          fieldsSummary.push({
+            id: of2.id,
+            name: of2.name,
+            technicalName: of2.technicalName,
+            changeType: 'delete',
+          });
+        }
+      }
+
+      // Campos nuevos o editados
+      for (const lf of localFields) {
+        const of2 = origFields.find((f: any) => f.id === lf.id);
+        if (!of2) {
+          fieldsSummary.push({
+            id: lf.id,
+            name: lf.name,
+            technicalName: lf.technicalName,
             changeType: 'new',
-          })),
-          views: (modelViewsMap[id] || []).map(v => ({
-            id: v.id,
-            name: v.name,
-            type: v.type,
+          });
+        } else {
+          const fEdited = lf.name !== of2.name || lf.technicalName !== of2.technicalName || lf.type !== of2.type;
+          if (fEdited) {
+            fieldsSummary.push({
+              id: lf.id,
+              name: lf.name,
+              technicalName: lf.technicalName,
+              changeType: 'edit',
+            });
+          }
+        }
+      }
+
+      const viewsSummary: any[] = [];
+      const localViews = modelViewsMap[localModel.id] || [];
+      const origViews = origModel?.views || [];
+      const localViewIds = localViews.map((v: any) => v.id);
+
+      // Vistas borradas
+      for (const oview of origViews) {
+        if (!localViewIds.includes(oview.id)) {
+          viewsSummary.push({
+            id: oview.id,
+            name: oview.name,
+            type: oview.type,
+            changeType: 'delete',
+          });
+        }
+      }
+
+      // Vistas nuevas o editadas
+      for (const lview of localViews) {
+        const oview = origViews.find((v: any) => v.id === lview.id);
+
+        if (!oview) {
+          viewsSummary.push({
+            id: lview.id,
+            name: lview.name,
+            type: lview.type,
             changeType: 'new',
-          })),
-        });
+          });
 
-      } else {
-        // Si ha sido cambiado
-        const isEdited = (localModel.name !== origModel.name) || (localModel.technicalName !== origModel.technicalName);
-        // Campos cambiados
-        const origFields = origModel.fields || [];
-        const localFields = modelFieldsMap[id] || [];
-        const origFieldIds = origFields.map((f: any) => f.id);
-        const localFieldIds = localFields.map((f: any) => f.id);
-        const fieldsSummary = [];
-
-        // Campos borrados
-        for (const ofield of origFields) {
-          if (!localFieldIds.includes(ofield.id)) {
-            fieldsSummary.push({
-              id: ofield.id,
-              name: ofield.name,
-              technicalName: ofield.technicalName,
-              type: ofield.type,
-              changeType: 'delete',
-            });
-          }
-        }
-
-        // Campos nuevos
-        for (const lfield of localFields) {
-          const ofield = origFields.find((f: any) => f.id === lfield.id);
-          // Si no existe en original, es nuevo
-          if (!ofield) {
-            fieldsSummary.push({
-              id: lfield.id,
-              name: lfield.name,
-              technicalName: lfield.technicalName,
-              type: lfield.type,
-              changeType: 'new',
-            });
-          } else {
-            // Si existe, detecta si ha sido editado
-            const isFieldEdited = lfield.name !== ofield.name || lfield.technicalName !== ofield.technicalName || lfield.type !== ofield.type;
-            fieldsSummary.push({
-              id: lfield.id,
-              name: lfield.name,
-              technicalName: lfield.technicalName,
-              type: lfield.type,
-              changeType: isFieldEdited ? 'edit' : 'unchanged',
-            });
-          }
-        }
-
-        // 3. Vistas cambiadas
-        const origViews = origModel.views || [];
-        const localViews = modelViewsMap[id] || [];
-        const origViewIds = origViews.map((v: any) => v.id);
-        const localViewIds = localViews.map((v: any) => v.id);
-        const viewsSummary = [];
-
-        // Vistas borradas
-        for (const oview of origViews) {
-          if (!localViewIds.includes(oview.id)) {
-            viewsSummary.push({
-              id: oview.id,
-              name: oview.name,
-              type: oview.type,
-              changeType: 'delete',
-            });
-          }
-        }
-        
-        // Vistas nuevas o editadas
-        for (const lview of localViews) {
-          const oview = origViews.find((v: any) => v.id === lview.id);
-
-          if (!oview) {
+        } else {
+          const vEdited = (lview.name !== oview.name) || (lview.type !== oview.type) || (JSON.stringify(lview.configuration) !== JSON.stringify(oview.configuration));
+          if (vEdited) {
             viewsSummary.push({
               id: lview.id,
               name: lview.name,
               type: lview.type,
-              changeType: 'new',
+              changeType: 'edit',
             });
-          
-          } else {
-            const vEdited = (lview.name !== oview.name) || (lview.type !== oview.type) || (JSON.stringify(lview.configuration) !== JSON.stringify(oview.configuration));
-            if (vEdited) {
-              viewsSummary.push({
-                id: lview.id,
-                name: lview.name,
-                type: lview.type,
-                changeType: 'edit',
-              });
-            }
           }
         }
+      }
 
-        if (isEdited || fieldsSummary.length > 0 || viewsSummary.length > 0) {
-          models.push({
-            id,
-            name: localModel.name,
-            technicalName: localModel.technicalName,
-            changeType: isEdited ? 'edit' : 'unchanged',
-            fields: fieldsSummary,
-            views: viewsSummary,
-          });
-        }
+      if (isEdited || fieldsSummary.length > 0 || viewsSummary.length > 0) {
+        models.push({
+          id: localModel.id,
+          name: localModel.name,
+          technicalName: localModel.technicalName,
+          changeType: isEdited ? 'edit' : 'unchanged',
+          fields: fieldsSummary,
+          views: viewsSummary,
+        });
       }
     }
 
@@ -759,24 +579,132 @@ const ModuleEditorScreen = () => {
     };
   };
 
+  // Componente de formulario de módulo
+  const ModuleFormFields: React.FC<{
+    name: string;
+    setName: (v: string) => void;
+    technicalName: string;
+    setTechnicalName: (v: string) => void;
+    description: string;
+    setDescription: (v: string) => void;
+    category: string;
+    setCategory: (v: string) => void;
+    categoryOptions: string[];
+    isPublic: boolean;
+    setIsPublic: (v: boolean) => void;
+    fieldErrors: { name?: string; technicalName?: string; category?: string };
+    styles: any;
+    colors: any;
+  }> = ({
+    name,
+    setName,
+    technicalName,
+    setTechnicalName,
+    description,
+    setDescription,
+    category,
+    setCategory,
+    categoryOptions,
+    isPublic,
+    setIsPublic,
+    fieldErrors,
+    styles,
+    colors,
+  }) => (
+    <>
+      {/* Campos de formulario del módulo */}
+      <Text style={[styles.label, { color: colors.text }]}>Nombre del módulo *</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.name && styles.inputError]}
+        value={name}
+        onChangeText={setName}
+        placeholder="Ej: Academia"
+        placeholderTextColor={colors.icon}
+        onFocus={() => {
+          if (!isEditing && !technicalName) setSyncTechName(true);
+        }}
+        onBlur={() => setSyncTechName(false)}
+      />
+      {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
+
+      <Text style={[styles.label, { color: colors.text }]}>Nombre técnico *</Text>
+      <TextInput
+        ref={technicalNameRef}
+        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.technicalName ? styles.inputError : undefined]}
+        value={technicalName}
+        onChangeText={setTechnicalName}
+        placeholder="Ej: academia_modulo"
+        placeholderTextColor={colors.icon}
+        autoCapitalize="none"
+        returnKeyType="done"
+        onFocus={() => {
+          setTechnicalNameFocused(true);
+          if (!isEditing && !name) setSyncName(true);
+        }}
+        onBlur={() => {
+          setTechnicalNameFocused(false);
+          setSyncName(false);
+        }}
+      />
+      {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
+
+      <Text style={[styles.label, { color: colors.text }]}>Descripción</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text, height: 80 }]}
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Descripción breve del módulo"
+        placeholderTextColor={colors.icon}
+        multiline
+      />
+
+      <Text style={[styles.label, { color: colors.text }]}>Categoría *</Text>
+      <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : colors.border, borderRadius: 8, marginBottom: 8, backgroundColor: colors.background }]}>
+        <Picker
+          selectedValue={category}
+          onValueChange={setCategory}
+          style={{ height: 44, color: colors.text }}
+        >
+          {categoryOptions.map((cat: string) => (
+            <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
+          ))}
+        </Picker>
+      </View>
+
+      {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+        <TouchableOpacity
+          style={[styles.radio, { borderColor: colors.primary, backgroundColor: isPublic ? colors.primary : 'transparent' }, isPublic && styles.radioSelected]}
+          onPress={() => setIsPublic(true)}
+        />
+        <Text style={{ marginRight: 24, color: colors.text }}>Público</Text>
+        <TouchableOpacity
+          style={[styles.radio, { borderColor: colors.primary, backgroundColor: !isPublic ? colors.primary : 'transparent' }, !isPublic && styles.radioSelected]}
+          onPress={() => setIsPublic(false)}
+        />
+        <Text style={{ color: colors.text }}>Privado</Text>
+      </View>
+    </>
+  );
+
   // Renderizado condicional para edición
   if (editingId) {
     // EDICIÓN DE MÓDULO Y MODELOS
     if (loadingFull || !moduleFull) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.light.background }}>
-          <Text style={{ color: Colors.light.primary, fontSize: 18 }}>Cargando módulo...</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+          <Text style={{ color: colors.primary, fontSize: 18 }}>Cargando módulo...</Text>
         </View>
       );
     }
     return (
       <KeyboardAvoidingView
-        style={[{ flex: 1 }, isDesktop && { paddingLeft: 80, backgroundColor: '#F7F7F7' }]}
+        style={[{ flex: 1, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }} style={{ flex: 1 }}>
           <View style={{ marginHorizontal: 30, marginTop: 32 }}>
-            <Text style={styles.title}>Editar módulo y modelos</Text>
+            <Text style={[styles.title, { color: colors.primary }]}>Editar módulo y modelos</Text>
 
             {/* Formulario de edición del módulo */}
             <ModuleFormFields
@@ -793,10 +721,11 @@ const ModuleEditorScreen = () => {
               setIsPublic={setIsPublic}
               fieldErrors={fieldErrors}
               styles={styles}
+              colors={colors}
             />
 
             <View style={{ marginTop: 32 }}>
-              <Text style={[styles.label, { fontSize: 18, marginBottom: 12 }]}>Modelos del módulo</Text>
+              <Text style={[styles.label, { fontSize: 18, marginBottom: 12, color: colors.text }]}>Modelos del módulo</Text>
               {/* Lista de modelos existentes */}
               {localModels && localModels.length > 0 && localModels.map((model: any) => (
                 <View
@@ -804,22 +733,23 @@ const ModuleEditorScreen = () => {
                   style={{
                     marginBottom: 18,
                     padding: 14,
-                    backgroundColor: '#fff',
+                    backgroundColor: colors.card,
                     borderRadius: 8,
                     borderWidth: 2,
-                    borderColor: showModuleEditError === model.id || (generalError && generalError.includes(model.technicalName)) ? '#c0392b' : Colors.light.border,
+                    borderColor: showModuleEditError === model.id || (generalError && generalError.includes(model.technicalName)) ? '#c0392b' : colors.border,
                     boxShadow: showModuleEditError === model.id || (generalError && generalError.includes(model.technicalName)) ? '0 0 0 2px #c0392b44' : undefined,
                   }}
                 >
 
                   {editingModelId === model.id ? (
                     <>
-                      <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6 }}>Editar modelo</Text>
+                      <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6, color: colors.text }}>Editar modelo</Text>
                       <TextInput
-                        style={[styles.input, modelFieldErrors.name && styles.inputError]}
+                        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, modelFieldErrors.name && styles.inputError]}
                         value={modelForm.name}
                         onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
                         placeholder="Nombre del modelo"
+                        placeholderTextColor={colors.icon}
                         onFocus={() => {
                           if (isNewModelEditing && !modelForm.technicalName) setSyncModelTechName(true);
                         }}
@@ -829,10 +759,11 @@ const ModuleEditorScreen = () => {
                       {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
                       <TextInput
                         ref={modelTechnicalNameRef}
-                        style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
+                        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? styles.inputError : undefined]}
                         value={modelForm.technicalName}
                         onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
                         placeholder="Nombre técnico"
+                        placeholderTextColor={colors.icon}
                         autoCapitalize="none"
                         returnKeyType="done"
                         onFocus={() => {
@@ -880,12 +811,12 @@ const ModuleEditorScreen = () => {
                       {!showModelFieldEdit && (
                         <>
                           <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
-                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
+                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSaveModel}>
                               <Text style={styles.buttonText}>Aceptar</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
-                              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.border }]} onPress={handleCancelModel}>
+                              <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
                             </TouchableOpacity>
                           </View>
 
@@ -896,19 +827,18 @@ const ModuleEditorScreen = () => {
                       )}
                       {showModuleEditError === model.id && (
                         <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
-                          Guarda o descarta los cambios del modelo primero.
-                        </Text>
+                          Guarda o descarta los cambios del modelo primero.</Text>
                       )}
                     </>
                   ) : (
                     <>
-                      <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{model.name} <Text style={{ color: Colors.light.icon }}>({model.technicalName})</Text></Text>
+                      <Text style={{ fontWeight: 'bold', fontSize: 16, color: colors.text }}>{model.name} <Text style={{ color: colors.icon }}>({model.technicalName})</Text></Text>
                       <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
                         <TouchableOpacity
                           style={{ alignSelf: 'flex-end' }}
                           onPress={() => handleEditModel(model)}
                         >
-                          <Text style={{ color: Colors.light.primary, fontWeight: 'bold' }}>Editar</Text>
+                          <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Editar</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -949,6 +879,7 @@ const ModuleEditorScreen = () => {
 
                             // Sin bloqueos: eliminar modelo localmente
                             setLocalModels(prev => prev.filter(m => m.id !== model.id));
+                            setLocalModels(prev => prev.filter(m => m.id !== model.id));
                             setModelFieldsMap(prev => {
                               const newMap = { ...prev };
                               delete newMap[model.id];
@@ -961,142 +892,136 @@ const ModuleEditorScreen = () => {
                             });
                           }}
                         >
-                          <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar modelo</Text>
+                          <Text style={{ color: '#c0392b', fontWeight: 'bold' }}>Eliminar</Text>
                         </TouchableOpacity>
                       </View>
-
-                      <ModelFieldsEditor
-                        fields={modelFieldsMap[model.id] || []}
-                        onAddField={() => { }}
-                        onEditField={() => { }}
-                        onDeleteField={() => { }}
-                        editable={false}
-                      />
-
-                      <ModelViewsEditor
-                        views={modelViewsMap[model.id] || []}
-                        modelFields={modelFieldsMap[model.id] || []}
-                        editable={false}
-                      />
                     </>
                   )}
                 </View>
               ))}
 
-              {/* Botón para añadir modelo siempre visible si no hay modelo en edición */}
-              {editingModelId === null && (
-                <TouchableOpacity
-                  style={styles.addModelButton}
-                  onPress={() => setEditingModelId(0)}
-                >
-                  <Text style={styles.addModelButtonText}>+ Añadir modelo</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Formulario para añadir modelo */}
+              {/* Formulario para nuevo modelo */}
               {editingModelId === 0 && (
-                <View style={{ marginTop: 18, padding: 14, backgroundColor: '#f8f8f8', borderRadius: 8, borderWidth: 1, borderColor: Colors.light.border }}>
-                  <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6 }}>Añadir nuevo modelo</Text>
+                <View
+                  style={{
+                    marginBottom: 18,
+                    padding: 14,
+                    backgroundColor: colors.card,
+                    borderRadius: 8,
+                    borderWidth: 2,
+                    borderColor: colors.primary,
+                  }}
+                >
+                  <Text style={{ fontWeight: 'bold', fontSize: 15, marginBottom: 6, color: colors.text }}>Nuevo modelo</Text>
                   <TextInput
-                    style={[styles.input, modelFieldErrors.name && styles.inputError]}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, modelFieldErrors.name && styles.inputError]}
                     value={modelForm.name}
                     onChangeText={v => setModelForm(f => ({ ...f, name: v }))}
                     placeholder="Nombre del modelo"
+                    placeholderTextColor={colors.icon}
                     onFocus={() => {
-                      if (isNewModelEditing && !modelForm.technicalName) setSyncModelTechName(true);
+                      if (!modelForm.technicalName) setSyncModelTechName(true);
                     }}
                     onBlur={() => setSyncModelTechName(false)}
                   />
                   {modelFieldErrors.name && <Text style={styles.error}>{modelFieldErrors.name}</Text>}
-
                   <TextInput
                     ref={modelTechnicalNameRef}
-                    style={modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? [styles.input, styles.inputError] : styles.input}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' ? styles.inputError : undefined]}
                     value={modelForm.technicalName}
                     onChangeText={v => setModelForm(f => ({ ...f, technicalName: v }))}
                     placeholder="Nombre técnico"
+                    placeholderTextColor={colors.icon}
                     autoCapitalize="none"
                     returnKeyType="done"
                     onFocus={() => {
                       setModelTechnicalNameFocused(true);
-                      if (isNewModelEditing && !modelForm.name) setSyncModelName(true);
+                      if (!modelForm.name) setSyncModelName(true);
                     }}
                     onBlur={() => {
                       setModelTechnicalNameFocused(false);
                       setSyncModelName(false);
                     }}
                   />
-                  {/* Solo mostrar errores distintos a 'No hay cambios para aceptar' debajo del input */}
                   {modelFieldErrors.technicalName && modelFieldErrors.technicalName !== 'No hay cambios para aceptar' && (
                     <Text style={styles.error}>{modelFieldErrors.technicalName}</Text>
                   )}
 
-                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: Colors.light.primary }]} onPress={handleSaveModel}>
-                      <Text style={styles.buttonText}>Crear modelo</Text>
+                  <View style={{ flexDirection: 'row', gap: 12, marginTop: 18 }}>
+                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSaveModel}>
+                      <Text style={styles.buttonText}>Aceptar</Text>
                     </TouchableOpacity>
-
-                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]} onPress={handleCancelModel}>
-                      <Text style={[styles.buttonText, { color: '#222' }]}>Descartar</Text>
+                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.border }]} onPress={handleCancelModel}>
+                      <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
                     </TouchableOpacity>
                   </View>
+
+                  {showModuleEditError === 0 && (
+                    <Text style={{ color: '#c0392b', fontWeight: 'bold', marginTop: 10 }}>
+                      Guarda o descarta los cambios del modelo primero.</Text>
+                  )}
                 </View>
               )}
-            </View>
 
-            {/* Botones guardar y descartar del módulo, muestran error si hay modelo en edición */}
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 32 }}>
-              <TouchableOpacity
-                style={[styles.button, { flex: 1, backgroundColor: editingModelId !== null ? '#bbb' : Colors.light.primary }]}
-                onPress={() => {
-                  if (editingModelId !== null) {
-                    setShowModuleEditError(editingModelId);
-                    return;
-                  }
+              {/* Botón "Añadir modelo" - siempre visible cuando no se está editando ningún modelo */}
+              {editingModelId === null && (
+                <TouchableOpacity
+                  style={[styles.addModelButton, { borderColor: colors.primary }]}
+                  onPress={() => {
+                    setEditingModelId(0);
+                    setModelForm({ name: '', technicalName: '' });
+                    setModelFieldErrors({});
+                    setShowModuleEditError(null);
+                  }}
+                >
+                  <Text style={[styles.addModelButtonText, { color: colors.primary }]}>+ Añadir modelo</Text>
+                </TouchableOpacity>
+              )}
 
-                  const broken = findBrokenRelations();
+              {/* Botones de guardar/descartar */}
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+                <TouchableOpacity
+                  style={[styles.button, { flex: 1, backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    if (editingModelId !== null) {
+                      setShowModuleEditError(editingModelId);
+                      return;
+                    }
 
-                  if (broken.length > 0) {
-                    setGeneralError(
-                      "Hay relaciones inválidas:\n\n" + broken.join("\n")
-                    );
-                    return;
-                  }
+                    if (!hasChanged) {
+                      setNoChangesError(true);
+                      return;
+                    }
 
-                  if (!hasChanged) {
-                    setNoChangesError(true);
-                    return;
-                  }
-
-                  setSummaryData(buildModuleSummary());
-                  setShowSummaryModal('save');
-                }}
-                disabled={loadingUpdate}
-              >
-                <Text style={styles.buttonText}>{loadingUpdate ? 'Guardando...' : 'Guardar cambios'}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.button, { flex: 1, backgroundColor: '#bbb' }]}
-                onPress={() => {
-                  if (editingModelId !== null) {
-                    setShowModuleEditError(editingModelId);
-                    return;
-                  }
-
-                  if (hasChanged) {
                     setSummaryData(buildModuleSummary());
-                    setShowSummaryModal('discard');
+                    setShowSummaryModal('save');
+                  }}
+                  disabled={loadingUpdate}
+                >
+                  <Text style={styles.buttonText}>{loadingUpdate ? 'Guardando...' : 'Guardar cambios'}</Text>
+                </TouchableOpacity>
 
-                  } else {
-                    resetForm();
-                    router.push('/(stack)/(drawer)/(tabs)/modules');
-                  }
-                }}
-                disabled={loadingUpdate}
-              >
-                <Text style={[styles.buttonText, { color: '#222' }]}>{hasChanged ? 'Limpiar' : 'Descartar'}</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, { flex: 1, backgroundColor: colors.border }]}
+                  onPress={() => {
+                    if (editingModelId !== null) {
+                      setShowModuleEditError(editingModelId);
+                      return;
+                    }
+
+                    if (hasChanged) {
+                      setSummaryData(buildModuleSummary());
+                      setShowSummaryModal('discard');
+                    } else {
+                      resetForm();
+                      router.push('/(stack)/(drawer)/(tabs)/modules');
+                    }
+                  }}
+                  disabled={loadingUpdate}
+                >
+                  <Text style={[styles.buttonText, { color: colors.text }]}>{hasChanged ? 'Limpiar' : 'Descartar'}</Text>
+                </TouchableOpacity>
+              </View>
 
               {/* Modal de resumen de cambios */}
               <ModuleEditSummaryModal
@@ -1109,7 +1034,6 @@ const ModuleEditorScreen = () => {
                   if (showSummaryModal === 'discard') {
                     resetForm();
                     router.push('/(stack)/(drawer)/(tabs)/modules');
-
                   } else {
                     handleUpdate();
                   }
@@ -1134,14 +1058,12 @@ const ModuleEditorScreen = () => {
           showDeleteBoth={!!deleteBothIds}
           type="model"
           onDeleteBoth={async () => {
-            // Eliminar ambos modelos por API y recargar
             if (deleteBothIds) {
               try {
                 await Promise.all([
                   ombApi.delete(`/models/${deleteBothIds[0]}`),
                   ombApi.delete(`/models/${deleteBothIds[1]}`)
                 ]);
-
                 if (typeof reload === 'function') reload();
               } catch (e) {
                 alert('Hubo un error eliminando ambos modelos. Por favor, inténtalo de nuevo.');
@@ -1159,11 +1081,11 @@ const ModuleEditorScreen = () => {
   // CREACIÓN DE MÓDULO
   return (
     <KeyboardAvoidingView
-      style={[{ flex: 1 }, isDesktop && { paddingLeft: 80, backgroundColor: '#F7F7F7' }]}
+      style={[{ flex: 1, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={{ marginHorizontal: 30, marginTop: 32 }}>
-        <Text style={styles.title}>Crear nuevo módulo Odoo</Text>
+        <Text style={[styles.title, { color: colors.primary }]}>Crear nuevo módulo Odoo</Text>
         <ModuleFormFields
           name={name}
           setName={setName}
@@ -1178,14 +1100,15 @@ const ModuleEditorScreen = () => {
           setIsPublic={setIsPublic}
           fieldErrors={fieldErrors}
           styles={styles}
+          colors={colors}
         />
 
         {successMessage ? <Text style={{ color: '#2ecc40', marginTop: 10 }}>{successMessage}</Text> : null}
-        {redirectMessage ? <Text style={{ color: '#888', marginTop: 4 }}>{redirectMessage}</Text> : null}
+        {redirectMessage ? <Text style={{ color: colors.icon, marginTop: 4 }}>{redirectMessage}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {backendError && !error ? <Text style={styles.error}>{backendError}</Text> : null}
-        
-        <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={loading}>
+
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleCreate} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Creando...' : 'Crear módulo'}</Text>
         </TouchableOpacity>
       </View>
@@ -1193,11 +1116,12 @@ const ModuleEditorScreen = () => {
   );
 };
 
+
+// ====== Estilos ======
 const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: Colors.light.primary,
     marginBottom: 24,
   },
   label: {
@@ -1208,11 +1132,9 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: Colors.light.border,
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
-    backgroundColor: '#fff',
     marginBottom: 4,
   },
   inputError: {
@@ -1223,16 +1145,13 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     borderWidth: 2,
-    borderColor: Colors.light.primary,
     marginRight: 6,
-    backgroundColor: '#fff',
   },
   radioSelected: {
-    backgroundColor: Colors.light.primary,
+    backgroundColor: 'transparent',
   },
   button: {
     marginTop: 28,
-    backgroundColor: Colors.light.primary,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1244,15 +1163,13 @@ const styles = StyleSheet.create({
   },
   addModelButton: {
     marginTop: 18,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: Colors.light.primary,
     paddingVertical: 14,
     alignItems: 'center',
   },
   addModelButtonText: {
-    color: Colors.light.primary,
     fontWeight: 'bold',
     fontSize: 18,
   },
@@ -1262,95 +1179,5 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 });
-
-type ModuleFormFieldsProps = {
-  name: string;
-  setName: (v: string) => void;
-  technicalName: string;
-  setTechnicalName: (v: string) => void;
-  description: string;
-  setDescription: (v: string) => void;
-  category: string;
-  setCategory: (v: string) => void;
-  categoryOptions: string[];
-  isPublic: boolean;
-  setIsPublic: (v: boolean) => void;
-  fieldErrors: { name?: string; technicalName?: string; category?: string };
-  styles: any;
-};
-
-const ModuleFormFields: React.FC<ModuleFormFieldsProps> = ({
-  name,
-  setName,
-  technicalName,
-  setTechnicalName,
-  description,
-  setDescription,
-  category,
-  setCategory,
-  categoryOptions,
-  isPublic,
-  setIsPublic,
-  fieldErrors,
-  styles,
-}) => (
-  <>
-    <Text style={styles.label}>Nombre del módulo *</Text>
-    <TextInput
-      style={[styles.input, fieldErrors.name && styles.inputError]}
-      value={name}
-      onChangeText={setName}
-      placeholder="Ej: Academia"
-    />
-    {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
-
-    <Text style={styles.label}>Nombre técnico *</Text>
-    <TextInput
-      style={fieldErrors.technicalName ? [styles.input, styles.inputError] : styles.input}
-      value={technicalName}
-      onChangeText={setTechnicalName}
-      placeholder="Ej: academia_modulo"
-      autoCapitalize="none"
-      returnKeyType="done"
-    />
-    {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
-
-    <Text style={styles.label}>Descripción</Text>
-    <TextInput
-      style={[styles.input, { height: 80 }]}
-      value={description}
-      onChangeText={setDescription}
-      placeholder="Descripción breve del módulo"
-      multiline
-    />
-
-    <Text style={styles.label}>Categoría *</Text>
-    <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : Colors.light.border, borderRadius: 8, marginBottom: 8 }]}>
-      <Picker
-        selectedValue={category}
-        onValueChange={setCategory}
-        style={{ height: 44 }}
-      >
-        {categoryOptions.map((cat: string) => (
-          <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
-        ))}
-      </Picker>
-    </View>
-    
-    {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-      <TouchableOpacity
-        style={[styles.radio, isPublic && styles.radioSelected]}
-        onPress={() => setIsPublic(true)}
-      />
-      <Text style={{ marginRight: 24 }}>Público</Text>
-      <TouchableOpacity
-        style={[styles.radio, !isPublic && styles.radioSelected]}
-        onPress={() => setIsPublic(false)}
-      />
-      <Text>Privado</Text>
-    </View>
-  </>
-);
 
 export default ModuleEditorScreen;

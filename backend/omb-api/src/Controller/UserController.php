@@ -117,8 +117,20 @@ class UserController extends AbstractController
                 $user->setEmail($data['email']);
             }
 
-            // Hashear la nueva contraseña si se está cambiando
+            // Actualizar username si se envía
+            if (isset($data['username'])) {
+                $user->setUsername($data['username']);
+            }
+
+            // Cambiar contraseña: requiere la contraseña actual para verificar
             if (isset($data['password'])) {
+                $currentPassword = $data['currentPassword'] ?? null;
+                if (!$currentPassword) {
+                    return new Response("Current password is required", 400);
+                }
+                if (!password_verify($currentPassword, $user->getPassword())) {
+                    return new Response("Current password is incorrect", 401);
+                }
                 $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
             }
 
@@ -137,6 +149,7 @@ class UserController extends AbstractController
                 return new Response("User not found", 404);
             }
 
+            // Las entidades relacionadas tienen onDelete="CASCADE" así que no hace falta borrarlo todo manualmente
             $entityManager->remove($user);
             $entityManager->flush();
 

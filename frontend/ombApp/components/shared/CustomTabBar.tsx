@@ -1,4 +1,6 @@
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
+import { getColors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { TouchableOpacity, View, useWindowDimensions } from 'react-native';
@@ -15,6 +17,8 @@ const tabIcons: { name: string; route: string }[] = [
 export const CustomTabBar = (props: any) => {
   const router = useRouter();
   const userId = useAuthStore(state => state.user?.id);
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
 
   // Al pulsar en las tabs navega a la ruta
   const handleTabPress = (route: string, idx: number) => {
@@ -32,13 +36,13 @@ export const CustomTabBar = (props: any) => {
         isDesktop
           ? (typeof window !== 'undefined' && window.document
               ? {
-                  backgroundColor: '#F7F7F7',
+                  backgroundColor: colors.background,
                   position: 'fixed',
                   left: 0,
                   top: 0,
                   width: 80,
                   height: '100vh',
-                  borderRight: '1px solid #A084A2',
+                  borderRight: `1px solid ${colors.icon}`,
                   zIndex: 100,
                   display: 'flex',
                   flexDirection: 'column',
@@ -46,16 +50,16 @@ export const CustomTabBar = (props: any) => {
                   alignItems: 'flex-start',
                 }
               : {
-                  backgroundColor: '#F7F7F7',
+                  backgroundColor: colors.background,
                   width: 80,
-                  borderRightColor: '#A084A2',
+                  borderRightColor: colors.icon,
                   borderRightWidth: 1,
                   flexDirection: 'column',
                   justifyContent: 'center',
                   alignItems: 'flex-start',
                 }
             )
-          : { backgroundColor: '#F7F7F7' }
+          : { backgroundColor: colors.background }
       }
     >
       <View
@@ -73,8 +77,8 @@ export const CustomTabBar = (props: any) => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 height: 56,
-                backgroundColor: '#F7F7F7',
-                borderTopColor: '#A084A2',
+                backgroundColor: colors.background,
+                borderTopColor: colors.icon,
                 borderTopWidth: 1,
               }
         }
@@ -99,7 +103,7 @@ export const CustomTabBar = (props: any) => {
               style={
                 activeIndex === idx
                   ? {
-                      backgroundColor: '#714B6722',
+                      backgroundColor: colors.primary + '22',
                       borderRadius: 32,
                       padding: 10,
                       margin: 2,
@@ -111,7 +115,7 @@ export const CustomTabBar = (props: any) => {
               <Ionicons
                 name={tab.name as any}
                 size={32}
-                color={activeIndex === idx ? '#714B67' : '#A084A2'}
+                color={activeIndex === idx ? colors.primary : colors.icon}
                 style={isDesktop ? { alignSelf: 'flex-start' } : {}}
               />
             </View>

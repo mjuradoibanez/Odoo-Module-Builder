@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, useWindowDimensions, FlatList, TouchableOpacity, Text, ActivityIndicator, ScrollView } from 'react-native';
+import { View, useWindowDimensions, FlatList, TouchableOpacity, Text, ActivityIndicator, ScrollView, Modal, TextInput } from 'react-native';
 import { ModuleCard } from '@/components/shared/ModuleCard';
 import { ModuleDetail } from '@/components/shared/ModuleDetail';
 import { checkDependencies } from '@/core/helpers/checkDependencies';
@@ -8,8 +8,9 @@ import { useAllModules } from '@/presentation/hooks/useAllModules';
 import { deleteModule } from '@/core/actions/delete-module';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useDuplicateModule } from '@/presentation/hooks/useDuplicateModule';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '@/constants/theme';
+import { getColors, Fonts } from '@/constants/theme';
 import { useLocalSearchParams, router } from 'expo-router';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
 
@@ -19,6 +20,8 @@ const ModuleEditorScreen = () => {
   const isDesktop = width >= 900;
   const user = useAuthStore(state => state.user);
   const userId = user?.id;
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
   const { id } = useLocalSearchParams();
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(id ? Number(id) : null);
   const [showBlockModal, setShowBlockModal] = useState(false);
@@ -76,23 +79,58 @@ const ModuleEditorScreen = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState<string | undefined>(undefined);
   const { duplicate, isDuplicating, error: duplicateError } = useDuplicateModule();
 
+  // Estado para el modal de renombrar antes de duplicar
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameModuleId, setRenameModuleId] = useState<number | null>(null);
+  const [renameName, setRenameName] = useState('');
+  const [renameTechnicalName, setRenameTechnicalName] = useState('');
+
+  const openRenameModal = async (moduleId: number) => {
+    const full = await getModuleFull(moduleId);
+    if (full) {
+      setRenameName(full.name + ' (copia)');
+      setRenameTechnicalName(full.technicalName + '_copia');
+    } else {
+      setRenameName('');
+      setRenameTechnicalName('');
+    }
+    setRenameModuleId(moduleId);
+    setShowRenameModal(true);
+  };
+
+  const handleDuplicateWithRename = async () => {
+    if (!renameModuleId || !renameName.trim() || !renameTechnicalName.trim()) return;
+    setShowRenameModal(false);
+    const result = await duplicate(renameModuleId, userId, {
+      name: renameName.trim(),
+      technicalName: renameTechnicalName.trim(),
+    });
+    if (result) {
+      await reload();
+      showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
+      setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+    } else {
+      showError(duplicateError || 'No se pudo duplicar el módulo.');
+    }
+  };
+
   if (isDesktop) {
     const showDetail = !!id;
     return (
-      <View style={[{ flex: 1, flexDirection: 'row' }, { paddingLeft: 80, backgroundColor: '#F7F7F7' }]}>
+      <View style={[{ flex: 1, flexDirection: 'row', backgroundColor: colors.background }, { paddingLeft: 80 }]}>
 
         {/* Lista de módulos del usuario */}
         <View style={{ flex: showDetail ? 0.32 : 1, padding: 16 }}>
           <View style={{ marginHorizontal: 30 }}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
               Todos tus módulos
             </Text>
           </View>
 
           {isLoading ? (
-            <ActivityIndicator size="large" color={Colors.light.primary} />
+            <ActivityIndicator size="large" color={colors.primary} />
           ) : modules.length === 0 ? (
-            <Text style={{ color: Colors.light.icon }}>No tienes módulos creados todavía.</Text>
+            <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
           ) : (
             <FlatList
               data={modules}
@@ -113,7 +151,7 @@ const ModuleEditorScreen = () => {
 
         {/* Detalles del módulo seleccionado o externo */}
         {showDetail && (
-          <View style={{ flex: 0.68, padding: 16, borderLeftWidth: 1, borderLeftColor: Colors.light.border }}>
+          <View style={{ flex: 0.68, padding: 16, borderLeftWidth: 1, borderLeftColor: colors.border }}>
             <ScrollView contentContainerStyle={{ paddingBottom: 200 }} showsVerticalScrollIndicator={true}>
               {/* Detalle del módulo */}
               <ModuleDetail moduleId={Number(id)} />
@@ -137,7 +175,7 @@ const ModuleEditorScreen = () => {
                   <>
                     <TouchableOpacity
                       style={{
-                        backgroundColor: Colors.light.primary,
+                        backgroundColor: colors.primary,
                         paddingVertical: 14,
                         paddingHorizontal: 28,
                         borderRadius: 14,
@@ -235,9 +273,9 @@ const ModuleEditorScreen = () => {
                 {/* Botón Duplicar */}
                 <TouchableOpacity
                   style={{
-                    backgroundColor: '#fff',
+                    backgroundColor: colors.card,
                     borderWidth: 2,
-                    borderColor: Colors.light.primary,
+                    borderColor: colors.primary,
                     paddingVertical: 14,
                     paddingHorizontal: 28,
                     borderRadius: 14,
@@ -255,13 +293,14 @@ const ModuleEditorScreen = () => {
                       showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
                       setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
                     } else {
-                      showError(duplicateError || 'No se pudo duplicar el módulo.');
+                      // Si falló por conflicto de nombre, ofrecer renombrar
+                      openRenameModal(Number(id));
                     }
                   }}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="copy" size={22} color={Colors.light.primary} />
-                  <Text style={{ color: Colors.light.primary, fontWeight: 'bold', fontSize: 18 }}>
+                  <Ionicons name="copy" size={22} color={colors.primary} />
+                  <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 18 }}>
                     {isDuplicating ? 'Duplicando...' : 'Duplicar'}
                   </Text>
                 </TouchableOpacity>
@@ -288,6 +327,72 @@ const ModuleEditorScreen = () => {
             />
           </View>
         )}
+
+        {/* Modal para renombrar antes de duplicar */}
+        <Modal visible={showRenameModal} transparent animationType="fade" onRequestClose={() => setShowRenameModal(false)}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+            <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 24, width: 360, maxWidth: '90%' }}>
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>
+                Ya tienes un módulo con ese nombre
+              </Text>
+              <Text style={{ fontSize: 14, color: colors.icon, marginBottom: 20 }}>
+                Introduce un nombre diferente para duplicar el módulo.
+              </Text>
+
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 4 }}>Nombre</Text>
+              <TextInput
+                value={renameName}
+                onChangeText={setRenameName}
+                placeholder="Nombre del módulo"
+                placeholderTextColor={colors.icon}
+                style={{
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 15,
+                  marginBottom: 16,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              />
+
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 4 }}>Nombre técnico</Text>
+              <TextInput
+                value={renameTechnicalName}
+                onChangeText={setRenameTechnicalName}
+                placeholder="nombre_tecnico"
+                placeholderTextColor={colors.icon}
+                style={{
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderRadius: 10,
+                  padding: 12,
+                  fontSize: 15,
+                  marginBottom: 24,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
+                <TouchableOpacity
+                  onPress={() => setShowRenameModal(false)}
+                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.border }}
+                >
+                  <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  onPress={handleDuplicateWithRename}
+                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.primary }}
+                >
+                  <Text style={{ color: '#fff', fontWeight: '600' }}>Duplicar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     );
 
@@ -296,7 +401,7 @@ const ModuleEditorScreen = () => {
     if (selectedModuleId !== null) {
       const isOwnModule = modules.some(m => m.id === selectedModuleId && m.user?.id === userId);
       return (
-        <View style={{ flex: 1, padding: 16, backgroundColor: '#F7F7F7' }}>
+        <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
           <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={true}>
             <ModuleDetail moduleId={selectedModuleId as number} />
 
@@ -319,7 +424,7 @@ const ModuleEditorScreen = () => {
                 <>
                   <TouchableOpacity
                     style={{
-                      backgroundColor: Colors.light.primary,
+                      backgroundColor: colors.primary,
                       paddingVertical: 14,
                       paddingHorizontal: 24,
                       borderRadius: 14,
@@ -362,9 +467,9 @@ const ModuleEditorScreen = () => {
               {/* Botón Duplicar: para módulos propios y de otros usuarios */}
               <TouchableOpacity
                 style={{
-                  backgroundColor: '#fff',
+                  backgroundColor: colors.card,
                   borderWidth: 2,
-                  borderColor: Colors.light.primary,
+                  borderColor: colors.primary,
                   paddingVertical: 14,
                   paddingHorizontal: 24,
                   borderRadius: 14,
@@ -381,13 +486,14 @@ const ModuleEditorScreen = () => {
                     showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
                     setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
                   } else {
-                    showError(duplicateError || 'No se pudo duplicar el módulo.');
+                    // Si falló por conflicto de nombre, ofrecer renombrar
+                    openRenameModal(selectedModuleId);
                   }
                 }}
                 activeOpacity={0.85}
               >
-                <Ionicons name="copy" size={20} color={Colors.light.primary} />
-                <Text style={{ color: Colors.light.primary, fontWeight: 'bold', fontSize: 16 }}>
+                <Ionicons name="copy" size={20} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>
                   {isDuplicating ? 'Duplicando...' : 'Duplicar'}
                 </Text>
               </TouchableOpacity>
@@ -397,17 +503,17 @@ const ModuleEditorScreen = () => {
       );
     }
     return (
-      <View style={{ flex: 1, padding: 16, backgroundColor: '#F7F7F7' }}>
+      <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
         <View style={{ marginHorizontal: 30 }}>
-          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: Colors.light.primary }}>
+          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
             Todos tus módulos
           </Text>
         </View>
 
         {isLoading ? (
-          <ActivityIndicator size="large" color={Colors.light.primary} />
+          <ActivityIndicator size="large" color={colors.primary} />
         ) : modules.length === 0 ? (
-          <Text style={{ color: Colors.light.icon }}>No tienes módulos creados todavía.</Text>
+          <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
         ) : (
           <FlatList
             data={modules}

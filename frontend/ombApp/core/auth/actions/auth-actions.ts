@@ -32,10 +32,13 @@ export const authLogin = async (
     const { data } = await ombApi.post<User>('/login', { email, password });
     return data;
   } catch (error: any) {
-    // Si la API devuelve un mensaje de error, lo retornamos
-    const apiMsg = error?.response?.data?.message;
-    if (apiMsg) {
-      return { error: apiMsg };
+    // La API devuelve errores como texto plano (ej: "Invalid password")
+    const responseData = error?.response?.data;
+    if (typeof responseData === 'string') {
+      return { error: responseData };
+    }
+    if (responseData?.message) {
+      return { error: responseData.message };
     }
     return { error: 'No se pudo conectar con el servidor' };
   }

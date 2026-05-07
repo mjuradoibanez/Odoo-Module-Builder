@@ -9,9 +9,16 @@ import { Platform } from 'react-native';
 const odooPurple = '#714B67';
 const odooLightPurple = '#A084A2';
 const odooGray = '#F7F7F7';
-const odooDarkGray = '#222';
+const odooDarkGray = '#1A1A2E';
 const odooWhite = '#fff';
 const odooAccent = '#FFB84D';
+
+// Dark mode specific
+const darkBackground = '#121212';
+const darkCard = '#1E1E2E';
+const darkTextPrimary = '#E8E0F0';
+const darkTextSecondary = '#C4B5D0';
+const darkPurple = '#9B7EB5';
 
 const tintColorLight = odooPurple;
 const tintColorDark = odooWhite;
@@ -30,17 +37,22 @@ export const Colors = {
     border: odooDarkGray,
   },
   dark: {
-    text: odooWhite,
-    background: odooDarkGray,
+    text: darkTextPrimary,
+    background: darkBackground,
     tint: tintColorDark,
-    icon: odooLightPurple,
-    tabIconDefault: odooLightPurple,
+    icon: darkTextSecondary,
+    tabIconDefault: darkTextSecondary,
     tabIconSelected: tintColorDark,
-    primary: odooPurple,
+    primary: darkPurple,
     accent: odooAccent,
-    card: odooPurple,
-    border: odooLightPurple,
+    card: darkCard,
+    border: '#2A2A3E',
   },
+};
+
+/* Devuelve el objeto de colores correspondiente al modo actual (claro u oscuro) */
+export const getColors = (isDarkMode: boolean): typeof Colors.light => {
+  return isDarkMode ? Colors.dark : Colors.light;
 };
 
 export const Fonts = Platform.select({

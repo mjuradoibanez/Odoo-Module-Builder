@@ -47,7 +47,7 @@ class Models
      *
      * @ORM\ManyToOne(targetEntity="Modules")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="module_id", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="module_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      *
      * @Groups({"models:read"})

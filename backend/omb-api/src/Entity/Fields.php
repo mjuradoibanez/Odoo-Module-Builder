@@ -128,7 +128,7 @@ class Fields
      *
      * @ORM\ManyToOne(targetEntity="Models")
      * @ORM\JoinColumns({
-     *   @ORM\JoinColumn(name="model_id", referencedColumnName="id")
+     *   @ORM\JoinColumn(name="model_id", referencedColumnName="id", onDelete="CASCADE")
      * })
      *
      * @Groups({"fields:read"})

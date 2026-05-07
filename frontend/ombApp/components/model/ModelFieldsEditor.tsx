@@ -3,7 +3,8 @@ import { Picker } from '@react-native-picker/picker';
 import { ODOO_STANDARD_MODELS } from '@/constants/odooStandardModels';
 import { useModelFields } from '@/presentation/hooks/useModelFields';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
@@ -122,6 +123,9 @@ const FieldForm = ({
   setTouched: Dispatch<SetStateAction<boolean>>;
   allFields?: any[];
 }) => {
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
+
   // Detecta cambios en cualquier campo
   useEffect(() => {
     setTouched(true);
@@ -199,9 +203,9 @@ const FieldForm = ({
 
   return (
     <>
-      <Text style={styles.label}>Nombre</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Nombre</Text>
       <TextInput
-        style={[styles.input, errors.name && styles.inputError]}
+        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, errors.name && styles.inputError]}
         value={form.name}
         onChangeText={(v) => setForm((f: any) => ({ ...f, name: v }))}
         onFocus={() => {
@@ -211,9 +215,9 @@ const FieldForm = ({
       />
       {errors.name && <Text style={styles.error}>{errors.name}</Text>}
 
-      <Text style={styles.label}>Nombre técnico</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Nombre técnico</Text>
       <TextInput
-        style={[styles.input, errors.technicalName && styles.inputError]}
+        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, errors.technicalName && styles.inputError]}
         value={form.technicalName}
         autoCapitalize="none"
         onChangeText={(v) =>
@@ -228,14 +232,15 @@ const FieldForm = ({
         <Text style={styles.error}>{errors.technicalName}</Text>
       )}
 
-      <Text style={styles.label}>Tipo</Text>
+      <Text style={[styles.label, { color: colors.text }]}>Tipo</Text>
       <View style={styles.pickerRow}>
         {FIELD_TYPES.map((opt) => (
           <TouchableOpacity
             key={opt.value}
             style={[
               styles.typeOption,
-              form.type === opt.value && styles.typeOptionSelected,
+              { borderColor: colors.border },
+              form.type === opt.value && [styles.typeOptionSelected, { backgroundColor: colors.primary }],
             ]}
             onPress={() =>
               setForm((f: any) => ({ ...f, type: opt.value, defaultValue: '' }))
@@ -245,8 +250,8 @@ const FieldForm = ({
               style={{
                 color:
                   form.type === opt.value
-                    ? Colors.light.primary
-                    : '#444',
+                    ? '#fff'
+                    : colors.icon,
               }}
             >
               {opt.label}
@@ -256,7 +261,7 @@ const FieldForm = ({
       </View>
 
       <View style={styles.switchRow}>
-        <Text>Requerido</Text>
+        <Text style={{ color: colors.text }}>Requerido</Text>
         <Switch
           value={!!form.required}
           onValueChange={(v) =>
@@ -264,7 +269,7 @@ const FieldForm = ({
           }
         />
 
-        <Text style={{ marginLeft: 16 }}>Único</Text>
+        <Text style={{ marginLeft: 16, color: colors.text }}>Único</Text>
         <Switch
           value={!!form.uniqueField}
           onValueChange={(v) =>
@@ -276,11 +281,11 @@ const FieldForm = ({
       {/* VALOR POR DEFECTO */}
       {form.type !== 'relation' && form.type !== 'selection' && (
         <View style={{ marginTop: 12 }}>
-          <Text style={styles.label}>Valor por defecto</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Valor por defecto</Text>
           
           {form.type === 'boolean' ? (
             <View style={[styles.switchRow, { marginTop: 4 }]}>
-              <Text>{form.defaultValue === 'true' ? 'Activado (True)' : 'Desactivado (False)'}</Text>
+              <Text style={{ color: colors.text }}>{form.defaultValue === 'true' ? 'Activado (True)' : 'Desactivado (False)'}</Text>
               <Switch
                 value={form.defaultValue === 'true'}
                 onValueChange={(v) =>
@@ -291,7 +296,7 @@ const FieldForm = ({
 
           ) : form.type === 'integer' || form.type === 'float' ? (
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={form.defaultValue}
               placeholder={form.type === 'integer' ? 'Ej: 123' : 'Ej: 3.14'}
               keyboardType="numeric"
@@ -321,7 +326,7 @@ const FieldForm = ({
 
           ) : ( // Input de texto para otros tipos
             <TextInput
-              style={styles.input}
+              style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={form.defaultValue}
               placeholder="Ingresa valor..."
               keyboardType="default"
@@ -333,12 +338,12 @@ const FieldForm = ({
 
       {/* GESTIÓN DE OPCIONES PARA SELECCIÓN */}
       {form.type === 'selection' && (
-        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#f9f9f9', borderRadius: 8 }}>
+        <View style={{ marginTop: 12, padding: 10, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
           <Text style={[styles.label, { fontWeight: 'bold' }]}>Opciones de selección</Text>
 
           {(form.selectionOptions || []).map((opt: any, index: number) => (
             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <Text style={{ flex: 1 }}>{`${opt.key}: ${opt.label}`}</Text>
+              <Text style={{ flex: 1, color: colors.text }}>{`${opt.key}: ${opt.label}`}</Text>
               <TouchableOpacity onPress={() => {
                 const newOpts = [...form.selectionOptions];
                 newOpts.splice(index, 1);
@@ -351,7 +356,7 @@ const FieldForm = ({
           
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             <TextInput
-              style={[styles.input, { flex: 1 }, form._newOptKeyError && styles.inputError]}
+              style={[styles.input, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, form._newOptKeyError && styles.inputError]}
               placeholder="Clave (ej: 0)"
               value={form._newOptKey || ''}
               onChangeText={(v) => {
@@ -377,7 +382,7 @@ const FieldForm = ({
               onBlur={() => setSyncOptLabel(false)}
             />
             <TextInput
-              style={[styles.input, { flex: 2 }]}
+              style={[styles.input, { flex: 2, backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               placeholder="Etiqueta (ej: Bajo)"
               value={form._newOptLabel || ''}
               onChangeText={(v) => setForm((f: any) => ({ ...f, _newOptLabel: v }))}
@@ -389,7 +394,7 @@ const FieldForm = ({
             
             <TouchableOpacity
               style={{
-                backgroundColor: form._newOptKey && form._newOptLabel && !form._newOptKeyError ? Colors.light.primary : '#bbb',
+                backgroundColor: form._newOptKey && form._newOptLabel && !form._newOptKeyError ? colors.primary : colors.border,
                 padding: 10, borderRadius: 6, justifyContent: 'center'
               }}
               disabled={!form._newOptKey || !form._newOptLabel || !!form._newOptKeyError}
@@ -406,9 +411,10 @@ const FieldForm = ({
             <Text style={[styles.error, { marginTop: 4 }]}>{form._newOptKeyError}</Text>
           )}
 
-          <Text style={[styles.label, { marginTop: 16 }]}>Valor por defecto</Text>
-          <View style={[styles.input, { padding: 0 }]}>
+          <Text style={[styles.label, { marginTop: 16, color: colors.text }]}>Valor por defecto</Text>
+          <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
             <Picker
+              style={{ color: colors.text }}
               selectedValue={form.defaultValue}
               onValueChange={(v) => setForm((f: any) => ({ ...f, defaultValue: v }))}
             >
@@ -423,12 +429,12 @@ const FieldForm = ({
 
       {/* GESTIÓN DE REGLAS DE NEGOCIO */}
       {['integer', 'float', 'date', 'char', 'selection'].includes(form.type) && (
-        <View style={{ marginTop: 12, padding: 10, backgroundColor: '#f0f4f8', borderRadius: 8 }}>
-          <Text style={[styles.label, { fontWeight: 'bold' }]}>Validaciones y Reglas</Text>
+        <View style={{ marginTop: 12, padding: 10, backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+          <Text style={[styles.label, { fontWeight: 'bold', color: colors.text }]}>Validaciones y Reglas</Text>
           
           {(form.rules || []).map((rule: any, index: number) => (
             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <Text style={{ flex: 1 }}>{`• ${rule.label} ${rule.value || ''}`}</Text>
+              <Text style={{ flex: 1, color: colors.text }}>{`• ${rule.label} ${rule.value || ''}`}</Text>
               <TouchableOpacity onPress={() => {
                 const newRules = [...form.rules];
                 newRules.splice(index, 1);
@@ -449,10 +455,11 @@ const FieldForm = ({
           )}
 
           {/* Configuración de nuevas reglas */}
-          <View style={{ marginTop: 10, borderTopWidth: 1, borderColor: '#ccc', paddingTop: 10 }}>
-            <Text style={{ fontSize: 12, color: '#666' }}>Añadir nueva regla:</Text>
-            <View style={[styles.input, { padding: 0, marginTop: 4 }]}>
+          <View style={{ marginTop: 10, borderTopWidth: 1, borderColor: colors.border, paddingTop: 10 }}>
+            <Text style={{ fontSize: 12, color: colors.icon }}>Añadir nueva regla:</Text>
+            <View style={[styles.input, { padding: 0, marginTop: 4, backgroundColor: colors.background, borderColor: colors.border }]}>
               <Picker
+                style={{ color: colors.text }}
                 selectedValue=""
                 onValueChange={(type) => {
                   if (!type) return;
@@ -507,12 +514,13 @@ const FieldForm = ({
           {(form.rules || []).map((rule: any, index: number) => {
             if (['date_no_future', 'date_no_past'].includes(rule.type)) return null; // Reglas sin valor adicional
             return (
-              <View key={index} style={{ marginTop: 8, padding: 6, backgroundColor: '#fff', borderRadius: 4 }}>
-                <Text style={{ fontSize: 12 }}>Configura {rule.label}:</Text>
+              <View key={index} style={{ marginTop: 8, padding: 6, backgroundColor: colors.background, borderRadius: 4 }}>
+                <Text style={{ fontSize: 12, color: colors.text }}>Configura {rule.label}:</Text>
                 
                 {rule.type.includes('field') ? (
-                  <View style={[styles.input, { padding: 0 }]}>
+                  <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Picker
+                      style={{ color: colors.text }}
                       selectedValue={rule.value}
                       onValueChange={(v) => {
                          const newRules = [...form.rules];
@@ -531,8 +539,9 @@ const FieldForm = ({
                   </View>
                   
                 ) : rule.type === 'warn_sel_is' ? (
-                  <View style={[styles.input, { padding: 0 }]}>
+                  <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Picker
+                      style={{ color: colors.text }}
                       selectedValue={rule.value}
                       onValueChange={(v) => {
                          const newRules = [...form.rules];
@@ -549,7 +558,7 @@ const FieldForm = ({
                   
                 ) : (
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="Valor"
                     keyboardType={['number_min', 'number_max', 'char_min_len', 'char_max_len'].includes(rule.type) ? 'numeric' : 'default'}
                     value={String(rule.value || '')}
@@ -583,7 +592,7 @@ const FieldForm = ({
       {/* Campos extra solo si es relación */}
       {form.type === 'relation' && (
         <View>
-          <Text style={styles.label}>Tipo de relación</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Tipo de relación</Text>
 
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {RELATION_SUBTYPES.map((opt) => (
@@ -591,8 +600,9 @@ const FieldForm = ({
                 key={opt.value}
                 style={[
                   styles.typeOption,
+                  { borderColor: colors.border },
                   form.relationSubtype === opt.value &&
-                  styles.typeOptionSelected,
+                  [styles.typeOptionSelected, { backgroundColor: colors.primary }],
                 ]}
                 onPress={() =>
                   setForm((f: any) => ({
@@ -601,14 +611,15 @@ const FieldForm = ({
                   }))
                 }
               >
-                <Text>{opt.label}</Text>
+                <Text style={{ color: colors.text }}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.label}>Modelo relacionado</Text>
-          <View style={[styles.input, { padding: 0 }]}>
+          <Text style={[styles.label, { color: colors.text }]}>Modelo relacionado</Text>
+          <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
             <Picker
+              style={{ color: colors.text }}
               selectedValue={form.relationModel}
               onValueChange={(v) => setForm((f: any) => ({ ...f, relationModel: v, relationField: '' }))}
             >
@@ -637,9 +648,10 @@ const FieldForm = ({
           {/* Selector de campo solo si el modelo destino es propio */}
           {form.availableOwnModels && form.availableOwnModels.some((m: any) => getFullModelName(m) === form.relationModel) && (
             <>
-              <Text style={styles.label}>Campo relación</Text>
-              <View style={[styles.input, { padding: 0 }]}>
+              <Text style={[styles.label, { color: colors.text }]}>Campo relación</Text>
+              <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
                 <Picker
+                  style={{ color: colors.text }}
                   selectedValue={form.relationField}
                   onValueChange={(v) => setForm((f: any) => ({ ...f, relationField: v }))}
                   enabled={!!form.relationModel && !loadingFields}
@@ -668,6 +680,9 @@ export default function ModelFieldsEditor({
   ownModels = [], // [{ technicalName, name }]
   onEditStateChange,
 }: any) {
+
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
 
   const [newForm, setNewForm] = useState({ ...INITIAL_FIELD, availableOwnModels: ownModels });
   const [editForm, setEditForm] = useState<any>(null);
@@ -791,15 +806,15 @@ export default function ModelFieldsEditor({
 
   return (
     <View>
-      <Text style={styles.sectionTitle}>Campos</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Campos</Text>
 
       {/* LISTADO DE CAMPOS */}
       {fields.length === 0 && (
-        <Text style={{ color: '#888', fontStyle: 'italic' }}>No hay campos definidos.</Text>
+        <Text style={{ color: colors.icon, fontStyle: 'italic' }}>No hay campos definidos.</Text>
       )}
 
       {fields.map((field: any) => (
-        <View key={field.id || field.technicalName} style={styles.fieldRow}>
+        <View key={field.id || field.technicalName} style={[styles.fieldRow, { borderColor: colors.border }]}>
           <TouchableOpacity
             onPress={() => editable && editingId !== getFieldKey(field) && handleEdit(field)}
             style={{ flex: 1 }}
@@ -816,25 +831,25 @@ export default function ModelFieldsEditor({
                   setTouched={setTouched}
                   allFields={fields}
                 />
-                <TouchableOpacity style={styles.button} onPress={handleSaveEdit}>
+                <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleSaveEdit}>
                   <Text style={styles.buttonText}>Guardar</Text>
                 </TouchableOpacity>
               </>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', paddingVertical: 4 }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 15 }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 15, color: colors.text }}>
                   {field.name}
                   {field.required ? <Text style={{ color: '#FF3333', fontSize: 16 }}> *</Text> : null}
                 </Text>
-                <Text style={{ color: Colors.light.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
-                <Text style={{ color: Colors.light.primary, marginLeft: 6 }}>{field.type}</Text>
+                <Text style={{ color: colors.icon, marginLeft: 6 }}>{`(${field.technicalName})`}</Text>
+                <Text style={{ color: colors.primary, marginLeft: 6 }}>{field.type}</Text>
                 {field.defaultValue && (
                   <Text style={{ color: '#27ae60', marginLeft: 6 }}>{`[Def: ${field.defaultValue}]`}</Text>
                 )}
                 {field.rules && field.rules.length > 0 && (
                   <Text style={{ color: '#f39c12', marginLeft: 6 }}>{`[Reglas: ${field.rules.length}]`}</Text>
                 )}
-                <Text style={{ color: '#666', marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
+                <Text style={{ color: colors.icon, marginLeft: 10 }}>{`| Único: ${field.uniqueField ? 'Sí' : 'No'}${field.type === 'relation' ? ` | Rel: ${field.relationModel} → ${field.relationField}` : ''}`}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -855,21 +870,21 @@ export default function ModelFieldsEditor({
         <TouchableOpacity
           style={{
             marginTop: 10,
-            backgroundColor: '#fff',
+            backgroundColor: colors.card,
             borderWidth: 1,
-            borderColor: Colors.light.primary,
+            borderColor: colors.primary,
             borderRadius: 8,
             paddingVertical: 10,
             alignItems: 'center',
           }}
           onPress={() => setShowNewFieldForm(true)}
         >
-          <Text style={{ color: Colors.light.primary, fontWeight: 'bold', fontSize: 16 }}>+ Añadir campo</Text>
+          <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>+ Añadir campo</Text>
         </TouchableOpacity>
       )}
 
       {editable && showNewFieldForm && (
-        <View style={styles.fieldBox}>
+        <View style={[styles.fieldBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <FieldForm
             form={newForm}
             setForm={setNewForm}
@@ -878,12 +893,12 @@ export default function ModelFieldsEditor({
             setTouched={setTouched}
             allFields={fields}
           />
-          <TouchableOpacity style={styles.button} onPress={handleAdd}>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAdd}>
             <Text style={styles.buttonText}>Añadir campo</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.button, { backgroundColor: '#bbb', marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
-            <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.border, marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
+            <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -898,14 +913,12 @@ const styles = StyleSheet.create({
   fieldRow: {
     padding: 10,
     borderBottomWidth: 1,
-    borderColor: '#ddd',
   },
 
   fieldBox: {
     marginTop: 20,
     padding: 10,
     borderWidth: 1,
-    borderColor: '#ddd',
   },
 
   label: { marginTop: 6 },
@@ -933,7 +946,6 @@ const styles = StyleSheet.create({
   },
 
   typeOptionSelected: {
-    backgroundColor: '#ddd',
   },
 
   switchRow: {
@@ -944,7 +956,6 @@ const styles = StyleSheet.create({
 
   button: {
     marginTop: 10,
-    backgroundColor: Colors.light.primary,
     padding: 10,
     borderRadius: 6,
   },

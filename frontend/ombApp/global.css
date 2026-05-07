@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos para react-datepicker en modo oscuro */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+html[data-theme='dark'] select,
+html[data-theme='dark'] select option {
+  background-color: #1E1E2E !important;
+  color: #E8E0F0 !important;
+}
+
+html[data-theme='light'] select,
+html[data-theme='light'] select option {
+  background-color: #ffffff !important;
+  color: #714B67 !important;
+}

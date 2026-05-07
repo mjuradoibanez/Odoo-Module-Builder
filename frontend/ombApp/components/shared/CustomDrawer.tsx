@@ -1,5 +1,6 @@
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerContentComponentProps, DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
 import { router } from 'expo-router';
@@ -8,6 +9,8 @@ import { Text, View } from 'react-native';
 
 const CustomDrawer = (props: DrawerContentComponentProps) => {
     const userId = useAuthStore(state => state.user?.id);
+    const isDarkMode = useThemeStore(state => state.isDarkMode);
+    const colors = getColors(isDarkMode);
     
         // Opciones principales del menú
         const menuOptions = [
@@ -16,16 +19,6 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                 icon: 'settings-outline',
                 route: '/(stack)/(drawer)/(tabs)/settings' as const,
             },
-            {
-                label: 'Profile',
-                icon: 'person-outline',
-                route: '/(stack)/(drawer)/(tabs)/profile' as const,
-            },
-            {
-                label: 'About',
-                icon: 'information-circle-outline',
-                route: '/(stack)/(drawer)/(tabs)/about' as const,
-            },
         ];
 
         // Ruta activa
@@ -33,9 +26,9 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
         const activeRoute = navState?.routeNames[navState.index] || '';
 
         return (
-            <DrawerContentScrollView {...props} style={{ backgroundColor: Colors.light.background }} contentContainerStyle={{ padding: 0 }}>
-                <View style={{ padding: 24, backgroundColor: Colors.light.primary, borderBottomColor: Colors.light.border, borderBottomWidth: 2, alignItems: 'center' }}>
-                    <Text style={{ color: Colors.light.card, fontWeight: 'bold', fontSize: 28, fontFamily: 'Montserrat-Bold', letterSpacing: 2 }}>Odoo Builder</Text>
+            <DrawerContentScrollView {...props} style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 0 }}>
+                <View style={{ padding: 24, backgroundColor: colors.primary, borderBottomColor: colors.border, borderBottomWidth: 2, alignItems: 'center' }}>
+                    <Text style={{ color: colors.card, fontWeight: 'bold', fontSize: 28, fontFamily: 'Montserrat-Bold', letterSpacing: 2 }}>Odoo Builder</Text>
                 </View>
                 <View style={{ marginTop: 16 }}>
                     {menuOptions.map(opt => {
@@ -44,11 +37,11 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                             <DrawerItem
                                 key={opt.route}
                                 label={opt.label}
-                                labelStyle={{ color: focused ? Colors.light.accent : Colors.light.primary, fontFamily: 'Montserrat-Bold', fontSize: 16 }}
+                                labelStyle={{ color: focused ? colors.accent : colors.primary, fontFamily: 'Montserrat-Bold', fontSize: 16 }}
                                 icon={({ size }) => (
-                                    <Ionicons name={opt.icon as any} size={size} color={focused ? Colors.light.accent : Colors.light.primary} />
+                                    <Ionicons name={opt.icon as any} size={size} color={focused ? colors.accent : colors.primary} />
                                 )}
-                                style={{ backgroundColor: focused ? Colors.light.primary + '22' : Colors.light.background, borderRadius: 8, marginVertical: 2 }}
+                                style={{ backgroundColor: focused ? colors.primary + '22' : colors.background, borderRadius: 8, marginVertical: 2 }}
                                 onPress={() => router.push(opt.route)}
                             />
                         );
@@ -65,7 +58,7 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                             await useAuthStore.getState().logout();
                             router.replace('/auth/login');
                         }}
-                        style={{ backgroundColor: Colors.light.background, borderRadius: 8 }}
+                        style={{ backgroundColor: colors.background, borderRadius: 8 }}
                     />
                 </View>
             </DrawerContentScrollView>

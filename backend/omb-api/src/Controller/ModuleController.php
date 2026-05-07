@@ -537,11 +537,15 @@ class ModuleController extends AbstractController
             return new Response("User not found", 404);
         }
 
+        // Usar nombre/technicalName personalizados si hay, si no los del original
+        $newName = $data['name'] ?? $originalModule->getName();
+        $newTechnicalName = $data['technicalName'] ?? $originalModule->getTechnicalName();
+
         // Verificar que el usuario no tenga ya un módulo con el mismo technical_name
         $existing = $entityManager
             ->getRepository(Modules::class)
             ->findOneBy([
-                'technicalName' => $originalModule->getTechnicalName(),
+                'technicalName' => $newTechnicalName,
                 'user' => $targetUser
             ]);
 
@@ -551,8 +555,8 @@ class ModuleController extends AbstractController
 
         // --- Duplicar el módulo ---
         $newModule = new Modules();
-        $newModule->setName($originalModule->getName());
-        $newModule->setTechnicalName($originalModule->getTechnicalName());
+        $newModule->setName($newName);
+        $newModule->setTechnicalName($newTechnicalName);
         $newModule->setDescription($originalModule->getDescription());
         $newModule->setVersion($originalModule->getVersion());
         $newModule->setAuthor($originalModule->getAuthor());
