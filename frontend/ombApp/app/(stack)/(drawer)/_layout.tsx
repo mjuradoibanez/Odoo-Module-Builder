@@ -1,21 +1,27 @@
 import CustomDrawer from '@/components/shared/CustomDrawer';
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { Ionicons } from '@expo/vector-icons';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
 
 const DrawerLayout = () => {
+  // Estado del tema
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawer {...props} />}
       screenOptions={{
         headerShown: true,
-        headerStyle: { backgroundColor: Colors.light.background },
-        headerTitleStyle: { color: Colors.light.primary, fontFamily: 'Montserrat-Bold' },
-        headerTintColor: Colors.light.primary,
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.primary, fontFamily: 'Montserrat-Bold' },
+        headerTintColor: colors.primary,
       }}
     >
+      {/* Personalizar etiqueta de la pestaña */}
       <Drawer.Screen
         name="(tabs)"
         options={({ route }) => {

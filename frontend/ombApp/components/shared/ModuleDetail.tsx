@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { ModuleCard } from '@/components/shared/ModuleCard';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 
 interface ModuleDetailProps {
   moduleId: number;
@@ -10,16 +12,18 @@ interface ModuleDetailProps {
 // Pantalla de detalle completo del módulo, mostrando modelos, campos y vistas
 export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
   const { module, isLoading } = useModuleFull(moduleId);
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
 
   if (isLoading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
+    return <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />;
   }
   if (!module) {
-    return <Text style={{ color: 'red', marginTop: 40 }}>No se encontró el módulo.</Text>;
+    return <Text style={{ color: '#e74c3c', marginTop: 40 }}>No se encontró el módulo.</Text>;
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Cabecera visual del módulo */}
       <View>
         <ModuleCard module={module} />
@@ -27,45 +31,45 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
 
       {/* Modelos */}
       <View style={{ marginHorizontal: 35 }}>
-        <Text style={styles.sectionTitle}>Modelos</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Modelos</Text>
       </View>
       {module.models && module.models.length > 0 ? (
         module.models.map((model: any) => (
-          <View key={model.id} style={{ ...styles.modelBox, marginHorizontal: 30 }}>
-            <Text style={styles.modelName}>{model.name} <Text style={styles.modelTech}>({model.technicalName})</Text></Text>
+          <View key={model.id} style={[styles.modelBox, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+            <Text style={[styles.modelName, { color: colors.text }]}>{model.name} <Text style={[styles.modelTech, { color: colors.icon }]}>({model.technicalName})</Text></Text>
             {/* Campos */}
-            <Text style={styles.subSectionTitle}>Campos</Text>
+            <Text style={[styles.subSectionTitle, { color: colors.primary }]}>Campos</Text>
             {model.fields && model.fields.length > 0 ? (
               model.fields.map((field: any) => (
                 <View key={field.id} style={styles.fieldRow}>
-                  <Text style={styles.fieldName}>{field.name}</Text>
-                  <Text style={styles.fieldType}>{field.type}</Text>
+                  <Text style={[styles.fieldName, { color: colors.text }]}>{field.name}</Text>
+                  <Text style={[styles.fieldType, { color: colors.primary }]}>{field.type}</Text>
                   {field.required && <Text style={styles.fieldRequired}>*</Text>}
                   {field.relationModel && (
-                    <Text style={styles.fieldRelation}>→ {field.relationModel}</Text>
+                    <Text style={[styles.fieldRelation, { color: '#2196F3' }]}>→ {field.relationModel}</Text>
                   )}
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>Sin campos</Text>
+              <Text style={[styles.emptyText, { color: colors.icon }]}>Sin campos</Text>
             )}
             {/* Vistas */}
-            <Text style={styles.subSectionTitle}>Vistas</Text>
+            <Text style={[styles.subSectionTitle, { color: colors.primary }]}>Vistas</Text>
             {model.views && model.views.length > 0 ? (
               model.views.map((view: any) => (
                 <View key={view.id} style={styles.viewRow}>
-                  <Text style={styles.viewType}>{view.type}</Text>
-                  <Text style={styles.viewName}>{view.name}</Text>
+                  <Text style={[styles.viewType, { color: '#4CAF50' }]}>{view.type}</Text>
+                  <Text style={[styles.viewName, { color: colors.icon }]}>{view.name}</Text>
                 </View>
               ))
             ) : (
-              <Text style={styles.emptyText}>Sin vistas</Text>
+              <Text style={[styles.emptyText, { color: colors.icon }]}>Sin vistas</Text>
             )}
           </View>
         ))
       ) : (
         <View style={{ marginHorizontal: 30 }}>
-          <Text style={styles.emptyText}>Este módulo no tiene modelos.</Text>
+          <Text style={[styles.emptyText, { color: colors.icon }]}>Este módulo no tiene modelos.</Text>
         </View>
       )}
     </ScrollView>
@@ -84,11 +88,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   modelBox: {
-    backgroundColor: '#F7F7F7',
     borderRadius: 10,
     padding: 12,
     marginBottom: 18,
-    shadowColor: '#000',
     shadowOpacity: 0.04,
     shadowRadius: 2,
     elevation: 1,
@@ -100,7 +102,6 @@ const styles = StyleSheet.create({
   },
   modelTech: {
     fontSize: 13,
-    color: '#888',
   },
   subSectionTitle: {
     fontSize: 15,
@@ -120,7 +121,6 @@ const styles = StyleSheet.create({
   },
   fieldType: {
     fontSize: 13,
-    color: '#7B61FF',
     marginRight: 8,
   },
   fieldRequired: {
@@ -130,7 +130,6 @@ const styles = StyleSheet.create({
   },
   fieldRelation: {
     fontSize: 13,
-    color: '#2196F3',
   },
   viewRow: {
     flexDirection: 'row',
@@ -140,15 +139,12 @@ const styles = StyleSheet.create({
   },
   viewType: {
     fontSize: 13,
-    color: '#4CAF50',
     marginRight: 8,
   },
   viewName: {
     fontSize: 13,
-    color: '#888',
   },
   emptyText: {
-    color: '#888',
     fontStyle: 'italic',
     marginLeft: 8,
     marginBottom: 4,

@@ -8,12 +8,14 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#1ed760',
-        background: '#000',
-        text: '#fff',
-        border: '#222',
-        card: '#232323',
-        lightText: '#b3b3b3',
+        primary: '#714B67',
+        background: '#F7F7F7',
+        text: '#714B67',
+        border: '#A084A2',
+        card: '#fff',
+        lightText: '#A084A2',
+        accent: '#FFB84D',
+        dark: '#222',
       },
       fontFamily: {
         bold: ['Montserrat-Bold'],

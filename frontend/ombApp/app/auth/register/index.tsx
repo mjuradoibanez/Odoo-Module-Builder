@@ -1,4 +1,5 @@
-import { Colors, Fonts } from '@/constants/theme';
+import { getColors, Fonts } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { authRegister } from '@/core/auth/actions/auth-actions';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -7,6 +8,8 @@ import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function RegisterScreen() {
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
   const [form, setForm] = useState({
     email: '',
     username: '',
@@ -74,18 +77,18 @@ export default function RegisterScreen() {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.light.background,
+        backgroundColor: colors.background,
       }}
     >
       <View
         style={{
           width: 420,
-          backgroundColor: Colors.light.card,
+          backgroundColor: colors.card,
           borderRadius: 18,
           padding: 40,
           flexDirection: 'column',
           alignItems: 'center',
-          shadowColor: Colors.light.primary,
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.15,
           shadowRadius: 16,
@@ -94,7 +97,7 @@ export default function RegisterScreen() {
       >
         <Text
           style={{
-            color: Colors.light.primary,
+            color: colors.primary,
             fontSize: 32,
             fontWeight: 'bold',
             marginBottom: 24,
@@ -105,17 +108,17 @@ export default function RegisterScreen() {
         </Text>
         <TextInput
           placeholder="Email"
-          placeholderTextColor={Colors.light.icon}
+          placeholderTextColor={colors.icon}
           style={{
             width: '100%',
-            backgroundColor: Colors.light.background,
-            color: Colors.light.text,
+            backgroundColor: colors.background,
+            color: colors.text,
             padding: 14,
             borderRadius: 10,
             marginBottom: 8,
             fontSize: 16,
             borderWidth: 1,
-            borderColor: Colors.light.border,
+            borderColor: colors.border,
             fontFamily: Fonts.sans,
           }}
           keyboardType="email-address"
@@ -136,17 +139,17 @@ export default function RegisterScreen() {
         />
         <TextInput
           placeholder="Nombre de usuario (opcional)"
-          placeholderTextColor={Colors.light.icon}
+          placeholderTextColor={colors.icon}
           style={{
             width: '100%',
-            backgroundColor: Colors.light.background,
-            color: Colors.light.text,
+            backgroundColor: colors.background,
+            color: colors.text,
             padding: 14,
             borderRadius: 10,
             marginBottom: 16,
             fontSize: 16,
             borderWidth: 1,
-            borderColor: Colors.light.border,
+            borderColor: colors.border,
             fontFamily: Fonts.sans,
           }}
           autoCapitalize="none"
@@ -157,16 +160,16 @@ export default function RegisterScreen() {
           <View style={{ position: 'relative' }}>
             <TextInput
               placeholder="Contraseña"
-              placeholderTextColor={Colors.light.icon}
+              placeholderTextColor={colors.icon}
               style={{
                 width: '100%',
-                backgroundColor: Colors.light.background,
-                color: Colors.light.text,
+                backgroundColor: colors.background,
+                color: colors.text,
                 padding: 14,
                 borderRadius: 10,
                 fontSize: 16,
                 borderWidth: 1,
-                borderColor: Colors.light.border,
+                borderColor: colors.border,
                 fontFamily: Fonts.sans,
                 paddingRight: 40,
               }}
@@ -179,7 +182,7 @@ export default function RegisterScreen() {
               style={{ position: 'absolute', right: 10, top: 14 }}
               onPress={() => setShowPassword((v) => !v)}
             >
-              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color={Colors.light.icon} />
+              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color={colors.icon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -187,16 +190,16 @@ export default function RegisterScreen() {
           <View style={{ position: 'relative' }}>
             <TextInput
               placeholder="Repetir contraseña"
-              placeholderTextColor={Colors.light.icon}
+              placeholderTextColor={colors.icon}
               style={{
                 width: '100%',
-                backgroundColor: Colors.light.background,
-                color: Colors.light.text,
+                backgroundColor: colors.background,
+                color: colors.text,
                 padding: 14,
                 borderRadius: 10,
                 fontSize: 16,
                 borderWidth: 1,
-                borderColor: Colors.light.border,
+                borderColor: colors.border,
                 fontFamily: Fonts.sans,
                 paddingRight: 40,
               }}
@@ -209,7 +212,7 @@ export default function RegisterScreen() {
               style={{ position: 'absolute', right: 10, top: 14 }}
               onPress={() => setShowConfirmPassword((v) => !v)}
             >
-              <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color={Colors.light.icon} />
+              <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={22} color={colors.icon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -218,7 +221,7 @@ export default function RegisterScreen() {
           disabled={isPosting}
           style={{
             width: '100%',
-            backgroundColor: Colors.light.primary,
+            backgroundColor: colors.primary,
             padding: 16,
             borderRadius: 10,
             alignItems: 'center',
@@ -228,7 +231,7 @@ export default function RegisterScreen() {
         >
           <Text
             style={{
-              color: Colors.light.card,
+              color: colors.card,
               fontWeight: 'bold',
               fontSize: 18,
               fontFamily: Fonts.sans,
@@ -242,7 +245,7 @@ export default function RegisterScreen() {
         >
           <Text
             style={{
-              color: Colors.light.accent,
+              color: colors.accent,
               textDecorationLine: 'underline',
               fontFamily: Fonts.sans,
             }}

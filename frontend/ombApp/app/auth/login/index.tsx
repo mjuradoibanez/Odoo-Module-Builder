@@ -1,4 +1,5 @@
-import { Colors, Fonts } from '@/constants/theme';
+import { getColors, Fonts } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -8,6 +9,8 @@ import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 export default function LoginScreen() {
 
   const { login, status } = useAuthStore();
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
 
   const [form, setForm] = useState({
     email: '',
@@ -55,18 +58,18 @@ export default function LoginScreen() {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: Colors.light.background,
+        backgroundColor: colors.background,
       }}
     >
       <View
         style={{
           width: 420,
-          backgroundColor: Colors.light.card,
+          backgroundColor: colors.card,
           borderRadius: 18,
           padding: 40,
           flexDirection: 'column',
           alignItems: 'center',
-          shadowColor: Colors.light.primary,
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.15,
           shadowRadius: 16,
@@ -75,7 +78,7 @@ export default function LoginScreen() {
       >
         <Text
           style={{
-            color: Colors.light.primary,
+            color: colors.primary,
             fontSize: 32,
             fontWeight: 'bold',
             marginBottom: 24,
@@ -86,17 +89,17 @@ export default function LoginScreen() {
         </Text>
         <TextInput
           placeholder="Email"
-          placeholderTextColor={Colors.light.icon}
+          placeholderTextColor={colors.icon}
           style={{
             width: '100%',
-            backgroundColor: Colors.light.background,
-            color: Colors.light.text,
+            backgroundColor: colors.background,
+            color: colors.text,
             padding: 14,
             borderRadius: 10,
             marginBottom: 16,
             fontSize: 16,
             borderWidth: 1,
-            borderColor: Colors.light.border,
+            borderColor: colors.border,
             fontFamily: Fonts.sans,
           }}
           keyboardType="email-address"
@@ -108,16 +111,16 @@ export default function LoginScreen() {
           <View style={{ position: 'relative' }}>
             <TextInput
               placeholder="Contraseña"
-              placeholderTextColor={Colors.light.icon}
+              placeholderTextColor={colors.icon}
               style={{
                 width: '100%',
-                backgroundColor: Colors.light.background,
-                color: Colors.light.text,
+                backgroundColor: colors.background,
+                color: colors.text,
                 padding: 14,
                 borderRadius: 10,
                 fontSize: 16,
                 borderWidth: 1,
-                borderColor: Colors.light.border,
+                borderColor: colors.border,
                 fontFamily: Fonts.sans,
                 paddingRight: 40,
               }}
@@ -130,7 +133,7 @@ export default function LoginScreen() {
               style={{ position: 'absolute', right: 10, top: 14 }}
               onPress={() => setShowPassword((v) => !v)}
             >
-              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color={Colors.light.icon} />
+              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={22} color={colors.icon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -139,7 +142,7 @@ export default function LoginScreen() {
           disabled={isPosting}
           style={{
             width: '100%',
-            backgroundColor: Colors.light.primary,
+            backgroundColor: colors.primary,
             padding: 16,
             borderRadius: 10,
             alignItems: 'center',
@@ -149,7 +152,7 @@ export default function LoginScreen() {
         >
           <Text
             style={{
-              color: Colors.light.card,
+              color: colors.card,
               fontWeight: 'bold',
               fontSize: 18,
               fontFamily: Fonts.sans,
@@ -163,7 +166,7 @@ export default function LoginScreen() {
         >
           <Text
             style={{
-              color: Colors.light.accent,
+              color: colors.accent,
               textDecorationLine: 'underline',
               fontFamily: Fonts.sans,
             }}

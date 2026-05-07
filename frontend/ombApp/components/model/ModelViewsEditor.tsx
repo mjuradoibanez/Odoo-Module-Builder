@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 
 // Componente para editar las vistas adicionales de un modelo (search, kanban, calendar, graph)
 
@@ -26,6 +27,9 @@ export default function ModelViewsEditor({
   modelFields = [],
   editable = true,
 }: any) {
+  const isDarkMode = useThemeStore(state => state.isDarkMode);
+  const colors = getColors(isDarkMode);
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [newView, setNewView] = useState({
     type: 'search',
@@ -64,22 +68,26 @@ export default function ModelViewsEditor({
       case 'search':
         return (
           <View>
-            <Text style={styles.label}>Campos de búsqueda</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>Selecciona los campos por los que se podrá buscar</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Campos de búsqueda</Text>
+            <Text style={{ fontSize: 12, color: colors.icon, marginBottom: 4 }}>Selecciona los campos por los que se podrá buscar</Text>
             <View style={styles.fieldsContainer}>
                 {modelFields.map((f: any) => {
                     const selected = (view.configuration.fields || []).includes(f.technicalName);
                     return (
                         <TouchableOpacity 
                             key={f.technicalName}
-                            style={[styles.fieldBadge, selected && styles.fieldBadgeSelected]}
+                            style={[
+                              styles.fieldBadge,
+                              { backgroundColor: colors.card, borderColor: colors.border },
+                              selected && { backgroundColor: colors.primary, borderColor: colors.primary }
+                            ]}
                             onPress={() => {
                                 const current = view.configuration.fields || [];
                                 const next = selected ? current.filter((name: string) => name !== f.technicalName) : [...current, f.technicalName];
                                 updateFn('fields', next);
                             }}
                         >
-                            <Text style={selected ? {color: '#fff'} : {}}>{f.name}</Text>
+                            <Text style={[selected ? {color: '#fff'} : { color: colors.text }]}>{f.name}</Text>
                         </TouchableOpacity>
                     );
                 })}
@@ -90,11 +98,12 @@ export default function ModelViewsEditor({
       case 'kanban':
         return (
           <View>
-            <Text style={styles.label}>Agrupar por defecto por:</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Agrupar por defecto por:</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.group_by}
                     onValueChange={(v) => updateFn('group_by', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Ninguno" value="" />
                     {modelFields.map((f: any) => (
@@ -108,11 +117,12 @@ export default function ModelViewsEditor({
       case 'calendar':
         return (
           <View>
-            <Text style={styles.label}>Campo de inicio (obligatorio)</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Campo de inicio (obligatorio)</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.date_start}
                     onValueChange={(v) => updateFn('date_start', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Selecciona un campo..." value="" />
                     {modelFields.filter((f: any) => ['date', 'datetime'].includes(f.type.toLowerCase())).map((f: any) => (
@@ -120,11 +130,12 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
-            <Text style={styles.label}>Campo de fin (opcional)</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Campo de fin (opcional)</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.date_stop}
                     onValueChange={(v) => updateFn('date_stop', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Ninguno" value="" />
                     {modelFields.filter((f: any) => ['date', 'datetime'].includes(f.type.toLowerCase())).map((f: any) => (
@@ -132,11 +143,12 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
-            <Text style={styles.label}>Color (por campo)</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Color (por campo)</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.color}
                     onValueChange={(v) => updateFn('color', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Ninguno" value="" />
                     {modelFields.map((f: any) => (
@@ -150,22 +162,24 @@ export default function ModelViewsEditor({
       case 'graph':
         return (
           <View>
-            <Text style={styles.label}>Tipo de gráfico</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Tipo de gráfico</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.graph_type}
                     onValueChange={(v) => updateFn('graph_type', v)}
+                    style={{ color: colors.text }}
                 >
                     {GRAPH_TYPES.map(gt => (
                         <Picker.Item key={gt.value} label={gt.label} value={gt.value} />
                     ))}
                 </Picker>
             </View>
-            <Text style={styles.label}>Agrupar por (Row)</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Agrupar por (Row)</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.row_field}
                     onValueChange={(v) => updateFn('row_field', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Selecciona un campo..." value="" />
                     {modelFields.map((f: any) => (
@@ -173,11 +187,12 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
-            <Text style={styles.label}>Medida (Measure)</Text>
-            <View style={styles.pickerContainer}>
+            <Text style={[styles.label, { color: colors.text }]}>Medida (Measure)</Text>
+            <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.measure_field}
                     onValueChange={(v) => updateFn('measure_field', v)}
+                    style={{ color: colors.text }}
                 >
                     <Picker.Item label="Selecciona un campo..." value="" />
                     {modelFields.filter((f: any) => ['integer', 'float', 'monetary'].includes(f.type.toLowerCase())).map((f: any) => (
@@ -195,17 +210,17 @@ export default function ModelViewsEditor({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Vistas adicionales</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text }]}>Vistas adicionales</Text>
       
       {views.length === 0 && !showAddForm && (
-        <Text style={styles.emptyText}>No hay vistas adicionales configuradas.</Text>
+        <Text style={[styles.emptyText, { color: colors.icon }]}>No hay vistas adicionales configuradas.</Text>
       )}
 
       {views.map((view: any) => (
-        <View key={view.id} style={styles.viewRow}>
+        <View key={view.id} style={[styles.viewRow, { borderColor: colors.border }]}>
           <View style={{ flex: 1 }}>
             {/*  Resumen */}
-            <Text style={styles.viewName}>{view.name} <Text style={styles.viewType}>({view.type})</Text></Text>
+            <Text style={[styles.viewName, { color: colors.text }]}>{view.name} <Text style={[styles.viewType, { color: colors.primary }]}>({view.type})</Text></Text>
           </View>
           {editable && (
             <TouchableOpacity onPress={() => onDeleteView(view.id)}>
@@ -216,15 +231,15 @@ export default function ModelViewsEditor({
       ))}
 
       {editable && !showAddForm && (
-        <TouchableOpacity style={styles.addButton} onPress={() => setShowAddForm(true)}>
-          <Text style={styles.addButtonText}>+ Añadir vista</Text>
+        <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.card, borderColor: colors.primary }]} onPress={() => setShowAddForm(true)}>
+          <Text style={[styles.addButtonText, { color: colors.primary }]}>+ Añadir vista</Text>
         </TouchableOpacity>
       )}
 
       {showAddForm && (
-        <View style={styles.formBox}>
-          <Text style={styles.label}>Tipo de vista</Text>
-          <View style={styles.pickerContainer}>
+        <View style={[styles.formBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.label, { color: colors.text }]}>Tipo de vista</Text>
+          <View style={[styles.pickerContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Picker
               selectedValue={newView.type}
               onValueChange={(v) => {
@@ -234,6 +249,7 @@ export default function ModelViewsEditor({
                 if (v === 'search') config = { fields: [] };
                 setNewView({ ...newView, type: v, configuration: config });
               }}
+              style={{ color: colors.text }}
             >
               {VIEW_TYPES.map(vt => (
                 <Picker.Item key={vt.value} label={vt.label} value={vt.value} />
@@ -241,22 +257,23 @@ export default function ModelViewsEditor({
             </Picker>
           </View>
 
-          <Text style={styles.label}>Nombre de la vista</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Nombre de la vista</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
             value={newView.name}
             onChangeText={(v) => setNewView({ ...newView, name: v })}
             placeholder="Ej: Vista de análisis"
+            placeholderTextColor={colors.icon}
           />
 
           {renderConfigFields(newView, true, updateConfig)}
 
           <View style={styles.formButtons}>
-            <TouchableOpacity style={[styles.button, { backgroundColor: Colors.light.primary }]} onPress={handleAdd}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAdd}>
               <Text style={styles.buttonText}>Añadir</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { backgroundColor: '#bbb' }]} onPress={resetForm}>
-              <Text style={[styles.buttonText, { color: '#222' }]}>Cancelar</Text>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.border }]} onPress={resetForm}>
+              <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -268,48 +285,39 @@ export default function ModelViewsEditor({
 const styles = StyleSheet.create({
   container: { marginTop: 20 },
   sectionTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
-  emptyText: { color: '#888', fontStyle: 'italic', marginBottom: 10 },
+  emptyText: { fontStyle: 'italic', marginBottom: 10 },
   viewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderColor: '#eee',
   },
   viewName: { fontSize: 16, fontWeight: '500' },
-  viewType: { color: Colors.light.icon, fontSize: 14 },
+  viewType: { fontSize: 14 },
   deleteText: { color: '#c0392b', fontWeight: 'bold' },
   addButton: {
     marginTop: 10,
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: Colors.light.primary,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  addButtonText: { color: Colors.light.primary, fontWeight: 'bold' },
+  addButtonText: { fontWeight: 'bold' },
   formBox: {
     marginTop: 15,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
-    backgroundColor: '#fdfdfd',
   },
   label: { marginTop: 10, fontWeight: '500', marginBottom: 4 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     padding: 8,
     borderRadius: 6,
-    backgroundColor: '#fff',
   },
   pickerContainer: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 6,
-    backgroundColor: '#fff',
     marginTop: 4,
   },
   formButtons: {
@@ -335,11 +343,5 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#eee',
   },
-  fieldBadgeSelected: {
-    backgroundColor: Colors.light.primary,
-    borderColor: Colors.light.primary,
-  }
 });

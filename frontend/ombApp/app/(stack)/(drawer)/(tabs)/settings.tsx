@@ -17,13 +17,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useUpdateUser } from '@/presentation/hooks/useUpdateUser';
 import { deleteAccount } from '@/core/actions/delete-account';
-import { Colors } from '@/constants/theme';
+import { getColors } from '@/constants/theme';
+import { useThemeStore } from '@/presentation/store/useThemeStore';
 
 // Apartado del formulario (para hacer secciones)
-const SettingsSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const SettingsSection = ({ title, children, colors }: { title: string; children: React.ReactNode; colors: ReturnType<typeof getColors> }) => (
   <View style={styles.section}>
-    <Text style={styles.sectionTitle}>{title}</Text>
-    <View style={styles.sectionContent}>{children}</View>
+    <Text style={[styles.sectionTitle, { color: colors.accent }]}>{title}</Text>
+    <View style={[styles.sectionContent, { backgroundColor: colors.card }]}>{children}</View>
   </View>
 );
 
@@ -34,28 +35,30 @@ const SettingSwitch = ({
   description,
   value,
   onValueChange,
+  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   description?: string;
   value: boolean;
   onValueChange: (val: boolean) => void;
+  colors: ReturnType<typeof getColors>;
 }) => (
   <View style={styles.settingRow}>
-    <View style={styles.settingIconContainer}>
-      <Ionicons name={icon} size={22} color={Colors.light.primary} />
+    <View style={[styles.settingIconContainer, { backgroundColor: colors.background }]}>
+      <Ionicons name={icon} size={22} color={colors.primary} />
     </View>
 
     <View style={styles.settingTextContainer}>
-      <Text style={styles.settingLabel}>{label}</Text>
-      {description && <Text style={styles.settingDescription}>{description}</Text>}
+      <Text style={[styles.settingLabel, { color: colors.text }]}>{label}</Text>
+      {description && <Text style={[styles.settingDescription, { color: colors.icon }]}>{description}</Text>}
     </View>
     
     <Switch
       value={value}
       onValueChange={onValueChange}
-      trackColor={{ false: Colors.light.icon, true: Colors.light.accent }}
-      thumbColor={value ? Colors.light.primary : '#f4f3f4'}
+      trackColor={{ false: colors.icon, true: colors.accent }}
+      thumbColor={value ? colors.primary : '#f4f3f4'}
     />
   </View>
 );
@@ -68,6 +71,7 @@ const SettingAction = ({
   onPress,
   rightText,
   danger = false,
+  colors,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -75,20 +79,21 @@ const SettingAction = ({
   onPress: () => void;
   rightText?: string;
   danger?: boolean;
+  colors: ReturnType<typeof getColors>;
 }) => (
   <TouchableOpacity style={styles.settingRow} onPress={onPress} activeOpacity={0.6}>
-    <View style={styles.settingIconContainer}>
-      <Ionicons name={icon} size={22} color={danger ? '#e74c3c' : Colors.light.primary} />
+    <View style={[styles.settingIconContainer, { backgroundColor: colors.background }]}>
+      <Ionicons name={icon} size={22} color={danger ? '#e74c3c' : colors.primary} />
     </View>
 
     <View style={styles.settingTextContainer}>
-      <Text style={[styles.settingLabel, danger && { color: '#e74c3c' }]}>{label}</Text>
-      {description && <Text style={styles.settingDescription}>{description}</Text>}
+      <Text style={[styles.settingLabel, danger && { color: '#e74c3c' }, !danger && { color: colors.text }]}>{label}</Text>
+      {description && <Text style={[styles.settingDescription, { color: colors.icon }]}>{description}</Text>}
     </View>
     
-    {rightText && <Text style={styles.settingRightText}>{rightText}</Text>}
+    {rightText && <Text style={[styles.settingRightText, { color: colors.icon }]}>{rightText}</Text>}
     
-    <Ionicons name="chevron-forward" size={18} color={Colors.light.icon} />
+    <Ionicons name="chevron-forward" size={18} color={colors.icon} />
   </TouchableOpacity>
 );
 
@@ -99,12 +104,14 @@ const ChangePasswordModal = ({
   onSubmit,
   isSubmitting,
   serverError,
+  colors,
 }: {
   visible: boolean;
   onClose: () => void;
   onSubmit: (currentPassword: string, newPassword: string) => Promise<boolean>;
   isSubmitting: boolean;
   serverError: string | null;
+  colors: ReturnType<typeof getColors>;
 }) => {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -182,15 +189,15 @@ const ChangePasswordModal = ({
     autoFocus?: boolean;
   }) => (
     <>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={styles.passwordInputContainer}>
+      <Text style={[styles.inputLabel, { color: colors.text }]}>{label}</Text>
+      <View style={[styles.passwordInputContainer, { backgroundColor: colors.background }]}>
         <TextInput
-          style={styles.passwordInput}
+          style={[styles.passwordInput, { color: colors.text }]}
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={!showPassword}
           placeholder={placeholder}
-          placeholderTextColor={Colors.light.icon}
+          placeholderTextColor={colors.icon}
           autoFocus={autoFocus}
         />
         
@@ -198,7 +205,7 @@ const ChangePasswordModal = ({
           <Ionicons
             name={showPassword ? 'eye-off-outline' : 'eye-outline'}
             size={22}
-            color={Colors.light.icon}
+            color={colors.icon}
           />
         </TouchableOpacity>
       </View>
@@ -211,11 +218,11 @@ const ChangePasswordModal = ({
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Cambiar contraseña</Text>
+            <Text style={[styles.modalTitle, { color: colors.primary }]}>Cambiar contraseña</Text>
             <TouchableOpacity onPress={handleClose}>
-              <Ionicons name="close" size={24} color={Colors.light.icon} />
+              <Ionicons name="close" size={24} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -263,14 +270,14 @@ const ChangePasswordModal = ({
 
               <View style={styles.modalActions}>
                 <TouchableOpacity
-                  style={styles.modalCancelButton}
+                  style={[styles.modalCancelButton, { backgroundColor: colors.background }]}
                   onPress={handleClose}
                   disabled={isSubmitting}
                 >
-                  <Text style={styles.modalCancelText}>Cancelar</Text>
+                  <Text style={[styles.modalCancelText, { color: colors.icon }]}>Cancelar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.modalSubmitButton}
+                  style={[styles.modalSubmitButton, { backgroundColor: colors.primary }]}
                   onPress={handleSubmit}
                   disabled={isSubmitting}
                 >
@@ -296,12 +303,14 @@ const DeleteAccountModal = ({
   onConfirm,
   deleting,
   error,
+  colors,
 }: {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
   deleting?: boolean;
   error?: string | null;
+  colors: ReturnType<typeof getColors>;
 }) => {
   const [confirmStep, setConfirmStep] = useState(false);
 
@@ -327,14 +336,14 @@ const DeleteAccountModal = ({
         style={styles.modalOverlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
           <View style={styles.deleteModalHeader}>
             <Ionicons name="warning-outline" size={48} color="#e74c3c" />
             <Text style={styles.deleteModalTitle}>Eliminar cuenta</Text>
           </View>
 
           <View style={styles.deleteModalBody}>
-            <Text style={styles.deleteModalText}>
+            <Text style={[styles.deleteModalText, { color: colors.text }]}>
               Esta acción es irreversible. Se eliminarán todos tus datos, incluyendo{' '}
               <Text style={styles.deleteModalHighlight}>todos tus módulos y proyectos</Text>.
             </Text>
@@ -362,11 +371,11 @@ const DeleteAccountModal = ({
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.deleteCancelButton}
+              style={[styles.deleteCancelButton, { backgroundColor: colors.background }]}
               onPress={handleClose}
               disabled={deleting}
             >
-              <Text style={styles.deleteCancelText}>Cancelar</Text>
+              <Text style={[styles.deleteCancelText, { color: colors.icon }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -382,8 +391,10 @@ export default function SettingsScreen() {
   const user = useAuthStore((state) => state.user);
   const { update, isUpdating, error: updateError } = useUpdateUser();
 
-  // Estados locales de configuración
-  const [darkModeEnabled, setDarkModeEnabled] = useState(false);
+  // Theme store
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const toggleDarkMode = useThemeStore((state) => state.toggleDarkMode);
+  const colors = getColors(isDarkMode);
 
   // Estado para edición de username
   const [editingUsername, setEditingUsername] = useState(false);
@@ -483,16 +494,16 @@ export default function SettingsScreen() {
   const memberSince = formatDate(user?.createdAt);
 
   return (
-    <View style={[styles.container, isDesktop && styles.containerDesktop]}>
+    <View style={[styles.container, { backgroundColor: colors.background }, isDesktop && styles.containerDesktop]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {/* Encabezado */}
-        <Text style={styles.headerTitle}>Ajustes</Text>
-        <Text style={styles.headerSubtitle}>Configura tu experiencia en la aplicación</Text>
+        <Text style={[styles.headerTitle, { color: colors.primary }]}>Ajustes</Text>
+        <Text style={[styles.headerSubtitle, { color: colors.icon }]}>Configura tu experiencia en la aplicación</Text>
 
         {/* Tarjeta de perfil */}
-        <View style={styles.profileCard}>
+        <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
           <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={64} color={Colors.light.primary} />
+            <Ionicons name="person-circle" size={64} color={colors.primary} />
           </View>
 
           <View style={styles.profileInfo}>
@@ -500,7 +511,7 @@ export default function SettingsScreen() {
               <View>
                 <View style={styles.usernameEditContainer}>
                   <TextInput
-                    style={styles.usernameInput}
+                    style={[styles.usernameInput, { color: colors.primary, borderBottomColor: colors.accent }]}
                     value={usernameDraft}
                     onChangeText={(text) => {
                       setUsernameDraft(text);
@@ -508,21 +519,21 @@ export default function SettingsScreen() {
                     }}
                     autoFocus
                     placeholder="Tu nombre de usuario"
-                    placeholderTextColor={Colors.light.icon}
+                    placeholderTextColor={colors.icon}
                     maxLength={50}
                   />
 
                   <View style={styles.usernameEditActions}>
                     <TouchableOpacity onPress={saveUsername} disabled={isUpdating}>
                       {isUpdating ? (
-                        <ActivityIndicator size="small" color={Colors.light.primary} />
+                        <ActivityIndicator size="small" color={colors.primary} />
                       ) : (
-                        <Ionicons name="checkmark-circle" size={28} color={Colors.light.primary} />
+                        <Ionicons name="checkmark-circle" size={28} color={colors.primary} />
                       )}
                     </TouchableOpacity>
 
                     <TouchableOpacity onPress={cancelEditingUsername}>
-                      <Ionicons name="close-circle" size={28} color={Colors.light.icon} />
+                      <Ionicons name="close-circle" size={28} color={colors.icon} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -537,28 +548,29 @@ export default function SettingsScreen() {
 
             ) : (
               <TouchableOpacity onPress={startEditingUsername} style={styles.usernameRow}>
-                <Text style={styles.profileName}>{user?.username || 'Usuario'}</Text>
-                <Ionicons name="pencil" size={16} color={Colors.light.icon} style={{ marginLeft: 8 }} />
+                <Text style={[styles.profileName, { color: colors.primary }]}>{user?.username || 'Usuario'}</Text>
+                <Ionicons name="pencil" size={16} color={colors.icon} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             )}
 
-            <Text style={styles.profileEmail}>{user?.email || 'Sin correo'}</Text>
+            <Text style={[styles.profileEmail, { color: colors.icon }]}>{user?.email || 'Sin correo'}</Text>
             {memberSince && (
-              <Text style={styles.profileDate}>Miembro desde {memberSince}</Text>
+              <Text style={[styles.profileDate, { color: colors.icon }]}>Miembro desde {memberSince}</Text>
             )}
           </View>
         </View>
 
         {/* Preferencias de la aplicación */}
-        <SettingsSection title="Preferencias">
+        <SettingsSection title="Preferencias" colors={colors}>
           <SettingSwitch
             icon="moon-outline"
             label="Modo oscuro"
             description="Cambia la apariencia de la aplicación"
-            value={darkModeEnabled}
-            onValueChange={setDarkModeEnabled}
+            value={isDarkMode}
+            onValueChange={toggleDarkMode}
+            colors={colors}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
           <SettingAction
             icon="language-outline"
@@ -566,18 +578,20 @@ export default function SettingsScreen() {
             description="Idioma de la aplicación"
             onPress={() => {}}
             rightText="Español"
+            colors={colors}
           />
         </SettingsSection>
 
         {/* Cuenta */}
-        <SettingsSection title="Cuenta">
+        <SettingsSection title="Cuenta" colors={colors}>
           <SettingAction
             icon="lock-closed-outline"
             label="Cambiar contraseña"
             description="Actualiza tu contraseña de acceso"
             onPress={openPasswordModal}
+            colors={colors}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
           <SettingAction
             icon="trash-outline"
@@ -585,31 +599,35 @@ export default function SettingsScreen() {
             description="Elimina tu cuenta y todos tus datos"
             onPress={handleDeleteAccount}
             danger
+            colors={colors}
           />
         </SettingsSection>
 
         {/* Información de la aplicación */}
-        <SettingsSection title="Información">
+        <SettingsSection title="Información" colors={colors}>
           <SettingAction
             icon="information-circle-outline"
             label="Versión"
             description="Versión actual de la aplicación"
             onPress={() => {}}
             rightText="1.0.0"
+            colors={colors}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
           <SettingAction
             icon="document-text-outline"
             label="Términos y condiciones"
             onPress={() => {}}
+            colors={colors}
           />
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
           <SettingAction
             icon="shield-checkmark-outline"
             label="Política de privacidad"
             onPress={() => {}}
+            colors={colors}
           />
         </SettingsSection>
 
@@ -623,6 +641,7 @@ export default function SettingsScreen() {
         onSubmit={handleChangePassword}
         isSubmitting={isUpdating}
         serverError={updateError}
+        colors={colors}
       />
 
       {/* Modal de eliminar cuenta */}
@@ -635,6 +654,7 @@ export default function SettingsScreen() {
         onConfirm={confirmDeleteAccount}
         deleting={isDeleting}
         error={deleteError}
+        colors={colors}
       />
     </View>
   );
@@ -643,7 +663,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light.background,
   },
   containerDesktop: {
     paddingLeft: 80,
@@ -656,19 +675,16 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: Colors.light.primary,
     marginBottom: 4,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: Colors.light.icon,
     marginBottom: 24,
   },
   // Tarjeta de perfil
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -691,17 +707,14 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.light.primary,
     marginBottom: 2,
   },
   profileEmail: {
     fontSize: 14,
-    color: Colors.light.icon,
     marginBottom: 4,
   },
   profileDate: {
     fontSize: 12,
-    color: Colors.light.icon,
     fontStyle: 'italic',
   },
   // Edición de username
@@ -714,9 +727,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.light.primary,
     borderBottomWidth: 2,
-    borderBottomColor: Colors.light.accent,
     paddingVertical: 2,
   },
   usernameEditActions: {
@@ -740,14 +751,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.light.accent,
     marginBottom: 8,
     marginLeft: 4,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   sectionContent: {
-    backgroundColor: Colors.light.card,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -767,7 +776,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: Colors.light.background,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -778,21 +786,17 @@ const styles = StyleSheet.create({
   settingLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.text,
   },
   settingDescription: {
     fontSize: 12,
-    color: Colors.light.icon,
     marginTop: 2,
   },
   settingRightText: {
     fontSize: 13,
-    color: Colors.light.icon,
     marginRight: 8,
   },
   separator: {
     height: 1,
-    backgroundColor: Colors.light.background,
     marginHorizontal: 16,
   },
   // Modal de cambio de contraseña
@@ -804,7 +808,6 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: Colors.light.card,
     borderRadius: 20,
     padding: 24,
     width: '100%',
@@ -824,7 +827,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: Colors.light.primary,
   },
   modalError: {
     flexDirection: 'row',
@@ -869,7 +871,6 @@ const styles = StyleSheet.create({
   },
   deleteModalText: {
     fontSize: 15,
-    color: Colors.light.text,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -897,35 +898,29 @@ const styles = StyleSheet.create({
   deleteCancelButton: {
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.light.background,
     alignItems: 'center',
   },
   deleteCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.icon,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 6,
     marginTop: 8,
   },
   modalInput: {
-    backgroundColor: Colors.light.background,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.light.text,
     borderWidth: 1,
     borderColor: 'transparent',
   },
   passwordInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.background,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'transparent',
@@ -935,7 +930,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: Colors.light.text,
   },
   eyeButton: {
     paddingHorizontal: 12,
@@ -951,18 +945,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    backgroundColor: Colors.light.background,
   },
   modalCancelText: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.light.icon,
   },
   modalSubmitButton: {
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 10,
-    backgroundColor: Colors.light.primary,
     minWidth: 90,
     alignItems: 'center',
   },
