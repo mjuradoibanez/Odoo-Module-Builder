@@ -31,6 +31,13 @@ export default function RootLayout() {
     }
   }, [isDarkMode]);
 
+  // Establecer el título de la pestaña del navegador en web
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      document.title = 'OMB - Odoo Module Builder';
+    }
+  }, []);
+
   if (!fontsLoaded) {
     return (
       <View className="flex-1 bg-background justify-center items-center">

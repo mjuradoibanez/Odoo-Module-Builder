@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "omb",
+    "name": "Odoo Module Builder",
     "slug": "omb",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -24,7 +24,8 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "title": "Odoo Module Builder"
     },
     "plugins": [
       "expo-router",
