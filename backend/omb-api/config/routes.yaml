@@ -109,6 +109,12 @@ deployment:
   controller: App\Controller\DeploymentController::deployment
   methods: [ GET, DELETE, OPTIONS ]
 
+# Deploy a Odoo
+deploy_to_odoo:
+  path: /api/deploy-to-odoo/{id}
+  controller: App\Controller\OdooDeployController::deployToOdoo
+  methods: [ POST, OPTIONS ]
+
 # Favorites
 user_favorites:
   path: /user/{user_id}/favorites

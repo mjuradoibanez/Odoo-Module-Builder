@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions, ScrollView, Modal } from 'react-native';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
@@ -8,6 +8,7 @@ import { getColors } from '@/constants/theme';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';
 import { useGenerateAndDownloadModule } from '@/presentation/hooks/useGenerateAndDownloadModule';
+import { useDeployToOdoo } from '@/presentation/hooks/useDeployToOdoo';
 
 // Pantalla de despliegue de módulo Odoo
 
@@ -42,6 +43,8 @@ const DeployScreen = () => {
   const { width } = useWindowDimensions();
   const isDesktop = width >= 900;
   const generateAndDownload = useGenerateAndDownloadModule();
+  const { deploy, isDeploying, deployResult, resetResult } = useDeployToOdoo();
+  const [showResultModal, setShowResultModal] = useState(false);
 
   // Cargar detalles completos de los módulos para validar si están completos
   useEffect(() => {
@@ -69,6 +72,13 @@ const DeployScreen = () => {
     fetchDetails();
   }, [modules]);
 
+  // Mostrar modal cuando cambie el resultado del deploy
+  useEffect(() => {
+    if (deployResult) {
+      setShowResultModal(true);
+    }
+  }, [deployResult]);
+
   const handleSelect = (id: number) => {
     const full = moduleDetails[id];
     const complete = full ? isModuleComplete(full) : false;
@@ -76,9 +86,19 @@ const DeployScreen = () => {
     setSelectedModuleId(prev => (prev === id ? null : id));
   };
 
-  const handleDeploy = async () => {
+  const handleDownloadZip = async () => {
+    if (!selectedModuleId || !selectedFull) return;
+    await generateAndDownload(selectedFull);
+  };
+
+  const handleDeployToOdoo = async () => {
     if (!selectedModuleId) return;
-    await generateAndDownload(selectedModuleId);
+    await deploy(selectedModuleId);
+  };
+
+  const closeModal = () => {
+    setShowResultModal(false);
+    resetResult();
   };
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
@@ -90,6 +110,9 @@ const DeployScreen = () => {
       <View style={{ marginHorizontal: 30 }}>
         <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: colors.primary }}>
           Desplegar módulo Odoo
+        </Text>
+        <Text style={{ color: colors.icon, marginBottom: 16, fontSize: 14 }}>
+          Selecciona un módulo completo y elige cómo deseas desplegarlo:
         </Text>
       </View>
 
@@ -138,21 +161,94 @@ const DeployScreen = () => {
 
       {selectedModule && (
         <View style={{ paddingHorizontal: 30, paddingTop: 16, paddingBottom: 32 }}>
+          {/* Botón: Descargar ZIP */}
           <TouchableOpacity
             style={[
               styles.deployButton,
               { backgroundColor: colors.primary },
               !isComplete && { opacity: 0.5 },
             ]}
-            onPress={handleDeploy}
+            onPress={handleDownloadZip}
             disabled={!isComplete}
           >
             <Text style={styles.deployButtonText}>
-              {isComplete ? `Desplegar ${selectedModule.name}` : 'Módulo incompleto'}
+              Descargar ZIP - {selectedModule.name}
             </Text>
+          </TouchableOpacity>
+
+          {/* Botón: Desplegar directamente en Odoo */}
+          <TouchableOpacity
+            style={[
+              styles.deployButton,
+              { backgroundColor: '#27ae60', marginTop: 12 },
+              (!isComplete || isDeploying) && { opacity: 0.5 },
+            ]}
+            onPress={handleDeployToOdoo}
+            disabled={!isComplete || isDeploying}
+          >
+            {isDeploying ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.deployButtonText}>Desplegando en Odoo...</Text>
+              </View>
+            ) : (
+              <Text style={styles.deployButtonText}>
+                Desplegar en Odoo - {selectedModule.name}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Modal de resultado del despliegue */}
+      <Modal
+        visible={showResultModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>
+              {deployResult?.success ? 'Despliegue exitoso' : 'Error en el despliegue'}
+            </Text>
+            
+            <ScrollView style={styles.modalScroll}>
+              {deployResult?.message && (
+                <Text style={[styles.modalMessage, { color: colors.text }]}>
+                  {deployResult.message}
+                </Text>
+              )}
+              
+              {deployResult?.error && (
+                <View style={[styles.errorBox, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.errorText, { color: '#e74c3c' }]}>
+                    {deployResult.error}
+                  </Text>
+                </View>
+              )}
+              
+              {deployResult?.log && (
+                <View style={{ marginTop: 12 }}>
+                  <Text style={[styles.logLabel, { color: colors.icon }]}>Log de Odoo:</Text>
+                  <View style={[styles.logBox, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.logText, { color: colors.text }]}>
+                      {deployResult.log}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.closeButton, { backgroundColor: colors.primary }]}
+              onPress={closeModal}
+            >
+              <Text style={styles.closeButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -168,6 +264,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   deployButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '80%',
+    borderRadius: 16,
+    padding: 24,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  modalScroll: {
+    maxHeight: 300,
+    marginBottom: 16,
+  },
+  modalMessage: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  errorBox: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  logLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  logBox: {
+    padding: 12,
+    borderRadius: 8,
+    maxHeight: 150,
+  },
+  logText: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    lineHeight: 18,
+  },
+  closeButton: {
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  closeButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',

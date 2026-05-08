@@ -6,6 +6,12 @@
 parameters:
     java_server_host: 'java-server'
     java_server_port: 5000
+    odoo_addons_path: '%env(ODOO_ADDONS_PATH)%'
+    odoo_host: '%env(ODOO_HOST)%'
+    odoo_port: '%env(ODOO_PORT)%'
+    odoo_db: '%env(ODOO_DB)%'
+    odoo_user: '%env(ODOO_USER)%'
+    odoo_password: '%env(ODOO_PASSWORD)%'
 
 services:
     # default configuration for services in *this* file

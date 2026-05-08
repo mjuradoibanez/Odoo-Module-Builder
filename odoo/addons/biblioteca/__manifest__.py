@@ -1,7 +1,7 @@
 {
-    'name': 'gestion de biblioteca',
+    'name': 'biblioteca',
     'version': '1.0',
-    'author': 'usuario',
+    'author': 'null',
     'category': 'otra',
     'depends': ['base'],
     'data': [
