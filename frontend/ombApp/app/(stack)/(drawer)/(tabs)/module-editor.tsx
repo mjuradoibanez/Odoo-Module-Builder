@@ -18,6 +18,131 @@ import { checkDependencies } from '@/core/helpers/checkDependencies';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { ombApi } from '@/core/auth/api/ombApi';
 
+interface ModuleFormFieldsProps {
+  name: string;
+  setName: (v: string) => void;
+  technicalName: string;
+  setTechnicalName: (v: string) => void;
+  description: string;
+  setDescription: (v: string) => void;
+  category: string;
+  setCategory: (v: string) => void;
+  categoryOptions: string[];
+  isPublic: boolean;
+  setIsPublic: (v: boolean) => void;
+  fieldErrors: { name?: string; technicalName?: string; category?: string };
+  styles: any;
+  colors: any;
+  isEditing: boolean;
+  setSyncTechName: (v: boolean) => void;
+  setSyncName: (v: boolean) => void;
+  technicalNameRef: React.RefObject<any>;
+  setTechnicalNameFocused: (v: boolean) => void;
+}
+
+// Componente de formulario de módulo fuera para evitar pérdida de foco
+const ModuleFormFields: React.FC<ModuleFormFieldsProps> = ({
+  name,
+  setName,
+  technicalName,
+  setTechnicalName,
+  description,
+  setDescription,
+  category,
+  setCategory,
+  categoryOptions,
+  isPublic,
+  setIsPublic,
+  fieldErrors,
+  styles,
+  colors,
+  isEditing,
+  setSyncTechName,
+  setSyncName,
+  technicalNameRef,
+  setTechnicalNameFocused,
+}) => (
+  <>
+    {/* Campos de formulario del módulo */}
+    <Text style={[styles.label, { color: colors.text }]}>Nombre del módulo *</Text>
+    <TextInput
+      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.name && styles.inputError]}
+      value={name}
+      onChangeText={setName}
+      placeholder="Ej: Academia"
+      placeholderTextColor={colors.icon}
+      onFocus={() => {
+        if (!isEditing && !technicalName) setSyncTechName(true);
+      }}
+      onBlur={() => setSyncTechName(false)}
+    />
+    {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
+
+    <Text style={[styles.label, { color: colors.text }]}>Nombre técnico *</Text>
+    <TextInput
+      ref={technicalNameRef}
+      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.technicalName ? styles.inputError : undefined]}
+      value={technicalName}
+      onChangeText={setTechnicalName}
+      placeholder="Ej: academia_modulo"
+      placeholderTextColor={colors.icon}
+      autoCapitalize="none"
+      returnKeyType="done"
+      onFocus={() => {
+        setTechnicalNameFocused(true);
+        if (!isEditing && !name) setSyncName(true);
+      }}
+      onBlur={() => {
+        setTechnicalNameFocused(false);
+        setSyncName(false);
+      }}
+    />
+    {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
+
+    <Text style={[styles.label, { color: colors.text }]}>Descripción</Text>
+    <TextInput
+      style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text, height: 80 }]}
+      value={description}
+      onChangeText={setDescription}
+      placeholder="Descripción breve del módulo"
+      placeholderTextColor={colors.icon}
+      multiline
+    />
+
+    <Text style={[styles.label, { color: colors.text }]}>Categoría *</Text>
+    <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : colors.border, borderRadius: 8, marginBottom: 8, backgroundColor: colors.background }]}>
+      <Picker
+        selectedValue={category}
+        onValueChange={setCategory}
+        style={{ height: 44, color: colors.text }}
+      >
+        {categoryOptions.map((cat: string) => (
+          <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
+        ))}
+      </Picker>
+    </View>
+
+    {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+      <TouchableOpacity
+        style={[styles.radio, { borderColor: colors.primary }]}
+        onPress={() => setIsPublic(true)}
+      >
+        {isPublic && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
+      </TouchableOpacity>
+      <Text style={{ marginRight: 24, color: colors.text }}>Público</Text>
+      
+      <TouchableOpacity
+        style={[styles.radio, { borderColor: colors.primary }]}
+        onPress={() => setIsPublic(false)}
+      >
+        {!isPublic && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
+      </TouchableOpacity>
+      <Text style={{ color: colors.text }}>Privado</Text>
+    </View>
+  </>
+);
+
 // Pantalla de creación y edición de módulos
 const ModuleEditorScreen = () => {
   const isDarkMode = useThemeStore(state => state.isDarkMode);
@@ -39,11 +164,33 @@ const ModuleEditorScreen = () => {
   const [technicalName, setTechnicalName] = useState(isEditing ? '' : '');
   const [description, setDescription] = useState(isEditing ? '' : '');
   const [category, setCategory] = useState(isEditing ? 'otra' : 'otra');
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [redirectMessage, setRedirectMessage] = useState('');
+
+  const clearForm = () => {
+    setName('');
+    setTechnicalName('');
+    setDescription('');
+    setCategory('otra');
+    setIsPublic(false); // Por defecto privado
+    setLocalModels([]);
+    setModelFieldsMap({});
+    setModelViewsMap({});
+    setFieldErrors({});
+    setError('');
+    setSuccessMessage('');
+    setGeneralError(null);
+  };
+
+  // Limpiar el formulario al entrar en modo creación
+  useEffect(() => {
+    if (!moduleId) {
+      clearForm();
+    }
+  }, [moduleId]);
 
   // Errores de validación específicos por campo
   const { create, loading, error: backendError, success } = useCreateModule();
@@ -579,113 +726,6 @@ const ModuleEditorScreen = () => {
     };
   };
 
-  // Componente de formulario de módulo
-  const ModuleFormFields: React.FC<{
-    name: string;
-    setName: (v: string) => void;
-    technicalName: string;
-    setTechnicalName: (v: string) => void;
-    description: string;
-    setDescription: (v: string) => void;
-    category: string;
-    setCategory: (v: string) => void;
-    categoryOptions: string[];
-    isPublic: boolean;
-    setIsPublic: (v: boolean) => void;
-    fieldErrors: { name?: string; technicalName?: string; category?: string };
-    styles: any;
-    colors: any;
-  }> = ({
-    name,
-    setName,
-    technicalName,
-    setTechnicalName,
-    description,
-    setDescription,
-    category,
-    setCategory,
-    categoryOptions,
-    isPublic,
-    setIsPublic,
-    fieldErrors,
-    styles,
-    colors,
-  }) => (
-    <>
-      {/* Campos de formulario del módulo */}
-      <Text style={[styles.label, { color: colors.text }]}>Nombre del módulo *</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.name && styles.inputError]}
-        value={name}
-        onChangeText={setName}
-        placeholder="Ej: Academia"
-        placeholderTextColor={colors.icon}
-        onFocus={() => {
-          if (!isEditing && !technicalName) setSyncTechName(true);
-        }}
-        onBlur={() => setSyncTechName(false)}
-      />
-      {fieldErrors.name && <Text style={styles.error}>{fieldErrors.name}</Text>}
-
-      <Text style={[styles.label, { color: colors.text }]}>Nombre técnico *</Text>
-      <TextInput
-        ref={technicalNameRef}
-        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }, fieldErrors.technicalName ? styles.inputError : undefined]}
-        value={technicalName}
-        onChangeText={setTechnicalName}
-        placeholder="Ej: academia_modulo"
-        placeholderTextColor={colors.icon}
-        autoCapitalize="none"
-        returnKeyType="done"
-        onFocus={() => {
-          setTechnicalNameFocused(true);
-          if (!isEditing && !name) setSyncName(true);
-        }}
-        onBlur={() => {
-          setTechnicalNameFocused(false);
-          setSyncName(false);
-        }}
-      />
-      {fieldErrors.technicalName && <Text style={styles.error}>{fieldErrors.technicalName}</Text>}
-
-      <Text style={[styles.label, { color: colors.text }]}>Descripción</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text, height: 80 }]}
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Descripción breve del módulo"
-        placeholderTextColor={colors.icon}
-        multiline
-      />
-
-      <Text style={[styles.label, { color: colors.text }]}>Categoría *</Text>
-      <View style={[{ borderWidth: 1, borderColor: fieldErrors.category ? '#FF6B6B' : colors.border, borderRadius: 8, marginBottom: 8, backgroundColor: colors.background }]}>
-        <Picker
-          selectedValue={category}
-          onValueChange={setCategory}
-          style={{ height: 44, color: colors.text }}
-        >
-          {categoryOptions.map((cat: string) => (
-            <Picker.Item key={cat} label={cat === 'otra' ? 'Otra' : cat.charAt(0).toUpperCase() + cat.slice(1)} value={cat} />
-          ))}
-        </Picker>
-      </View>
-
-      {fieldErrors.category && <Text style={styles.error}>{fieldErrors.category}</Text>}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-        <TouchableOpacity
-          style={[styles.radio, { borderColor: colors.primary, backgroundColor: isPublic ? colors.primary : 'transparent' }, isPublic && styles.radioSelected]}
-          onPress={() => setIsPublic(true)}
-        />
-        <Text style={{ marginRight: 24, color: colors.text }}>Público</Text>
-        <TouchableOpacity
-          style={[styles.radio, { borderColor: colors.primary, backgroundColor: !isPublic ? colors.primary : 'transparent' }, !isPublic && styles.radioSelected]}
-          onPress={() => setIsPublic(false)}
-        />
-        <Text style={{ color: colors.text }}>Privado</Text>
-      </View>
-    </>
-  );
 
   // Renderizado condicional para edición
   if (editingId) {
@@ -722,6 +762,11 @@ const ModuleEditorScreen = () => {
               fieldErrors={fieldErrors}
               styles={styles}
               colors={colors}
+              isEditing={isEditing}
+              setSyncTechName={setSyncTechName}
+              setSyncName={setSyncName}
+              technicalNameRef={technicalNameRef}
+              setTechnicalNameFocused={setTechnicalNameFocused}
             />
 
             <View style={{ marginTop: 32 }}>
@@ -815,7 +860,7 @@ const ModuleEditorScreen = () => {
                               <Text style={styles.buttonText}>Aceptar</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.border }]} onPress={handleCancelModel}>
+                            <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: isDarkMode ? colors.border : '#e9ecef' }]} onPress={handleCancelModel}>
                               <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
                             </TouchableOpacity>
                           </View>
@@ -951,7 +996,7 @@ const ModuleEditorScreen = () => {
                     <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.primary }]} onPress={handleSaveModel}>
                       <Text style={styles.buttonText}>Aceptar</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: colors.border }]} onPress={handleCancelModel}>
+                    <TouchableOpacity style={[styles.button, { flex: 1, backgroundColor: isDarkMode ? colors.border : '#e9ecef' }]} onPress={handleCancelModel}>
                       <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
                     </TouchableOpacity>
                   </View>
@@ -1002,7 +1047,7 @@ const ModuleEditorScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.button, { flex: 1, backgroundColor: colors.border }]}
+                  style={[styles.button, { flex: 1, backgroundColor: isDarkMode ? colors.border : '#e9ecef' }]}
                   onPress={() => {
                     if (editingModelId !== null) {
                       setShowModuleEditError(editingModelId);
@@ -1101,6 +1146,11 @@ const ModuleEditorScreen = () => {
           fieldErrors={fieldErrors}
           styles={styles}
           colors={colors}
+          isEditing={isEditing}
+          setSyncTechName={setSyncTechName}
+          setSyncName={setSyncName}
+          technicalNameRef={technicalNameRef}
+          setTechnicalNameFocused={setTechnicalNameFocused}
         />
 
         {successMessage ? <Text style={{ color: '#2ecc40', marginTop: 10 }}>{successMessage}</Text> : null}
@@ -1116,8 +1166,7 @@ const ModuleEditorScreen = () => {
   );
 };
 
-
-// ====== Estilos ======
+// Estilos
 const styles = StyleSheet.create({
   title: {
     fontSize: 24,
@@ -1141,14 +1190,18 @@ const styles = StyleSheet.create({
     borderColor: '#FF6B6B',
   },
   radio: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    marginRight: 6,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  radioSelected: {
-    backgroundColor: 'transparent',
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   button: {
     marginTop: 28,
