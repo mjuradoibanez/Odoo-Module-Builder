@@ -110,7 +110,7 @@ const DeployScreen = () => {
 
   return (
     <ScrollView style={[{ flex: 1, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}>
-      {/* Historial de despliegues - ARRIBA DEL TODO, ANCHO COMPLETO */}
+      {/* Historial de despliegues */}
       <View style={{ padding: 16, paddingBottom: 0 }}>
         <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 16, marginBottom: 4, color: colors.primary }}>
           Historial de despliegues
