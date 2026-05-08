@@ -9,6 +9,7 @@ import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';
 import { useGenerateAndDownloadModule } from '@/presentation/hooks/useGenerateAndDownloadModule';
 import { useDeployToOdoo } from '@/presentation/hooks/useDeployToOdoo';
+import { useUserDeployments } from '@/presentation/hooks/useUserDeployments';
 
 // Pantalla de despliegue de módulo Odoo
 
@@ -44,6 +45,7 @@ const DeployScreen = () => {
   const isDesktop = width >= 900;
   const generateAndDownload = useGenerateAndDownloadModule();
   const { deploy, isDeploying, deployResult, resetResult } = useDeployToOdoo();
+  const { deployments, isLoading: loadingDeployments, refresh: refreshDeployments } = useUserDeployments(userId ?? 0);
   const [showResultModal, setShowResultModal] = useState(false);
 
   // Cargar detalles completos de los módulos para validar si están completos
@@ -94,6 +96,7 @@ const DeployScreen = () => {
   const handleDeployToOdoo = async () => {
     if (!selectedModuleId) return;
     await deploy(selectedModuleId);
+    refreshDeployments(); // Refrescar el historial tras el deploy
   };
 
   const closeModal = () => {
@@ -106,99 +109,182 @@ const DeployScreen = () => {
   const isComplete = selectedFull ? isModuleComplete(selectedFull) : false;
 
   return (
-    <View style={[{ flex: 1, padding: 16, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}>
-      <View style={{ marginHorizontal: 30 }}>
-        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 32, marginBottom: 16, color: colors.primary }}>
+    <ScrollView style={[{ flex: 1, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}>
+      {/* Historial de despliegues - ARRIBA DEL TODO, ANCHO COMPLETO */}
+      <View style={{ padding: 16, paddingBottom: 0 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', marginTop: 16, marginBottom: 4, color: colors.primary }}>
+          Historial de despliegues
+        </Text>
+        <Text style={{ color: colors.icon, fontSize: 13, marginBottom: 16 }}>
+          Últimos despliegues realizados a Odoo
+        </Text>
+
+        {loadingDeployments ? (
+          <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
+        ) : deployments.length === 0 ? (
+          <View style={[styles.emptyHistory, { backgroundColor: colors.card }]}>
+            <Text style={{ color: colors.icon, textAlign: 'center', fontSize: 14 }}>
+              No hay despliegues registrados todavía.
+            </Text>
+          </View>
+        ) : (
+          <View style={{ borderRadius: 12, overflow: 'hidden' }}>
+            {/* Cabecera de la tabla */}
+            <View style={[styles.tableRow, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2 }]}>Módulo</Text>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1.5 }]}>Nombre técnico</Text>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1.5 }]}>Fecha</Text>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1 }]}>Estado</Text>
+            </View>
+
+            {/* Filas de la tabla */}
+            {deployments.map((dep) => {
+              const isSuccess = dep.status === 'success';
+              const date = new Date(dep.createdAt || dep.created_at);
+              const formattedDate = date.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              });
+
+              return (
+                <View
+                  key={dep.id}
+                  style={[
+                    styles.tableRow,
+                    {
+                      backgroundColor: isSuccess
+                        ? 'rgba(39, 174, 96, 0.08)'
+                        : 'rgba(231, 76, 60, 0.08)',
+                    },
+                  ]}
+                >
+                  <Text style={[styles.tableCell, { flex: 2, color: colors.text }]} numberOfLines={1}>
+                    {dep.module?.name || '—'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1.5, color: colors.icon }]} numberOfLines={1}>
+                    {dep.module?.technicalName || dep.module?.technical_name || '—'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1.5, color: colors.text }]}>
+                    {formattedDate}
+                  </Text>
+                  <View style={{ flex: 1, paddingVertical: 10, paddingHorizontal: 8 }}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        { backgroundColor: isSuccess ? '#27ae60' : '#e74c3c' },
+                      ]}
+                    >
+                      <Text style={styles.statusBadgeText}>
+                        {isSuccess ? 'Éxito' : 'Error'}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+
+      {/* Separador */}
+      <View style={{ height: 1, backgroundColor: colors.icon, opacity: 0.2, marginVertical: 24, marginHorizontal: 16 }} />
+
+      {/* Sección de despliegue de módulo */}
+      <View style={{ padding: 16, paddingTop: 0 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8, color: colors.primary }}>
           Desplegar módulo Odoo
         </Text>
         <Text style={{ color: colors.icon, marginBottom: 16, fontSize: 14 }}>
           Selecciona un módulo completo y elige cómo deseas desplegarlo:
         </Text>
-      </View>
 
-      {isLoading || loadingDetails ? (
-        <ActivityIndicator size="large" color={colors.primary} />
-      ) : (
-        <FlatList
-          data={modules}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={{ paddingHorizontal: 30 }}
-          renderItem={({ item }) => {
-            const full = moduleDetails[item.id];
-            const complete = full ? isModuleComplete(full) : false;
+        {isLoading || loadingDetails ? (
+          <ActivityIndicator size="large" color={colors.primary} />
+        ) : (
+          <FlatList
+            data={modules}
+            keyExtractor={(item) => item.id.toString()}
+            scrollEnabled={false}
+            renderItem={({ item }) => {
+              const full = moduleDetails[item.id];
+              const complete = full ? isModuleComplete(full) : false;
 
-            return (
-              <TouchableOpacity
-                onPress={() => handleSelect(item.id)}
-                disabled={!complete}
-                activeOpacity={complete ? 0.7 : 1}
-                style={[
-                  { marginBottom: 12, borderRadius: 12, overflow: 'hidden' },
-                  selectedModuleId === item.id && styles.selectedCard,
-                  selectedModuleId === item.id && { borderColor: colors.primary },
-                  !complete && { opacity: 0.6 },
-                ]}
-              >
-                <ModuleCard module={item} incomplete={!complete} />
-                {!complete && (
-                  <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-                    <Text style={{ color: '#e74c3c', fontSize: 12, fontStyle: 'italic' }}>
-                      * Este módulo no está completo. Añade modelos y campos antes de desplegar.
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-            );
-          }}
-          
-          ListEmptyComponent={
-            <Text style={{ color: colors.icon, textAlign: 'center', marginTop: 40 }}>
-              No tienes módulos creados todavía.
-            </Text>
-          }
-        />
-      )}
-
-      {selectedModule && (
-        <View style={{ paddingHorizontal: 30, paddingTop: 16, paddingBottom: 32 }}>
-          {/* Botón: Descargar ZIP */}
-          <TouchableOpacity
-            style={[
-              styles.deployButton,
-              { backgroundColor: colors.primary },
-              !isComplete && { opacity: 0.5 },
-            ]}
-            onPress={handleDownloadZip}
-            disabled={!isComplete}
-          >
-            <Text style={styles.deployButtonText}>
-              Descargar ZIP - {selectedModule.name}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Botón: Desplegar directamente en Odoo */}
-          <TouchableOpacity
-            style={[
-              styles.deployButton,
-              { backgroundColor: '#27ae60', marginTop: 12 },
-              (!isComplete || isDeploying) && { opacity: 0.5 },
-            ]}
-            onPress={handleDeployToOdoo}
-            disabled={!isComplete || isDeploying}
-          >
-            {isDeploying ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
-                <Text style={styles.deployButtonText}>Desplegando en Odoo...</Text>
-              </View>
-            ) : (
-              <Text style={styles.deployButtonText}>
-                Desplegar en Odoo - {selectedModule.name}
+              return (
+                <TouchableOpacity
+                  onPress={() => handleSelect(item.id)}
+                  disabled={!complete}
+                  activeOpacity={complete ? 0.7 : 1}
+                  style={[
+                    { marginBottom: 12, borderRadius: 12, overflow: 'hidden' },
+                    selectedModuleId === item.id && styles.selectedCard,
+                    selectedModuleId === item.id && { borderColor: colors.primary },
+                    !complete && { opacity: 0.6 },
+                  ]}
+                >
+                  <ModuleCard module={item} incomplete={!complete} />
+                  {!complete && (
+                    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+                      <Text style={{ color: '#e74c3c', fontSize: 12, fontStyle: 'italic' }}>
+                        * Este módulo no está completo. Añade modelos y campos antes de desplegar.
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+            
+            ListEmptyComponent={
+              <Text style={{ color: colors.icon, textAlign: 'center', marginTop: 20 }}>
+                No tienes módulos creados todavía.
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+            }
+          />
+        )}
+
+        {selectedModule && (
+          <View style={{ paddingTop: 16, paddingBottom: 32 }}>
+            {/* Botón: Descargar ZIP */}
+            <TouchableOpacity
+              style={[
+                styles.deployButton,
+                { backgroundColor: colors.primary },
+                !isComplete && { opacity: 0.5 },
+              ]}
+              onPress={handleDownloadZip}
+              disabled={!isComplete}
+            >
+              <Text style={styles.deployButtonText}>
+                Descargar ZIP - {selectedModule.name}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Botón: Desplegar directamente en Odoo */}
+            <TouchableOpacity
+              style={[
+                styles.deployButton,
+                { backgroundColor: '#27ae60', marginTop: 12 },
+                (!isComplete || isDeploying) && { opacity: 0.5 },
+              ]}
+              onPress={handleDeployToOdoo}
+              disabled={!isComplete || isDeploying}
+            >
+              {isDeploying ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={styles.deployButtonText}>Desplegando en Odoo...</Text>
+                </View>
+              ) : (
+                <Text style={styles.deployButtonText}>
+                  Desplegar en Odoo - {selectedModule.name}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
       {/* Modal de resultado del despliegue */}
       <Modal
@@ -249,7 +335,7 @@ const DeployScreen = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -335,6 +421,38 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptyHistory: {
+    padding: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  tableCell: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    fontSize: 13,
+  },
+  tableHeaderText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 13,
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+  },
+  statusBadgeText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });

@@ -99,4 +99,33 @@ class DeploymentController extends AbstractController
 
         return new Response("Method not allowed", 405);
     }
+
+    // Deployments de los módulos de un usuario específico.
+    public function userDeployments(Request $request, SerializerInterface $serializer)
+    {
+        $userId = $request->get('user_id');
+        $entityManager = $this->getDoctrine()->getManager();
+
+        // Obtener todos los módulos del usuario
+        $userModules = $entityManager
+            ->getRepository(Modules::class)
+            ->findBy(['user' => $userId]);
+
+        if (!$userModules) {
+            return new Response(json_encode([]), 200, ['Content-Type' => 'application/json']);
+        }
+
+        $moduleIds = array_map(function($module) {
+            return $module->getId();
+        }, $userModules);
+
+        // Obtener los deployments de esos módulos, ordenados por fecha descendente
+        $data = $entityManager
+            ->getRepository(Deployments::class)
+            ->findBy(['module' => $moduleIds], ['createdAt' => 'DESC']);
+
+        $data = $serializer->serialize($data, 'json', ['groups' => 'deployments:read']);
+
+        return new Response($data, 200, ['Content-Type' => 'application/json']);
+    }
 }

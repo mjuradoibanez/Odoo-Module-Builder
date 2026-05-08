@@ -109,6 +109,11 @@ deployment:
   controller: App\Controller\DeploymentController::deployment
   methods: [ GET, DELETE, OPTIONS ]
 
+user_deployments:
+  path: /user/{user_id}/deployments
+  controller: App\Controller\DeploymentController::userDeployments
+  methods: [ GET, OPTIONS ]
+
 # Deploy a Odoo
 deploy_to_odoo:
   path: /api/deploy-to-odoo/{id}
