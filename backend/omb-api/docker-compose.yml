@@ -7,8 +7,17 @@ services:
     volumes:
       - .:/var/www/html
       - ./provisioning/sites-enabled:/etc/apache2/sites-enabled
+      - ../../odoo/addons:/mnt/extra-addons
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file:
       - .env.webapp
+    environment:
+      ODOO_ADDONS_PATH: /mnt/extra-addons
+      ODOO_HOST: omb_odoo
+      ODOO_PORT: '8069'
+      ODOO_DB: omb
+      ODOO_USER: odoo
+      ODOO_PASSWORD: odoo
     ports:
       - 8082:80
     networks:
