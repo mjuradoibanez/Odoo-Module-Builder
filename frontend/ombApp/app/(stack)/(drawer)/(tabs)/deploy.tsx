@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions, ScrollView, Modal } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions, ScrollView, Modal, TextInput, Switch } from 'react-native';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
@@ -47,6 +47,9 @@ const DeployScreen = () => {
   const { deploy, isDeploying, deployResult, resetResult } = useDeployToOdoo();
   const { deployments, isLoading: loadingDeployments, refresh: refreshDeployments } = useUserDeployments(userId ?? 0);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showModuleSelector, setShowModuleSelector] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hideIncomplete, setHideIncomplete] = useState(true);
 
   // Cargar detalles completos de los módulos para validar si están completos
   useEffect(() => {
@@ -108,6 +111,25 @@ const DeployScreen = () => {
   const selectedFull = selectedModuleId ? moduleDetails[selectedModuleId] : null;
   const isComplete = selectedFull ? isModuleComplete(selectedFull) : false;
 
+  // Módulos filtrados para el selector: por búsqueda y por visibilidad de incompletos
+  const filteredModules = useMemo(() => {
+    let result = modules;
+    if (hideIncomplete) {
+      result = result.filter(m => {
+        const full = moduleDetails[m.id];
+        return full ? isModuleComplete(full) : false;
+      });
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(m =>
+        m.name.toLowerCase().includes(q) ||
+        (m.technicalName && m.technicalName.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [modules, moduleDetails, hideIncomplete, searchQuery]);
+
   return (
     <ScrollView style={[{ flex: 1, backgroundColor: colors.background }, isDesktop && { paddingLeft: 80 }]}>
       {/* Historial de despliegues */}
@@ -131,8 +153,9 @@ const DeployScreen = () => {
           <View style={{ borderRadius: 12, overflow: 'hidden' }}>
             {/* Cabecera de la tabla */}
             <View style={[styles.tableRow, { backgroundColor: colors.primary }]}>
-              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2 }]}>Módulo</Text>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1.5 }]}>Módulo</Text>
               <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1.5 }]}>Nombre técnico</Text>
+              <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 2.5 }]}>Log</Text>
               <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1.5 }]}>Fecha</Text>
               <Text style={[styles.tableCell, styles.tableHeaderText, { flex: 1 }]}>Estado</Text>
             </View>
@@ -148,6 +171,11 @@ const DeployScreen = () => {
                 hour: '2-digit',
                 minute: '2-digit',
               });
+              const logPreview = dep.log
+                ? dep.log.length > 100
+                  ? dep.log.substring(0, 80) + '...'
+                  : dep.log
+                : '—';
 
               return (
                 <View
@@ -161,11 +189,14 @@ const DeployScreen = () => {
                     },
                   ]}
                 >
-                  <Text style={[styles.tableCell, { flex: 2, color: colors.text }]} numberOfLines={1}>
+                  <Text style={[styles.tableCell, { flex: 1.5, color: colors.text }]} numberOfLines={1}>
                     {dep.module?.name || '—'}
                   </Text>
                   <Text style={[styles.tableCell, { flex: 1.5, color: colors.icon }]} numberOfLines={1}>
                     {dep.module?.technicalName || dep.module?.technical_name || '—'}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 2.5, color: colors.icon, fontSize: 11 }]} numberOfLines={2}>
+                    {logPreview}
                   </Text>
                   <Text style={[styles.tableCell, { flex: 1.5, color: colors.text }]}>
                     {formattedDate}
@@ -198,55 +229,29 @@ const DeployScreen = () => {
           Desplegar módulo Odoo
         </Text>
         <Text style={{ color: colors.icon, marginBottom: 16, fontSize: 14 }}>
-          Selecciona un módulo completo y elige cómo deseas desplegarlo:
+          Selecciona un módulo y elige cómo deseas desplegarlo:
         </Text>
 
-        {isLoading || loadingDetails ? (
-          <ActivityIndicator size="large" color={colors.primary} />
-        ) : (
-          <FlatList
-            data={modules}
-            keyExtractor={(item) => item.id.toString()}
-            scrollEnabled={false}
-            renderItem={({ item }) => {
-              const full = moduleDetails[item.id];
-              const complete = full ? isModuleComplete(full) : false;
+        {/* Selector de módulo tipo dropdown */}
+        <TouchableOpacity
+          style={[styles.selectorButton, { backgroundColor: colors.card, borderColor: colors.icon }]}
+          onPress={() => setShowModuleSelector(true)}
+        >
+          <Text
+            style={[
+              styles.selectorButtonText,
+              { color: selectedModule ? colors.text : colors.icon },
+            ]}
+            numberOfLines={1}
+          >
+            {selectedModule ? selectedModule.name : 'Seleccionar módulo...'}
+          </Text>
+          <Text style={{ color: colors.icon, fontSize: 16 }}>▼</Text>
+        </TouchableOpacity>
 
-              return (
-                <TouchableOpacity
-                  onPress={() => handleSelect(item.id)}
-                  disabled={!complete}
-                  activeOpacity={complete ? 0.7 : 1}
-                  style={[
-                    { marginBottom: 12, borderRadius: 12, overflow: 'hidden' },
-                    selectedModuleId === item.id && styles.selectedCard,
-                    selectedModuleId === item.id && { borderColor: colors.primary },
-                    !complete && { opacity: 0.6 },
-                  ]}
-                >
-                  <ModuleCard module={item} incomplete={!complete} />
-                  {!complete && (
-                    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-                      <Text style={{ color: '#e74c3c', fontSize: 12, fontStyle: 'italic' }}>
-                        * Este módulo no está completo. Añade modelos y campos antes de desplegar.
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-            
-            ListEmptyComponent={
-              <Text style={{ color: colors.icon, textAlign: 'center', marginTop: 20 }}>
-                No tienes módulos creados todavía.
-              </Text>
-            }
-          />
-        )}
-
+        {/* Botones de acción (solo si hay módulo seleccionado) */}
         {selectedModule && (
           <View style={{ paddingTop: 16, paddingBottom: 32 }}>
-            {/* Botón: Descargar ZIP */}
             <TouchableOpacity
               style={[
                 styles.deployButton,
@@ -261,7 +266,6 @@ const DeployScreen = () => {
               </Text>
             </TouchableOpacity>
 
-            {/* Botón: Desplegar directamente en Odoo */}
             <TouchableOpacity
               style={[
                 styles.deployButton,
@@ -285,6 +289,107 @@ const DeployScreen = () => {
           </View>
         )}
       </View>
+
+      {/* Modal selector de módulos con buscador */}
+      <Modal
+        visible={showModuleSelector}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowModuleSelector(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.selectorModalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.selectorModalHeader}>
+              <Text style={[styles.selectorModalTitle, { color: colors.text }]}>
+                Seleccionar módulo
+              </Text>
+              <TouchableOpacity onPress={() => setShowModuleSelector(false)}>
+                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: 'bold' }}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Buscador */}
+            <TextInput
+              style={[styles.searchInput, { backgroundColor: colors.background, color: colors.text, borderColor: colors.icon }]}
+              placeholder="Buscar módulo por nombre..."
+              placeholderTextColor={colors.icon}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
+            />
+
+            {/* Switch para ocultar incompletos dentro del modal */}
+            <View style={styles.switchRow}>
+              <Text style={{ color: colors.text, fontSize: 14 }}>
+                Ocultar módulos incompletos
+              </Text>
+              <Switch
+                value={hideIncomplete}
+                onValueChange={setHideIncomplete}
+                trackColor={{ false: colors.icon, true: colors.primary }}
+                thumbColor="#fff"
+              />
+            </View>
+
+            {/* Lista de módulos filtrados */}
+            {isLoading || loadingDetails ? (
+              <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 20 }} />
+            ) : filteredModules.length === 0 ? (
+              <Text style={{ color: colors.icon, textAlign: 'center', marginTop: 20, fontSize: 14 }}>
+                {searchQuery.trim()
+                  ? 'No se encontraron módulos con ese nombre.'
+                  : 'No hay módulos disponibles.'}
+              </Text>
+            ) : (
+              <FlatList
+                data={filteredModules}
+                keyExtractor={(item) => item.id.toString()}
+                style={{ marginTop: 8 }}
+                renderItem={({ item }) => {
+                  const full = moduleDetails[item.id];
+                  const complete = full ? isModuleComplete(full) : false;
+
+                  return (
+                    <TouchableOpacity
+                      style={[
+                        styles.selectorItem,
+                        { borderBottomColor: colors.background },
+                        selectedModuleId === item.id && { backgroundColor: colors.primary + '20' },
+                        !complete && { opacity: 0.6 },
+                      ]}
+                      onPress={() => {
+                        if (complete) {
+                          setSelectedModuleId(item.id);
+                          setShowModuleSelector(false);
+                          setSearchQuery('');
+                        }
+                      }}
+                      disabled={!complete}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontSize: 15, fontWeight: '500' }} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                        <Text style={{ color: colors.icon, fontSize: 12 }} numberOfLines={1}>
+                          {item.technicalName}
+                        </Text>
+                      </View>
+                      {!complete && (
+                        <Text style={{ color: '#e74c3c', fontSize: 11, fontStyle: 'italic', marginLeft: 8 }}>
+                          Incompleto
+                        </Text>
+                      )}
+                      {selectedModuleId === item.id && (
+                        <Text style={{ color: colors.primary, fontSize: 18, marginLeft: 8 }}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal de resultado del despliegue */}
       <Modal
@@ -454,6 +559,63 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  selectorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  selectorButtonText: {
+    fontSize: 15,
+    flex: 1,
+    marginRight: 8,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  selectorModalContent: {
+    width: '100%',
+    maxWidth: 500,
+    maxHeight: '85%',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  selectorModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectorModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  searchInput: {
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    fontSize: 15,
+    marginBottom: 8,
+  },
+  selectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderRadius: 8,
   },
 });
 
