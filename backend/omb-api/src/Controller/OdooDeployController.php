@@ -9,7 +9,6 @@ use App\Entity\Fields;
 use App\Entity\Views;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -23,13 +22,16 @@ class OdooDeployController extends AbstractController
         $this->httpClient = $httpClient;
     }
 
-    // Endpoint principal: genera el módulo, lo copia a Odoo, lo instala y verifica
+    // ──────────────────────────────────────────────
+    //  ENDPOINT PRINCIPAL
+    // ──────────────────────────────────────────────
+
     public function deployToOdoo(Request $request, SerializerInterface $serializer)
     {
         $moduleId = $request->get('id');
         $entityManager = $this->getDoctrine()->getManager();
 
-        // 1. Obtener el módulo completo de la BD
+        // 1. Obtener el módulo de la BD
         $module = $entityManager
             ->getRepository(Modules::class)
             ->find($moduleId);
@@ -38,59 +40,419 @@ class OdooDeployController extends AbstractController
             return $this->json(['success' => false, 'error' => 'Module not found'], 404);
         }
 
-        // 2. Construir el JSON completo del módulo (igual que module_full)
-        $moduleData = $this->buildModuleFullData($module, $entityManager);
-
-        // 3. Generar el ZIP a través del servidor Java
-        $zipData = $this->generateZipFromJava($moduleData);
-        if ($zipData === null) {
-            return $this->json(['success' => false, 'error' => 'Failed to generate module ZIP'], 500);
-        }
-
         $technicalName = $module->getTechnicalName();
+        $addonsPath = $this->getParameter('odoo_addons_path');
+        $targetPath = $addonsPath . '/' . $technicalName;
+        $backupPath = $addonsPath . '/.' . $technicalName . '_backup';
+        $backupUsed = false;
 
-        // 4. Extraer el ZIP directamente en la carpeta addons de Odoo
-        $extractResult = $this->extractZipToOdooAddons($zipData, $technicalName);
-        if ($extractResult['success'] === false) {
-            return $this->json(['success' => false, 'error' => $extractResult['error']], 500);
-        }
+        try {
+            // 2. Construir el JSON completo del módulo
+            $moduleData = $this->buildModuleFullData($module, $entityManager);
 
-        $addonsPath = $extractResult['path'];
+            // 3. Generar el ZIP a través del servidor Java
+            $zipData = $this->generateZipFromJava($moduleData);
+            if ($zipData === null) {
+                return $this->json(['success' => false, 'error' => 'Failed to generate module ZIP'], 500);
+            }
 
-        // 5. Instalar el módulo en Odoo por API
-        $installResult = $this->installModuleInOdoo($technicalName);
-        
-        // 6. Verificar logs de Odoo para confirmar instalación
-        $logCheck = $this->checkOdooLogs($technicalName);
+            // 4. Hacer backup del módulo existente (si lo hay) antes de tocarlo
+            if (is_dir($targetPath)) {
+                $this->removeDirectory($backupPath);
+                // Mover en lugar de copiar para que sea instantáneo
+                if (rename($targetPath, $backupPath)) {
+                    $backupUsed = true;
+                }
+            }
 
-        // 7. Si hay error, eliminar carpeta del módulo y registrar el error
-        if (!$installResult['success'] || !$logCheck['success']) {
-            $this->rollbackModule($addonsPath);
-            
-            $errorMsg = $installResult['error'] ?? $logCheck['error'] ?? 'Unknown error during installation';
-            
-            // Registrar el deployment fallido
+            // 5. Extraer el ZIP en la carpeta addons de Odoo
+            $extractResult = $this->extractZipToDirectory($zipData, $targetPath);
+            if ($extractResult['success'] === false) {
+                // Restaurar backup si existe
+                if ($backupUsed) {
+                    $this->restoreBackup($backupPath, $targetPath);
+                }
+                return $this->json(['success' => false, 'error' => $extractResult['error']], 500);
+            }
+
+            // 6. Instalar (o actualizar) el módulo en Odoo
+            $installResult = $this->installOrUpgradeModuleInOdoo($technicalName);
+
+            // 7. Si hay error, restaurar backup y notificar
+            if (!$installResult['success']) {
+                $errorMsg = $installResult['error'] ?? 'Unknown error during installation';
+
+                // Restaurar la versión anterior
+                $this->removeDirectory($targetPath);
+                if ($backupUsed) {
+                    $this->restoreBackup($backupPath, $targetPath);
+                }
+
+                $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
+
+                return $this->json([
+                    'success' => false,
+                    'error' => $errorMsg,
+                    'log' => $installResult['log'] ?? '',
+                    'restored' => $backupUsed,
+                ], 500);
+            }
+
+            // 8. Éxito: eliminar backup
+            if ($backupUsed) {
+                $this->removeDirectory($backupPath);
+            }
+
+            $successMsg = "Module '{$technicalName}' deployed and installed successfully in Odoo";
+            $this->recordDeployment($module, 'success', $successMsg, $entityManager);
+
+            return $this->json([
+                'success' => true,
+                'message' => $successMsg,
+            ]);
+        } catch (\Exception $e) {
+            // Error inesperado: restaurar backup si existe
+            if ($backupUsed && !is_dir($targetPath)) {
+                $this->restoreBackup($backupPath, $targetPath);
+            } elseif ($backupUsed && is_dir($targetPath)) {
+                $this->removeDirectory($targetPath);
+                $this->restoreBackup($backupPath, $targetPath);
+            }
+
+            $errorMsg = 'Unexpected error: ' . $e->getMessage();
             $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
-            
+
             return $this->json([
                 'success' => false,
                 'error' => $errorMsg,
-                'log' => $logCheck['log'] ?? '',
+                'restored' => $backupUsed,
             ], 500);
         }
-
-        // 8. Éxito - registrar deployment
-        $successLog = "Module '{$technicalName}' deployed and installed successfully.\n" . ($logCheck['log'] ?? '');
-        $this->recordDeployment($module, 'success', $successLog, $entityManager);
-
-        return $this->json([
-            'success' => true,
-            'message' => "Module '{$technicalName}' deployed and installed successfully in Odoo",
-            'log' => $logCheck['log'] ?? '',
-        ]);
     }
 
-    // Construye los datos completos del módulo (modelos, campos, vistas)
+    // ──────────────────────────────────────────────
+    //  INSTALACIÓN EN ODOO (install / upgrade / reinstall)
+    // ──────────────────────────────────────────────
+
+    
+    // Instala el módulo si no existe, o lo actualiza si ya existe.
+    // Si el upgrade falla, intenta desinstalar y reinstalar desde cero.
+    private function installOrUpgradeModuleInOdoo(string $technicalName): array
+    {
+        $odooHost = $this->getParameter('odoo_host');
+        $odooPort = $this->getParameter('odoo_port');
+        $odooDb = $this->getParameter('odoo_db');
+        $odooUser = $this->getParameter('odoo_user');
+        $odooPassword = $this->getParameter('odoo_password');
+
+        $baseUrl = "http://{$odooHost}:{$odooPort}";
+
+        try {
+            // Autenticación
+            $uid = $this->odooLogin($baseUrl, $odooDb, $odooUser, $odooPassword);
+            if ($uid === null) {
+                // Si la API no funciona, intentar con odoo bin (fallback)
+                return $this->installModuleViaOdooBin($technicalName);
+            }
+
+            // Buscar el módulo en Odoo
+            $moduleInfo = $this->findModule($baseUrl, $uid, $odooDb, $odooPassword, $technicalName);
+
+            // Si no se encuentra, actualizar la lista de módulos y buscar de nuevo
+            if ($moduleInfo === null) {
+                $this->updateModuleList($baseUrl, $uid, $odooDb, $odooPassword);
+                usleep(500000); // 0.5 segundos para que Odoo procese
+                $moduleInfo = $this->findModule($baseUrl, $uid, $odooDb, $odooPassword, $technicalName);
+            }
+
+            // Si sigue sin aparecer, error
+            if ($moduleInfo === null) {
+                return [
+                    'success' => false,
+                    'error' => "Module '{$technicalName}' not found in Odoo even after update_list. "
+                        . "Check that the module files are correctly placed in the addons directory.",
+                ];
+            }
+
+            $moduleId = $moduleInfo['id'];
+            $state = $moduleInfo['state'];
+
+            if ($state === 'uninstalled') {
+                // No instalado: instalar
+                return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
+            } elseif ($state === 'installed' || $state === 'to upgrade') {
+                // Ya instalado: intentar upgrade primero (recarga modelos, vistas, etc.)
+                $upgradeResult = $this->odooUpgradeModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
+                if ($upgradeResult['success']) {
+                    return $upgradeResult;
+                }
+                // Si upgrade falla: desinstalar y reinstalar desde cero
+                return $this->odooReinstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
+            } else {
+                // Estado desconocido (to remove, etc.): intentar instalar
+                return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
+            }
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Odoo API error: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  MÉTODOS AUXILIARES DE LA API ODOO
+    // ──────────────────────────────────────────────
+
+    // Autentica en Odoo y devuelve el UID, o null si falla
+    private function odooLogin(string $baseUrl, string $db, string $user, string $password): ?int
+    {
+        try {
+            $response = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'common',
+                        'method' => 'login',
+                        'args' => [$db, $user, $password],
+                    ],
+                    'id' => 1,
+                ],
+                'timeout' => 10,
+            ]);
+
+            $data = json_decode($response->getContent(), true);
+            $uid = $data['result'] ?? null;
+
+            return (is_numeric($uid) && $uid > 0) ? (int)$uid : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    // Busca un módulo por nombre técnico y devuelve {id, name, state} o null
+    private function findModule(string $baseUrl, int $uid, string $db, string $password, string $technicalName): ?array
+    {
+        try {
+            $response = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'object',
+                        'method' => 'execute_kw',
+                        'args' => [
+                            $db,
+                            $uid,
+                            $password,
+                            'ir.module.module',
+                            'search_read',
+                            [
+                                [['name', '=', $technicalName]],
+                            ],
+                            ['fields' => ['id', 'name', 'state'], 'limit' => 1],
+                        ],
+                    ],
+                    'id' => 2,
+                ],
+                'timeout' => 10,
+            ]);
+
+            $data = json_decode($response->getContent(), true);
+            $modules = $data['result'] ?? [];
+
+            return !empty($modules) ? $modules[0] : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    // Actualiza la lista de módulos en Odoo (para que aparezcan los nuevos)
+    private function updateModuleList(string $baseUrl, int $uid, string $db, string $password): void
+    {
+        try {
+            $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'object',
+                        'method' => 'execute_kw',
+                        'args' => [
+                            $db,
+                            $uid,
+                            $password,
+                            'ir.module.module',
+                            'update_list',
+                            [],
+                        ],
+                    ],
+                    'id' => 10,
+                ],
+                'timeout' => 60,
+            ]);
+        } catch (\Exception $e) {
+            // No crítico
+        }
+    }
+
+    // Instala un módulo en estado 'uninstalled'
+    private function odooInstallModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
+    {
+        try {
+            $response = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'object',
+                        'method' => 'execute_kw',
+                        'args' => [
+                            $db,
+                            $uid,
+                            $password,
+                            'ir.module.module',
+                            'button_immediate_install',
+                            [[$moduleId]],
+                        ],
+                    ],
+                    'id' => 4,
+                ],
+                'timeout' => 120,
+            ]);
+
+            $data = json_decode($response->getContent(), true);
+
+            if (isset($data['error'])) {
+                return [
+                    'success' => false,
+                    'error' => 'Odoo install error: ' . ($data['error']['message'] ?? json_encode($data['error'])),
+                ];
+            }
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Odoo install exception: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    // Actualiza un módulo ya instalado (recarga modelos, vistas, campos desde los ficheros)
+    private function odooUpgradeModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
+    {
+        try {
+            $response = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'object',
+                        'method' => 'execute_kw',
+                        'args' => [
+                            $db,
+                            $uid,
+                            $password,
+                            'ir.module.module',
+                            'button_immediate_upgrade',
+                            [[$moduleId]],
+                        ],
+                    ],
+                    'id' => 6,
+                ],
+                'timeout' => 120,
+            ]);
+
+            $data = json_decode($response->getContent(), true);
+
+            if (isset($data['error'])) {
+                return [
+                    'success' => false,
+                    'error' => 'Odoo upgrade error: ' . ($data['error']['message'] ?? json_encode($data['error'])),
+                ];
+            }
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'error' => 'Odoo upgrade exception: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    // Desinstala y reinstala un módulo (para forzar nuevos ficheros)
+    private function odooReinstallModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
+    {
+        // 1. Desinstalar
+        try {
+            $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
+                'json' => [
+                    'jsonrpc' => '2.0',
+                    'method' => 'call',
+                    'params' => [
+                        'service' => 'object',
+                        'method' => 'execute_kw',
+                        'args' => [
+                            $db,
+                            $uid,
+                            $password,
+                            'ir.module.module',
+                            'button_immediate_uninstall',
+                            [[$moduleId]],
+                        ],
+                    ],
+                    'id' => 5,
+                ],
+                'timeout' => 120,
+            ]);
+        } catch (\Exception $e) {
+            // Si falla la desinstalación, continuamos e intentamos instalar igualmente
+        }
+
+        // Pequeña pausa para que Odoo procese la desinstalación
+        usleep(500000); // 0.5 segundos
+
+        // 2. Reinstalar
+        return $this->odooInstallModule($baseUrl, $uid, $db, $password, $moduleId, $technicalName);
+    }
+
+    // ──────────────────────────────────────────────
+    //  FALLBACK: INSTALAR CON ODOO BIN (DOCKER)
+    // ──────────────────────────────────────────────
+
+    private function installModuleViaOdooBin(string $technicalName): array
+    {
+        try {
+            $command = sprintf(
+                'docker exec omb_odoo odoo -d %s -u %s --stop-after-init --addons-path=/mnt/extra-addons 2>&1',
+                escapeshellarg($this->getParameter('odoo_db')),
+                escapeshellarg($technicalName)
+            );
+
+            $output = shell_exec($command);
+
+            if ($output === null) {
+                return ['success' => false, 'error' => 'Failed to execute odoo command in container'];
+            }
+
+            if (strpos($output, 'Traceback') !== false ||
+                preg_match('/ERROR.*' . preg_quote($technicalName, '/') . '/i', $output)) {
+                return ['success' => false, 'error' => 'Odoo installation error', 'log' => substr($output, -2000)];
+            }
+
+            return ['success' => true];
+        } catch (\Exception $e) {
+            return ['success' => false, 'error' => 'Exception: ' . $e->getMessage()];
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  GENERACIÓN DEL MÓDULO (ZIP)
+    // ──────────────────────────────────────────────
+
     private function buildModuleFullData(Modules $module, $entityManager): array
     {
         $modelRepo = $entityManager->getRepository(Models::class);
@@ -109,7 +471,7 @@ class OdooDeployController extends AbstractController
                 'name' => $model->getName(),
                 'technicalName' => $model->getTechnicalName(),
                 'fields' => array_map(function($field) {
-                    $fieldData = [
+                    return [
                         'id' => $field->getId(),
                         'name' => $field->getName(),
                         'technicalName' => $field->getTechnicalName(),
@@ -123,7 +485,6 @@ class OdooDeployController extends AbstractController
                         'rules' => $field->getRules(),
                         'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many', 'one2one']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
-                    return $fieldData;
                 }, $fields),
                 'views' => array_map(function($view) {
                     return [
@@ -194,7 +555,6 @@ class OdooDeployController extends AbstractController
         $zipData = '';
         $received = 0;
 
-        // Leer el ZIP en fragmentos hasta recibir todo
         while ($received < $size) {
             $chunk = socket_read($socket, min(8192, $size - $received));
             if ($chunk === false) break;
@@ -210,30 +570,21 @@ class OdooDeployController extends AbstractController
         return $zipData;
     }
 
-    // Extrae el ZIP a una carpeta temporal y luego lo mueve a la carpeta addons de Odoo
-    private function extractZipToOdooAddons(string $zipData, string $technicalName): array
+    // Extrae un ZIP en el directorio especificado (el directorio ya debe existir)
+    private function extractZipToDirectory(string $zipData, string $targetPath): array
     {
-        $addonsPath = $this->getParameter('odoo_addons_path');
-        $targetPath = $addonsPath . '/' . $technicalName;
-
-        // Si ya existe el módulo en Odoo, eliminarlo primero (para actualizar)
-        if (is_dir($targetPath)) {
-            $this->removeDirectory($targetPath);
-        }
-
         // Crear el directorio destino
-        if (!mkdir($targetPath, 0777, true)) {
+        if (!@mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
             return ['success' => false, 'error' => 'Could not create target module directory'];
         }
 
-        // Guardar ZIP a archivo temporal y extraer
-        $tempZip = sys_get_temp_dir() . '/' . $technicalName . '_' . uniqid() . '.zip';
+        // Guardar ZIP temporal y extraer
+        $tempZip = sys_get_temp_dir() . '/' . basename($targetPath) . '_' . uniqid() . '.zip';
         file_put_contents($tempZip, $zipData);
 
         $zip = new \ZipArchive();
         $result = $zip->open($tempZip);
         if ($result !== true) {
-            // unlink para eliminar el archivo temporal
             @unlink($tempZip);
             $this->removeDirectory($targetPath);
             return ['success' => false, 'error' => 'Could not open ZIP file'];
@@ -243,7 +594,7 @@ class OdooDeployController extends AbstractController
         $zip->close();
         @unlink($tempZip);
 
-        // Verificar que se haya extraído correctamente (debe existir __manifest__.py)
+        // Verificar que se haya extraído correctamente
         if (!file_exists($targetPath . '/__manifest__.py')) {
             $this->removeDirectory($targetPath);
             return ['success' => false, 'error' => 'Invalid module: __manifest__.py not found in ZIP'];
@@ -252,292 +603,19 @@ class OdooDeployController extends AbstractController
         return ['success' => true, 'path' => $targetPath];
     }
 
-
-    // Instala el módulo en Odoo usando la API XML-RPC o HTTP
-    private function installModuleInOdoo(string $technicalName): array
+    // Restaura el backup renombrándolo de vuelta a su lugar original
+    private function restoreBackup(string $backupPath, string $targetPath): void
     {
-        $odooHost = $this->getParameter('odoo_host');
-        $odooPort = $this->getParameter('odoo_port');
-        $odooDb = $this->getParameter('odoo_db');
-        $odooUser = $this->getParameter('odoo_user');
-        $odooPassword = $this->getParameter('odoo_password');
-
-        // Odoo 19 tiene una API JSON-RPC en /jsonrpc
-        $baseUrl = "http://{$odooHost}:{$odooPort}";
-
-        try {
-            // Paso 1: Autenticarse en Odoo (login estándar de Odoo)
-            $authResponse = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'call',
-                    'params' => [
-                        'service' => 'common',
-                        'method' => 'login',
-                        'args' => [
-                            $odooDb,
-                            $odooUser,
-                            $odooPassword,
-                        ],
-                    ],
-                    'id' => 1,
-                ],
-                'timeout' => 10,
-            ]);
-
-            // Odoo responde el id del usuario autenticado
-            $authData = json_decode($authResponse->getContent(), true);
-            $uid = $authData['result'] ?? null;
-
-            if (!$uid || !is_numeric($uid)) {
-                // Si la API no funciona, instala con Docker
-                return $this->installModuleViaOdooBin($technicalName);
-            }
-
-            // Paso 2: Llamar al método button_immediate_install del módulo
-            // Buscamos el módulo por nombre técnico
-            $searchResponse = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'call',
-                    'params' => [
-                        'service' => 'object',
-                        'method' => 'execute_kw',
-                        'args' => [
-                            $odooDb,
-                            $uid,
-                            $odooPassword,
-                            'ir.module.module',
-                            'search_read',
-                            [
-                                [['name', '=', $technicalName]],
-                            ],
-                            ['fields' => ['id', 'name', 'state'], 'limit' => 1],
-                        ],
-                    ],
-                    'id' => 2,
-                ],
-                'timeout' => 10,
-            ]);
-
-            // Odoo devuelte el id, el nombre y el estado del modulo
-            $searchData = json_decode($searchResponse->getContent(), true);
-            $modules = $searchData['result'] ?? [];
-
-            if (empty($modules)) {
-                // Si no encuentra el módulo, actualizamos la lista de módulos
-                $this->updateModuleList($baseUrl, $uid, $odooDb, $odooPassword);
-
-                // Buscar de nuevo
-                $searchResponse = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                    'json' => [
-                        'jsonrpc' => '2.0',
-                        'method' => 'call',
-                        'params' => [
-                            'service' => 'object',
-                            'method' => 'execute_kw',
-                            'args' => [
-                                $odooDb,
-                                $uid,
-                                $odooPassword,
-                                'ir.module.module',
-                                'search_read',
-                                [
-                                    [['name', '=', $technicalName]],
-                                ],
-                                ['fields' => ['id', 'name', 'state'], 'limit' => 1],
-                            ],
-                        ],
-                        'id' => 3,
-                    ],
-                    'timeout' => 10,
-                ]);
-
-                $searchData = json_decode($searchResponse->getContent(), true);
-                $modules = $searchData['result'] ?? [];
-
-                // Si sigue sin encontrar el módulo, devuelve el error
-                if (empty($modules)) {
-                    return ['success' => false, 'error' => "Module '{$technicalName}' not found in Odoo module list even after update"];
-                }
-            }
-
-            // Si encuentra el módulo, obtenemos su id y estado
-            $moduleInfo = $modules[0];
-            $moduleId = $moduleInfo['id'];
-            $state = $moduleInfo['state'];
-
-            // Paso 3: Instalar el módulo
-            if ($state === 'uninstalled') {
-                $installResponse = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                    'json' => [
-                        'jsonrpc' => '2.0',
-                        'method' => 'call',
-                        'params' => [
-                            'service' => 'object',
-                            'method' => 'execute_kw',
-                            'args' => [
-                                $odooDb,
-                                $uid,
-                                $odooPassword,
-                                'ir.module.module',
-                                'button_immediate_install',
-                                [[$moduleId]],
-                            ],
-                        ],
-                        'id' => 4,
-                    ],
-                    'timeout' => 120, // La instalación puede tardar
-                ]);
-
-                $installData = json_decode($installResponse->getContent(), true);
-                if (isset($installData['error'])) {
-                    return ['success' => false, 'error' => 'Odoo install error: ' . ($installData['error']['message'] ?? json_encode($installData['error']))];
-                }
-            
-            // Si ya está instalado, hacer upgrade
-            } elseif ($state === 'installed' || $state === 'to upgrade') {
-                $upgradeResponse = $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                    'json' => [
-                        'jsonrpc' => '2.0',
-                        'method' => 'call',
-                        'params' => [
-                            'service' => 'object',
-                            'method' => 'execute_kw',
-                            'args' => [
-                                $odooDb,
-                                $uid,
-                                $odooPassword,
-                                'ir.module.module',
-                                'button_immediate_upgrade',
-                                [[$moduleId]],
-                            ],
-                        ],
-                        'id' => 5,
-                    ],
-                    'timeout' => 120,
-                ]);
-
-                $upgradeData = json_decode($upgradeResponse->getContent(), true);
-                if (isset($upgradeData['error'])) {
-                    return ['success' => false, 'error' => 'Odoo upgrade error: ' . ($upgradeData['error']['message'] ?? json_encode($upgradeData['error']))];
-                }
-            }
-
-            return ['success' => true];
-
-        } catch (\Exception $e) {
-            // Si falla la conexión HTTP, intentar con odoo-bin
-            return $this->installModuleViaOdooBin($technicalName);
+        if (!is_dir($backupPath)) {
+            return;
         }
+        rename($backupPath, $targetPath);
     }
 
-    // Actualiza la lista de módulos en Odoo para que aparezca el nuevo
-    private function updateModuleList(string $baseUrl, $uid, string $odooDb, string $odooPassword): void
-    {
-        try {
-            $this->httpClient->request('POST', $baseUrl . '/jsonrpc', [
-                'json' => [
-                    'jsonrpc' => '2.0',
-                    'method' => 'call',
-                    'params' => [
-                        'service' => 'object',
-                        'method' => 'execute_kw',
-                        'args' => [
-                            $odooDb,
-                            $uid,
-                            $odooPassword,
-                            'ir.module.module',
-                            'update_list',
-                            [],
-                        ],
-                    ],
-                    'id' => 10,
-                ],
-                'timeout' => 60,
-            ]);
-        } catch (\Exception $e) {
-            // Ignorar errores de actualización de lista
-        }
-    }
+    // ──────────────────────────────────────────────
+    //  LIMPIEZA Y REGISTRO
+    // ──────────────────────────────────────────────
 
-    // Método alternativo: instalar módulo usando odoo-bin dentro del contenedor Docker
-    private function installModuleViaOdooBin(string $technicalName): array
-    {
-        try {
-            // Ejecutar odoo-bin dentro del contenedor Docker para instalar el módulo
-            $command = sprintf(
-                'docker exec omb_odoo odoo-bin -d %s -u %s --stop-after-init --addons-path=/mnt/extra-addons 2>&1',
-                escapeshellarg($this->getParameter('odoo_db')),
-                escapeshellarg($technicalName)
-            );
-
-            $output = shell_exec($command);
-
-            // Verificar si la instalación fue exitosa
-            if ($output === null) {
-                return ['success' => false, 'error' => 'Failed to execute odoo-bin command'];
-            }
-
-            // Buscar errores en la salida
-            if (preg_match('/ERROR.*' . preg_quote($technicalName, '/') . '/i', $output) ||
-                preg_match('/Module.*' . preg_quote($technicalName, '/') . '.*not found/i', $output) ||
-                strpos($output, 'Traceback') !== false) {
-                return ['success' => false, 'error' => 'Odoo installation error', 'log' => substr($output, -2000)];
-            }
-
-            // Verificar que se haya instalado correctamente
-            if (strpos($output, "module {$technicalName}: module loaded") !== false ||
-                strpos($output, "Modules loaded") !== false) {
-                return ['success' => true, 'log' => substr($output, -2000)];
-            }
-
-            return ['success' => true, 'log' => substr($output, -2000)];
-
-        } catch (\Exception $e) {
-            return ['success' => false, 'error' => 'Exception: ' . $e->getMessage()];
-        }
-    }
-
-    // Verifica los logs de Odoo para confirmar que el módulo se instaló correctamente
-    private function checkOdooLogs(string $technicalName): array
-    {
-        try {
-            // Leer logs del contenedor de Odoo
-            $command = sprintf(
-                'docker logs omb_odoo --tail 100 2>&1 | grep -i "%s" || true',
-                escapeshellarg($technicalName)
-            );
-
-            $output = shell_exec($command);
-
-            if ($output === null || trim($output) === '') {
-                // No hay logs específicos del módulo, puede que esté bien
-                return ['success' => true, 'log' => 'No specific errors found in Odoo logs'];
-            }
-
-            // Buscar errores en los logs
-            if (preg_match('/ERROR|CRITICAL|WARNING.*' . preg_quote($technicalName, '/') . '/i', $output)) {
-                return ['success' => false, 'error' => 'Errors found in Odoo logs', 'log' => $output];
-            }
-
-            return ['success' => true, 'log' => $output];
-
-        } catch (\Exception $e) {
-            // Si no podemos leer logs, asumimos que fue bien
-            return ['success' => true, 'log' => 'Could not read Odoo logs, but installation completed'];
-        }
-    }
-
-    // Rollback: elimina la carpeta del módulo de Odoo addons
-    private function rollbackModule(string $modulePath): void
-    {
-        if (is_dir($modulePath)) {
-            $this->removeDirectory($modulePath);
-        }
-    }
-
-    // Registra un deployment en la base de datos
     private function recordDeployment(Modules $module, string $status, string $log, $entityManager): void
     {
         try {
@@ -551,27 +629,39 @@ class OdooDeployController extends AbstractController
             // Ignorar si falla
         }
     }
- 
-    // Elimina un directorio y todo su contenido (archivos y subdirectorios)
+
     private function removeDirectory(string $dir): void
     {
         if (!is_dir($dir)) {
             return;
         }
 
-        $iterator = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-            \RecursiveIteratorIterator::CHILD_FIRST
-        );
+        $escapedDir = escapeshellarg($dir);
+        shell_exec("rm -rf {$escapedDir} 2>&1");
 
-        foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                rmdir($item);
-            } else {
-                unlink($item);
-            }
+        if (!is_dir($dir)) {
+            return;
         }
 
-        rmdir($dir);
+        // Fallback con PHP
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST
+            );
+
+            foreach ($iterator as $item) {
+                if ($item->isDir()) {
+                    @rmdir($item);
+                } else {
+                    @chmod($item, 0777);
+                    @unlink($item);
+                }
+            }
+
+            @rmdir($dir);
+        } catch (\Exception $e) {
+            // Ignorar
+        }
     }
 }

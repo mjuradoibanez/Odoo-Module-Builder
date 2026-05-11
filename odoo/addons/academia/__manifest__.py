@@ -1,8 +1,9 @@
 {
-    'name': 'prueba defecto',
+    'name': 'Academia',
     'version': '1.0',
-    'author': 'usuario',
-    'category': 'otra',
+    'author': 'Admin',
+    'category': 'educacion',
+    'description': 'Gestión de alumnos, cursos y profesores para centros educativos.',
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',
