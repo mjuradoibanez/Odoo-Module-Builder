@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # Backend (Symfony API)
   backend-web:
@@ -84,12 +82,15 @@ services:
       - ./odoo/addons:/mnt/extra-addons
       - ./odoo/config:/etc/odoo
       - odoo_data:/var/lib/odoo
+      - ./odoo/entrypoint.sh:/opt/omb-entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "/opt/omb-entrypoint.sh"]
     environment:
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
+      ADMIN_PASSWD: ${ODOO_ADMIN_PASSWD}
 
 volumes:
   postgres_data:
