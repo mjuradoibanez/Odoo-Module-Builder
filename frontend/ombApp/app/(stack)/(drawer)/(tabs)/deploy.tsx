@@ -3,7 +3,6 @@ import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, 
 import { useUserModules } from '@/presentation/hooks/useUserModules';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
-import { ModuleCard } from '@/components/shared/ModuleCard';
 import { getColors } from '@/constants/theme';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';

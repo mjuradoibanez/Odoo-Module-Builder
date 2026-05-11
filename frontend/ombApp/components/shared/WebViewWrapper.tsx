@@ -9,7 +9,6 @@ interface WebViewWrapperProps {
 
 export const WebViewWrapper: React.FC<WebViewWrapperProps> = ({ style, children }) => {
   if (Platform.OS === 'web') {
-    // @ts-ignore
     return <div style={style}>{children}</div>;
   }
   return <View style={style}>{children}</View>;
