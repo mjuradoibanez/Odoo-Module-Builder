@@ -2,10 +2,6 @@
 -- Odoo Module Builder - Schema para Symfony / MySQL
 -- ---------------------------------------------------
 
-DROP DATABASE IF EXISTS omb;
-CREATE DATABASE omb;
-USE omb;
-
 -- -----------------------------
 -- Tabla users
 -- -----------------------------

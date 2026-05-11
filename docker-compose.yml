@@ -1,6 +1,49 @@
 version: "3.9"
 
 services:
+  # Backend (Symfony API)
+  backend-web:
+    build:
+      context: ./backend/omb-api
+    container_name: omb-api
+    volumes:
+      - ./backend/omb-api:/var/www/html
+      - ./backend/omb-api/provisioning/sites-enabled:/etc/apache2/sites-enabled
+      - ./odoo/addons:/mnt/extra-addons
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      ODOO_ADDONS_PATH: ${BACKEND_ODOO_ADDONS_PATH}
+      ODOO_HOST: ${BACKEND_ODOO_HOST}
+      ODOO_PORT: ${BACKEND_ODOO_PORT}
+      ODOO_DB: ${BACKEND_ODOO_DB}
+      ODOO_USER: ${BACKEND_ODOO_USER}
+      ODOO_PASSWORD: ${BACKEND_ODOO_PASSWORD}
+    ports:
+      - "8082:80"
+    networks:
+      - omb-net
+    tty: true
+    working_dir: /var/www/html
+    depends_on:
+      - backend-db
+
+  backend-db:
+    image: mysql:8.0
+    container_name: omb-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - backend_mysql_data:/var/lib/mysql
+      - ./docs/database:/docker-entrypoint-initdb.d:ro
+    networks:
+      - omb-net
+
+  # Java Server
   java-server:
     build:
       context: ./server/omb-server
@@ -11,6 +54,7 @@ services:
       - omb-net
     restart: unless-stopped
 
+  # PostgreSQL (para Odoo)
   db:
     image: postgres:15
     container_name: omb_postgres
@@ -26,8 +70,9 @@ services:
     networks:
       - omb-net
 
+  # Odoo
   odoo:
-    image: odoo:19
+    image: odoo:${ODOO_VERSION}
     container_name: omb_odoo
     depends_on:
       - db
@@ -49,7 +94,8 @@ services:
 volumes:
   postgres_data:
   odoo_data:
+  backend_mysql_data:
 
 networks:
   omb-net:
-    external: true
+    driver: bridge
