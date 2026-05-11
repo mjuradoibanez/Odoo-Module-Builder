@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getColors, Fonts } from '@/constants/theme';
 import { useLocalSearchParams, router } from 'expo-router';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 // Pantalla de mis módulos y detalles
 const ModuleEditorScreen = () => {
@@ -66,10 +67,12 @@ const ModuleEditorScreen = () => {
   const handleSelectModule = (moduleId: number) => {
     if (Number(id) === moduleId) {
       // Si ya está seleccionado, lo deselecciona (cierra el detalle)
+      blurActiveElement();
       router.replace({ pathname: '/modules' });
     } else {
       setSelectedModuleId(moduleId);
       if (isDesktop) {
+        blurActiveElement();
         router.replace({ pathname: '/modules', params: { id: moduleId } });
       }
     }
@@ -108,7 +111,7 @@ const ModuleEditorScreen = () => {
     if (result) {
       await reload();
       showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-      setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+      setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
     } else {
       showError(duplicateError || 'No se pudo duplicar el módulo.');
     }
@@ -182,13 +185,10 @@ const ModuleEditorScreen = () => {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 10,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.15,
-                        shadowRadius: 6,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                         elevation: 4,
                       }}
-                      onPress={() => router.push({ pathname: '/module-editor', params: { moduleId: id } })}
+                      onPress={() => { blurActiveElement(); router.push({ pathname: '/module-editor', params: { moduleId: id } }); }}
                       activeOpacity={0.85}
                     >
                       <Ionicons name="construct" size={22} color="#fff" />
@@ -259,6 +259,7 @@ const ModuleEditorScreen = () => {
                         if (ok) {
                           await reload();
                           setSelectedModuleId(null);
+                          blurActiveElement();
                           router.replace({ pathname: '/modules' });
                         }
                       }}
@@ -291,7 +292,7 @@ const ModuleEditorScreen = () => {
                     if (result) {
                       await reload();
                       showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-                      setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+                      setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
                     } else {
                       // Si falló por conflicto de nombre, ofrecer renombrar
                       openRenameModal(Number(id));
@@ -322,6 +323,7 @@ const ModuleEditorScreen = () => {
                 setShowBlockModal(false);
                 setDeleteBothIds(null);
                 setDeleting(false);
+                blurActiveElement();
                 router.replace({ pathname: '/modules' });
               }}
             />
@@ -378,9 +380,9 @@ const ModuleEditorScreen = () => {
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setShowRenameModal(false)}
-                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.border }}
+                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary }}
                 >
-                  <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>Cancelar</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -432,7 +434,7 @@ const ModuleEditorScreen = () => {
                       alignItems: 'center',
                       gap: 8,
                     }}
-                    onPress={() => router.push({ pathname: '/module-editor', params: { moduleId: selectedModuleId } })}
+                    onPress={() => { blurActiveElement(); router.push({ pathname: '/module-editor', params: { moduleId: selectedModuleId } }); }}
                     activeOpacity={0.85}
                   >
                     <Ionicons name="construct" size={20} color="#fff" />
@@ -484,7 +486,7 @@ const ModuleEditorScreen = () => {
                   if (result) {
                     await reload();
                     showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-                    setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+                    setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
                   } else {
                     // Si falló por conflicto de nombre, ofrecer renombrar
                     openRenameModal(selectedModuleId);

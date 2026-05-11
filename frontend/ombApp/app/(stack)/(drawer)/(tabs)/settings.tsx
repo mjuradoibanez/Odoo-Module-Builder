@@ -572,14 +572,14 @@ export default function SettingsScreen() {
           />
           <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
-          <SettingAction
+          {/*<SettingAction
             icon="language-outline"
             label="Idioma"
             description="Idioma de la aplicación"
             onPress={() => {}}
             rightText="Español"
             colors={colors}
-          />
+          />*/}
         </SettingsSection>
 
         {/* Cuenta */}
@@ -688,10 +688,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     elevation: 3,
   },
   avatarContainer: {
@@ -759,10 +756,7 @@ const styles = StyleSheet.create({
   sectionContent: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
+    boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
     elevation: 2,
   },
   // Filas de configuración
@@ -812,10 +806,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
     elevation: 10,
   },
   modalHeader: {

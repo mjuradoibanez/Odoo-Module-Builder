@@ -19,6 +19,10 @@ export async function createModule({ name, technicalName, description, isPublic,
       author,
       category,
     });
+    // Notificar a otras pantallas que los módulos han cambiado
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('modules-updated'));
+    }
     return { data: response.data };
   } catch (error: any) {
     if (error.response) {

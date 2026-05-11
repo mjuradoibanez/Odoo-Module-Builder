@@ -31,6 +31,7 @@ export default function ModelViewsEditor({
   const colors = getColors(isDarkMode);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [formErrors, setFormErrors] = useState<string[]>([]);
   const [newView, setNewView] = useState({
     type: 'search',
     name: '',
@@ -40,11 +41,47 @@ export default function ModelViewsEditor({
   // Reiniciar formulario de nueva vista
   const resetForm = () => {
     setNewView({ type: 'search', name: '', configuration: {} });
+    setFormErrors([]);
     setShowAddForm(false);
+  };
+
+  // Validar campos requeridos según el tipo de vista
+  const getValidationErrors = (): string[] => {
+    const errors: string[] = [];
+    const cfg = newView.configuration || {};
+
+    switch (newView.type) {
+      case 'search':
+        if (!cfg.fields || cfg.fields.length === 0) {
+          errors.push('Debes seleccionar al menos un campo de búsqueda.');
+        }
+        break;
+      case 'calendar':
+        if (!cfg.date_start) {
+          errors.push('Debes seleccionar un campo de inicio para la vista de calendario.');
+        }
+        break;
+      case 'graph':
+        if (!cfg.row_field) {
+          errors.push('Debes seleccionar un campo para "Agrupar por" (Row).');
+        }
+        if (!cfg.measure_field) {
+          errors.push('Debes seleccionar un campo para "Medida" (Measure).');
+        }
+        break;
+      // kanban no tiene campos obligatorios
+    }
+    return errors;
   };
 
   // Añadir nueva vista
   const handleAdd = () => {
+    const errors = getValidationErrors();
+    if (errors.length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+    setFormErrors([]);
     const viewToAdd = {
       ...newView,
       name: newView.name || `${newView.type.charAt(0).toUpperCase() + newView.type.slice(1)} view`,
@@ -117,7 +154,7 @@ export default function ModelViewsEditor({
       case 'calendar':
         return (
           <View>
-            <Text style={[styles.label, { color: colors.text }]}>Campo de inicio (obligatorio)</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Campo de inicio *</Text>
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.date_start}
@@ -245,7 +282,7 @@ export default function ModelViewsEditor({
               onValueChange={(v) => {
                 let config = {};
                 if (v === 'graph') config = { graph_type: 'bar' };
-                if (v === 'calendar') config = { date_start: 'create_date' };
+                if (v === 'calendar') config = {};
                 if (v === 'search') config = { fields: [] };
                 setNewView({ ...newView, type: v, configuration: config });
               }}
@@ -268,12 +305,20 @@ export default function ModelViewsEditor({
 
           {renderConfigFields(newView, true, updateConfig)}
 
+          {formErrors.length > 0 && (
+            <View style={{ marginTop: 12 }}>
+              {formErrors.map((err, i) => (
+                <Text key={i} style={{ color: '#c0392b', fontWeight: 'bold', fontSize: 14, marginBottom: i < formErrors.length - 1 ? 4 : 0 }}>{err}</Text>
+              ))}
+            </View>
+          )}
+
           <View style={styles.formButtons}>
             <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAdd}>
               <Text style={styles.buttonText}>Añadir</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, { backgroundColor: colors.border }]} onPress={resetForm}>
-              <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary }]} onPress={resetForm}>
+              <Text style={[styles.buttonText, { color: colors.primary }]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>

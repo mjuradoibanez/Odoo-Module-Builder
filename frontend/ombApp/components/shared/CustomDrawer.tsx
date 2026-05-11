@@ -6,6 +6,7 @@ import { DrawerContentComponentProps, DrawerContentScrollView, DrawerItem } from
 import { router } from 'expo-router';
 import React from 'react';
 import { Text, View } from 'react-native';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 const CustomDrawer = (props: DrawerContentComponentProps) => {
     const userId = useAuthStore(state => state.user?.id);
@@ -42,7 +43,7 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                                     <Ionicons name={opt.icon as any} size={size} color={focused ? colors.accent : colors.primary} />
                                 )}
                                 style={{ backgroundColor: focused ? colors.primary + '22' : colors.background, borderRadius: 8, marginVertical: 2 }}
-                                onPress={() => router.push(opt.route)}
+                                onPress={() => { blurActiveElement(); router.push(opt.route); }}
                             />
                         );
                     })}
@@ -56,6 +57,7 @@ const CustomDrawer = (props: DrawerContentComponentProps) => {
                         )}
                         onPress={async () => {
                             await useAuthStore.getState().logout();
+                            blurActiveElement();
                             router.replace('/auth/login');
                         }}
                         style={{ backgroundColor: colors.background, borderRadius: 8 }}

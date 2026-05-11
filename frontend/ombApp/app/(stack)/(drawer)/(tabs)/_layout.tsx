@@ -53,18 +53,6 @@ const TabsLayout = () => {
           tabBarButton: () => null,
         }}
       />
-      <Tabs.Screen
-        name='profile'
-        options={{
-          tabBarButton: () => null,
-        }}
-      />
-      <Tabs.Screen
-        name='about'
-        options={{
-          tabBarButton: () => null,
-        }}
-      />
     </Tabs>
   )
 }

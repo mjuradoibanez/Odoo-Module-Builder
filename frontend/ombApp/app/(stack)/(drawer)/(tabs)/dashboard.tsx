@@ -9,6 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { router } from 'expo-router';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
@@ -219,10 +220,12 @@ const DashboardScreen = () => {
   }, [reload, reloadFavs]);
 
   const handlePressModule = useCallback((moduleId: number) => {
+    blurActiveElement();
     router.push({ pathname: '/modules', params: { id: moduleId } });
   }, []);
 
   const handleSeeAll = useCallback(() => {
+    blurActiveElement();
     router.push({ pathname: '/modules' });
   }, []);
 
@@ -370,10 +373,7 @@ const styles = StyleSheet.create({
     width: 150,
     borderRadius: 12,
     padding: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
     elevation: 3,
   },
   compactIconContainer: {

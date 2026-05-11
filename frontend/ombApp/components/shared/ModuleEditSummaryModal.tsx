@@ -65,7 +65,7 @@ export const ModuleEditSummaryModal: React.FC<ModuleEditSummaryModalProps> = ({ 
       onRequestClose={onClose}
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 32, width: 600, maxWidth: '98%', shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 16, elevation: 8 }}>
+        <View style={{ backgroundColor: '#fff', borderRadius: 18, padding: 32, width: 600, maxWidth: '98%', boxShadow: '0 0 16px rgba(0,0,0,0.18)', elevation: 8 }}>
           <Text style={{ fontWeight: 'bold', fontSize: 24, color: mode === 'discard' ? '#c0392b' : '#7B61FF', marginBottom: 16, letterSpacing: 0.2 }}>
             {mode === 'discard' ? 'Descartar cambios del módulo' : 'Resumen de cambios del módulo'}
           </Text>
