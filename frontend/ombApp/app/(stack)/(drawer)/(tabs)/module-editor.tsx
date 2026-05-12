@@ -904,7 +904,7 @@ const ModuleEditorScreen = () => {
                               const modelTechnicalName = model.technicalName;
                               const { blockList, circularIds } = checkDependencies(
                                 allModulesFull,
-                                { type: 'model', id: model.id, technicalName, modelTechnicalName }
+                                { type: 'model', id: model.id, technicalName, modelTechnicalName, userId: user?.id }
                               );
 
                               if (blockList.length > 0 || circularIds) {

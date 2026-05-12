@@ -359,7 +359,7 @@ const ModuleEditorScreen = () => {
                         const thisModule = await getModuleFull(Number(id));
                         const { blockList, circularIds } = checkDependencies(
                           allModulesFull,
-                          { type: 'module', id: thisModule.id, technicalName: thisModule.technicalName, models: thisModule.models }
+                          { type: 'module', id: thisModule.id, technicalName: thisModule.technicalName, userId, models: thisModule.models }
                         );
 
                         if (blockList.length > 0 || circularIds) {

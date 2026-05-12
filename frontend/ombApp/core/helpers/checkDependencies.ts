@@ -1,12 +1,23 @@
 // Comprobar dependencias de módulos o modelos
+// Solo se consideran bloqueantes las dependencias de OTROS módulos (no del mismo módulo)
+// Solo se revisan módulos del mismo usuario, ya que no se pueden crear relaciones a módulos de otros usuarios
 
-export function checkDependencies(allModules: any[], target: { type: 'module'|'model', id: number, technicalName: string, models?: any[], modelTechnicalName?: string }) {
+export function checkDependencies(allModules: any[], target: { type: 'module'|'model', id: number, technicalName: string, userId?: number, models?: any[], modelTechnicalName?: string }) {
   const blockList: any[] = [];
   let circularIds: [number, number] | null = null;
 
-  // Comprobamos si algún campo de otro módulo apunta a cualquiera de sus modelos
+  // Comprobamos si algún campo de OTRO módulo apunta a cualquiera de sus modelos
   for (const module of allModules) {
+    // Saltar el propio módulo objetivo: las dependencias internas no son bloqueantes
+    if (module.id === target.id) continue;
     if (!module.models) continue;
+
+    // Solo revisar módulos del mismo usuario. Un usuario no puede crear relaciones
+    // a módulos de otros usuarios, así que no tiene sentido buscar dependencias ajenas.
+    // Esto también evita falsos positivos al borrar un módulo duplicado con el mismo
+    // technicalName pero de otro usuario.
+    if (target.userId !== undefined && module.user?.id !== target.userId) continue;
+
     for (const model of module.models) {
       if (!model.fields) continue;
       for (const field of model.fields) {
@@ -28,10 +39,6 @@ export function checkDependencies(allModules: any[], target: { type: 'module'|'m
                   fieldTechnicalName: field.technicalName,
                   fieldType: field.type,
                 });
-                // Bloqueo circular: ¿el modelo objetivo también apunta de vuelta?
-                if (model.fields.some((f: any) => f.relationModel === `${target.technicalName}.${m.technicalName}`)) {
-                  circularIds = [target.id, model.id];
-                }
               }
             }
           } else if (target.type === 'model' && target.modelTechnicalName) {
@@ -46,10 +53,6 @@ export function checkDependencies(allModules: any[], target: { type: 'module'|'m
                 fieldTechnicalName: field.technicalName,
                 fieldType: field.type,
               });
-              // Bloqueo circular: ¿el modelo objetivo también apunta de vuelta?
-              if (model.fields.some((f: any) => f.relationModel === `${target.technicalName}.${target.modelTechnicalName}`)) {
-                circularIds = [target.id, model.id];
-              }
             }
           }
         }
