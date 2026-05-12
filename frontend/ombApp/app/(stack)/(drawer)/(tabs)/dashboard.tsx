@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+ import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -131,7 +131,14 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
 
       {/* Información del usuario (solo para módulos de otros) */}
       {showUser && (
-        <View style={styles.userRow}>
+        <TouchableOpacity
+          style={styles.userRow}
+          onPress={() => {
+            blurActiveElement();
+            router.push({ pathname: '/modules', params: { userId: module.user.id } });
+          }}
+          activeOpacity={0.6}
+        >
           <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.userAvatarText}>{userInitial}</Text>
           </View>
@@ -141,7 +148,7 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
           >
             {username}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
   );

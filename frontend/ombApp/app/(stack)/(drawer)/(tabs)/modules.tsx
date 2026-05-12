@@ -23,7 +23,7 @@ const ModuleEditorScreen = () => {
   const userId = user?.id;
   const isDarkMode = useThemeStore(state => state.isDarkMode);
   const colors = getColors(isDarkMode);
-  const { id } = useLocalSearchParams();
+  const { id, userId: paramUserId } = useLocalSearchParams<{ id?: string; userId?: string }>();
   const [selectedModuleId, setSelectedModuleId] = useState<number | null>(id ? Number(id) : null);
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [blockRelations, setBlockRelations] = useState<any[]>([]);
@@ -60,8 +60,21 @@ const ModuleEditorScreen = () => {
     return () => window.removeEventListener('modules-updated', handler);
   }, [reload]);
 
-  // Filtrar los módulos del usuario
-  const modules = allModules.filter(m => m.user?.id === userId);
+  // Determinar si estamos viendo módulos de otro usuario
+  const targetUserId = paramUserId ? Number(paramUserId) : null;
+  const isViewingOtherUser = targetUserId !== null && targetUserId !== userId;
+
+  // Obtener información del usuario
+  const targetUser = isViewingOtherUser
+    ? allModules.find(m => m.user?.id === targetUserId)?.user
+    : null;
+
+  // Filtrar los módulos según el usuario
+  // Si es otro usuario, solo mostrar módulos públicos
+  const modules = isViewingOtherUser
+    ? allModules.filter(m => m.user?.id === targetUserId && m.isPublic)
+    : allModules.filter(m => m.user?.id === userId);
+    
   const isLoading = loadingAllModules;
 
   // Aplicar filtros de búsqueda y privacidad
@@ -70,9 +83,11 @@ const ModuleEditorScreen = () => {
     if (searchText.trim() && !m.name.toLowerCase().includes(searchText.trim().toLowerCase())) {
       return false;
     }
-    // Filtro por privacidad
-    if (privacyFilter === 'public' && !m.isPublic) return false;
-    if (privacyFilter === 'private' && m.isPublic) return false;
+    // Filtro por privacidad (solo para módulos propios)
+    if (!isViewingOtherUser) {
+      if (privacyFilter === 'public' && !m.isPublic) return false;
+      if (privacyFilter === 'private' && m.isPublic) return false;
+    }
     return true;
   });
 
@@ -84,17 +99,25 @@ const ModuleEditorScreen = () => {
   // Si hay un id en la ruta, mostrar ese módulo aunque no sea del usuario
   const showOtherModule = id && (!modules.some(m => m.id === Number(id)));
 
-  // Si seleccionas uno de tus módulos, actualiza la URL para reflejar el id
+  // Si seleccionas un módulo, actualiza la URL para reflejar el id
   const handleSelectModule = (moduleId: number) => {
     if (Number(id) === moduleId) {
       // Si ya está seleccionado, lo deselecciona (cierra el detalle)
       blurActiveElement();
-      router.replace({ pathname: '/modules' });
+      if (isViewingOtherUser) {
+        router.replace({ pathname: '/modules', params: { userId: targetUserId } });
+      } else {
+        router.replace({ pathname: '/modules' });
+      }
     } else {
       setSelectedModuleId(moduleId);
       if (isDesktop) {
         blurActiveElement();
-        router.replace({ pathname: '/modules', params: { id: moduleId } });
+        const params: Record<string, string> = { id: String(moduleId) };
+        if (isViewingOtherUser) {
+          params.userId = String(targetUserId);
+        }
+        router.replace({ pathname: '/modules', params });
       }
     }
   };
@@ -138,6 +161,30 @@ const ModuleEditorScreen = () => {
     }
   };
 
+  // Cabecera de usuario para cuando se ven módulos de otro usuario
+  const renderUserHeader = () => {
+    if (!isViewingOtherUser || !targetUser) return null;
+    const username = targetUser.username || 'Usuario';
+    const userInitial = username.charAt(0).toUpperCase();
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 }}>
+        <TouchableOpacity
+          onPress={() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>{userInitial}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{username}</Text>
+          <Text style={{ fontSize: 13, color: colors.icon }}>Módulos de {username}</Text>
+        </View>
+      </View>
+    );
+  };
+
   if (isDesktop) {
     const showDetail = !!id;
     return (
@@ -146,9 +193,11 @@ const ModuleEditorScreen = () => {
         {/* Lista de módulos del usuario */}
         <View style={{ flex: showDetail ? 0.32 : 1, padding: 16 }}>
           <View style={{ marginHorizontal: 30 }}>
-            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
-              Todos tus módulos
-            </Text>
+            {isViewingOtherUser ? renderUserHeader() : (
+              <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
+                Todos tus módulos
+              </Text>
+            )}
 
             {/* Filtros: buscador + chips de privacidad */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -176,35 +225,39 @@ const ModuleEditorScreen = () => {
               ) : null}
             </View>
 
-            {/* Chips de privacidad */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              {(['all', 'public', 'private'] as const).map((opt) => {
-                const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
-                const isActive = privacyFilter === opt;
-                return (
-                  <TouchableOpacity
-                    key={opt}
-                    onPress={() => setPrivacyFilter(opt)}
-                    style={{
-                      paddingVertical: 6,
-                      paddingHorizontal: 14,
-                      borderRadius: 20,
-                      backgroundColor: isActive ? colors.primary : colors.card,
-                      borderWidth: 1,
-                      borderColor: isActive ? colors.primary : colors.border,
-                    }}
-                  >
-                    <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            {/* Chips de privacidad (solo para módulos propios) */}
+            {!isViewingOtherUser && (
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                {(['all', 'public', 'private'] as const).map((opt) => {
+                  const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+                  const isActive = privacyFilter === opt;
+                  return (
+                    <TouchableOpacity
+                      key={opt}
+                      onPress={() => setPrivacyFilter(opt)}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 14,
+                        borderRadius: 20,
+                        backgroundColor: isActive ? colors.primary : colors.card,
+                        borderWidth: 1,
+                        borderColor: isActive ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
 
           {isLoading ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : filteredModules.length === 0 ? (
-            <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
+            <Text style={{ color: colors.icon, marginHorizontal: 30 }}>
+              {isViewingOtherUser ? 'Este usuario no tiene módulos públicos.' : 'No tienes módulos creados todavía.'}
+            </Text>
           ) : (
             <FlatList
               data={filteredModules}
@@ -593,9 +646,11 @@ const ModuleEditorScreen = () => {
     return (
       <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
         <View style={{ marginHorizontal: 30 }}>
-          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
-            Todos tus módulos
-          </Text>
+          {isViewingOtherUser ? renderUserHeader() : (
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
+              Todos tus módulos
+            </Text>
+          )}
 
           {/* Filtros: buscador + chips de privacidad */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
@@ -623,35 +678,39 @@ const ModuleEditorScreen = () => {
             ) : null}
           </View>
 
-          {/* Chips de privacidad */}
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-            {(['all', 'public', 'private'] as const).map((opt) => {
-              const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
-              const isActive = privacyFilter === opt;
-              return (
-                <TouchableOpacity
-                  key={opt}
-                  onPress={() => setPrivacyFilter(opt)}
-                  style={{
-                    paddingVertical: 6,
-                    paddingHorizontal: 14,
-                    borderRadius: 20,
-                    backgroundColor: isActive ? colors.primary : colors.card,
-                    borderWidth: 1,
-                    borderColor: isActive ? colors.primary : colors.border,
-                  }}
-                >
-                  <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Chips de privacidad (solo para módulos propios) */}
+          {!isViewingOtherUser && (
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {(['all', 'public', 'private'] as const).map((opt) => {
+                const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+                const isActive = privacyFilter === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => setPrivacyFilter(opt)}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      backgroundColor: isActive ? colors.primary : colors.card,
+                      borderWidth: 1,
+                      borderColor: isActive ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {isLoading ? (
           <ActivityIndicator size="large" color={colors.primary} />
         ) : filteredModules.length === 0 ? (
-          <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
+          <Text style={{ color: colors.icon, marginHorizontal: 30 }}>
+            {isViewingOtherUser ? 'Este usuario no tiene módulos públicos.' : 'No tienes módulos creados todavía.'}
+          </Text>
         ) : (
           <FlatList
             data={filteredModules}
