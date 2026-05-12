@@ -276,10 +276,10 @@ INSERT INTO views (type, name, configuration, model_id) VALUES
 
 -- Admin
 INSERT INTO favorites (user_id, module_id) VALUES
-(1, 1),
-(1, 2);
+(1, 4),
+(1, 6);
 
 -- Usuario
 INSERT INTO favorites (user_id, module_id) VALUES
-(2, 4),
-(2, 6);
+(2, 1),
+(2, 2);
