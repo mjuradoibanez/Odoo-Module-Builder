@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+ import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
+import { getAvatarSource } from '@/core/constants/avatars';
 import { usePublicModules } from '@/presentation/hooks/usePublicModules';
 import { useUserFavorites } from '@/presentation/hooks/useUserFavorites';
 import { useAddFavorite } from '@/presentation/hooks/useAddFavorite';
@@ -32,6 +34,7 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
   isFavorite,
   onToggleFavorite,
   isToggling = false,
+  showUser = false,
 }: {
   module: Module;
   onPress: () => void;
@@ -39,6 +42,7 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   isToggling?: boolean;
+  showUser?: boolean;
 }) {
   const category = (module.category || 'otra')
     .toLowerCase()
@@ -53,6 +57,9 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
 
   const showFavorite =
     typeof isFavorite === 'boolean' && !!onToggleFavorite;
+
+  const username = module.user?.username || 'Usuario';
+  const userInitial = username.charAt(0).toUpperCase();
 
   return (
     <TouchableOpacity
@@ -123,6 +130,33 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
       >
         {module.technicalName}
       </Text>
+
+      {/* Información del usuario (solo para módulos de otros) */}
+      {showUser && (
+        <TouchableOpacity
+          style={styles.userRow}
+          onPress={() => {
+            blurActiveElement();
+            router.push({ pathname: '/modules', params: { userId: module.user.id } });
+          }}
+          activeOpacity={0.6}
+        >
+          {/* Avatar del usuario */}
+          {module.user?.avatar ? (
+            <Image source={getAvatarSource(module.user.avatar)} style={[styles.userAvatar, { backgroundColor: undefined }]} resizeMode="cover" />
+          ) : (
+            <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.userAvatarText}>{userInitial}</Text>
+            </View>
+          )}
+          <Text
+            style={[styles.userName, { color: colors.icon }]}
+            numberOfLines={1}
+          >
+            {username}
+          </Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 });
@@ -149,6 +183,7 @@ const HorizontalScrollRow = ({
   favoriteMap,
   onToggleFavorite,
   toggleIds,
+  showUser = false,
 }: {
   data: Module[];
   onPressModule: (id: number) => void;
@@ -157,6 +192,7 @@ const HorizontalScrollRow = ({
   favoriteMap?: Map<number, number>;
   onToggleFavorite?: (id: number) => void;
   toggleIds?: Set<number>;
+  showUser?: boolean;
 }) => {
   if (data.length === 0) {
     return (
@@ -181,6 +217,7 @@ const HorizontalScrollRow = ({
           isFavorite={favoriteMap?.has(item.id) ?? false}
           onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.id) : undefined}
           isToggling={toggleIds?.has(item.id) ?? false}
+          showUser={showUser}
         />
       ))}
     </ScrollView>
@@ -235,7 +272,7 @@ const DashboardScreen = () => {
 
   const handleSeeAll = useCallback(() => {
     blurActiveElement();
-    router.push({ pathname: '/modules' });
+    router.push({ pathname: '/users' });
   }, []);
 
   // Añadir o eliminar de favoritos y recargar la lista
@@ -302,11 +339,12 @@ const DashboardScreen = () => {
             favoriteMap={favoriteMap}
             onToggleFavorite={handleToggleFavorite}
             toggleIds={toggleIds}
+            showUser
           />
         )}
 
         {/* Sección: Módulos públicos de la comunidad */}
-        <SectionHeader title="Módulos públicos de la comunidad" colors={colors} />
+        <SectionHeader title="Módulos públicos de la comunidad" colors={colors} onSeeAll={handleSeeAll}/>
         {isLoadingPublic ? (
           <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
         ) : communityModules.length === 0 ? (
@@ -328,6 +366,7 @@ const DashboardScreen = () => {
                 onToggleFavorite={() => handleToggleFavorite(item.id)}
                 isToggling={toggleIds.has(item.id)}
                 colors={colors}
+                showUser
               />
             ))}
           </ScrollView>
@@ -425,6 +464,28 @@ const styles = StyleSheet.create({
     height: 26,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  userAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatarText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  userName: {
+    fontSize: 11,
+    flex: 1,
   },
 });
 

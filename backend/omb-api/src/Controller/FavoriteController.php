@@ -48,6 +48,7 @@ class FavoriteController extends AbstractController
                         'id' => $module->getUser()->getId(),
                         'username' => $module->getUser()->getUsername(),
                         'email' => $module->getUser()->getEmail(),
+                        'avatar' => $module->getUser()->getAvatar(),
                     ],
                     'favoritedAt' => $fav->getCreatedAt(),
                 ];

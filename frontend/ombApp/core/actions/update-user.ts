@@ -6,6 +6,7 @@ export interface UpdateUserDto {
   email?: string;
   password?: string;
   currentPassword?: string;
+  avatar?: string | null;
 }
 
 export const updateUser = async (userId: number, data: UpdateUserDto): Promise<User> => {
