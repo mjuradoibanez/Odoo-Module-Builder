@@ -696,6 +696,8 @@ export default function SettingsScreen() {
     if (updatedUser) {
       useAuthStore.setState({ user: updatedUser });
       setShowAvatarModal(false);
+      // Notificar a otras pantallas que el avatar cambió
+      window.dispatchEvent(new Event('avatar-updated'));
     }
   };
 

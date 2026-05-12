@@ -1,4 +1,4 @@
- import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -263,6 +263,16 @@ const DashboardScreen = () => {
     
     // Limpia al desmontar
     return () => window.removeEventListener('modules-updated', handler);
+  }, [reload, reloadFavs]);
+
+  // Recargar datos cuando se actualice el avatar
+  useEffect(() => {
+    const handler = () => {
+      reload();
+      reloadFavs();
+    };
+    window.addEventListener('avatar-updated', handler);
+    return () => window.removeEventListener('avatar-updated', handler);
   }, [reload, reloadFavs]);
 
   const handlePressModule = useCallback((moduleId: number) => {

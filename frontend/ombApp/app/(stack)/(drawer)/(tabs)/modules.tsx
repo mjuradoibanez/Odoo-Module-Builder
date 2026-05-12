@@ -61,6 +61,13 @@ const ModuleEditorScreen = () => {
     return () => window.removeEventListener('modules-updated', handler);
   }, [reload]);
 
+  // Recargar datos cuando se actualice el avatar
+  useEffect(() => {
+    const handler = () => reload();
+    window.addEventListener('avatar-updated', handler);
+    return () => window.removeEventListener('avatar-updated', handler);
+  }, [reload]);
+
   // Determinar si estamos viendo módulos de otro usuario
   const targetUserId = paramUserId ? Number(paramUserId) : null;
   const isViewingOtherUser = targetUserId !== null && targetUserId !== userId;
@@ -359,7 +366,7 @@ const ModuleEditorScreen = () => {
                         const thisModule = await getModuleFull(Number(id));
                         const { blockList, circularIds } = checkDependencies(
                           allModulesFull,
-                          { type: 'module', id: thisModule.id, technicalName: thisModule.technicalName, models: thisModule.models }
+                          { type: 'module', id: thisModule.id, technicalName: thisModule.technicalName, userId, models: thisModule.models }
                         );
 
                         if (blockList.length > 0 || circularIds) {
