@@ -37,7 +37,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ module, selected, showLo
   return (
     <View style={cardStyle}>
       {/* Icono o inicial */}
-      <View style={[styles.iconContainer, { backgroundColor: iconData.color, shadowColor: colors.border }]}>
+      <View style={[styles.iconContainer, { backgroundColor: iconData.color }]}>
         {showIcon ? (
           <Ionicons name={iconData.icon as any} size={28} color={colors.card} />
         ) : (
@@ -89,10 +89,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 14,
     marginHorizontal: 0,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
     elevation: 4,
     borderLeftWidth: 6,
     marginBottom: 8,
@@ -107,9 +104,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
     elevation: 2,
   },
   iconInitial: {

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getColors, Fonts } from '@/constants/theme';
 import { useLocalSearchParams, router } from 'expo-router';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 // Pantalla de mis módulos y detalles
 const ModuleEditorScreen = () => {
@@ -31,6 +32,10 @@ const ModuleEditorScreen = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const { modules: allModules = [], isLoading: loadingAllModules, reload } = useAllModules();
+
+  // Filtros
+  const [searchText, setSearchText] = useState('');
+  const [privacyFilter, setPrivacyFilter] = useState<'all' | 'public' | 'private'>('all');
 
   const showSuccess = useCallback((msg: string) => {
     setSuccessMessage(msg);
@@ -59,6 +64,23 @@ const ModuleEditorScreen = () => {
   const modules = allModules.filter(m => m.user?.id === userId);
   const isLoading = loadingAllModules;
 
+  // Aplicar filtros de búsqueda y privacidad
+  const filteredModules = modules.filter(m => {
+    // Filtro por nombre
+    if (searchText.trim() && !m.name.toLowerCase().includes(searchText.trim().toLowerCase())) {
+      return false;
+    }
+    // Filtro por privacidad
+    if (privacyFilter === 'public' && !m.isPublic) return false;
+    if (privacyFilter === 'private' && m.isPublic) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setSearchText('');
+    setPrivacyFilter('all');
+  };
+
   // Si hay un id en la ruta, mostrar ese módulo aunque no sea del usuario
   const showOtherModule = id && (!modules.some(m => m.id === Number(id)));
 
@@ -66,10 +88,12 @@ const ModuleEditorScreen = () => {
   const handleSelectModule = (moduleId: number) => {
     if (Number(id) === moduleId) {
       // Si ya está seleccionado, lo deselecciona (cierra el detalle)
+      blurActiveElement();
       router.replace({ pathname: '/modules' });
     } else {
       setSelectedModuleId(moduleId);
       if (isDesktop) {
+        blurActiveElement();
         router.replace({ pathname: '/modules', params: { id: moduleId } });
       }
     }
@@ -108,7 +132,7 @@ const ModuleEditorScreen = () => {
     if (result) {
       await reload();
       showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-      setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+      setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
     } else {
       showError(duplicateError || 'No se pudo duplicar el módulo.');
     }
@@ -125,15 +149,65 @@ const ModuleEditorScreen = () => {
             <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
               Todos tus módulos
             </Text>
+
+            {/* Filtros: buscador + chips de privacidad */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Buscar por nombre..."
+                placeholderTextColor={colors.icon}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 14,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              />
+              {searchText.trim() || privacyFilter !== 'all' ? (
+                <TouchableOpacity onPress={clearFilters}>
+                  <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Limpiar buscador</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Chips de privacidad */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {(['all', 'public', 'private'] as const).map((opt) => {
+                const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+                const isActive = privacyFilter === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => setPrivacyFilter(opt)}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      backgroundColor: isActive ? colors.primary : colors.card,
+                      borderWidth: 1,
+                      borderColor: isActive ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {isLoading ? (
             <ActivityIndicator size="large" color={colors.primary} />
-          ) : modules.length === 0 ? (
-            <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
+          ) : filteredModules.length === 0 ? (
+            <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
           ) : (
             <FlatList
-              data={modules}
+              data={filteredModules}
               keyExtractor={item => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -182,13 +256,10 @@ const ModuleEditorScreen = () => {
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 10,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.15,
-                        shadowRadius: 6,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                         elevation: 4,
                       }}
-                      onPress={() => router.push({ pathname: '/module-editor', params: { moduleId: id } })}
+                      onPress={() => { blurActiveElement(); router.push({ pathname: '/module-editor', params: { moduleId: id } }); }}
                       activeOpacity={0.85}
                     >
                       <Ionicons name="construct" size={22} color="#fff" />
@@ -259,6 +330,7 @@ const ModuleEditorScreen = () => {
                         if (ok) {
                           await reload();
                           setSelectedModuleId(null);
+                          blurActiveElement();
                           router.replace({ pathname: '/modules' });
                         }
                       }}
@@ -291,7 +363,7 @@ const ModuleEditorScreen = () => {
                     if (result) {
                       await reload();
                       showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-                      setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+                      setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
                     } else {
                       // Si falló por conflicto de nombre, ofrecer renombrar
                       openRenameModal(Number(id));
@@ -322,6 +394,7 @@ const ModuleEditorScreen = () => {
                 setShowBlockModal(false);
                 setDeleteBothIds(null);
                 setDeleting(false);
+                blurActiveElement();
                 router.replace({ pathname: '/modules' });
               }}
             />
@@ -378,9 +451,9 @@ const ModuleEditorScreen = () => {
               <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setShowRenameModal(false)}
-                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.border }}
+                  style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary }}
                 >
-                  <Text style={{ color: colors.text, fontWeight: '600' }}>Cancelar</Text>
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>Cancelar</Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
@@ -432,7 +505,7 @@ const ModuleEditorScreen = () => {
                       alignItems: 'center',
                       gap: 8,
                     }}
-                    onPress={() => router.push({ pathname: '/module-editor', params: { moduleId: selectedModuleId } })}
+                    onPress={() => { blurActiveElement(); router.push({ pathname: '/module-editor', params: { moduleId: selectedModuleId } }); }}
                     activeOpacity={0.85}
                   >
                     <Ionicons name="construct" size={20} color="#fff" />
@@ -484,7 +557,7 @@ const ModuleEditorScreen = () => {
                   if (result) {
                     await reload();
                     showSuccess('¡Módulo duplicado correctamente a tu cuenta!');
-                    setTimeout(() => router.replace({ pathname: '/modules' }), 1500);
+                    setTimeout(() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }, 1500);
                   } else {
                     // Si falló por conflicto de nombre, ofrecer renombrar
                     openRenameModal(selectedModuleId);
@@ -508,15 +581,65 @@ const ModuleEditorScreen = () => {
           <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
             Todos tus módulos
           </Text>
+
+          {/* Filtros: buscador + chips de privacidad */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Buscar por nombre..."
+              placeholderTextColor={colors.icon}
+              style={{
+                flex: 1,
+                backgroundColor: colors.background,
+                color: colors.text,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            />
+            {searchText.trim() || privacyFilter !== 'all' ? (
+              <TouchableOpacity onPress={clearFilters}>
+                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Limpiar buscador</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Chips de privacidad */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            {(['all', 'public', 'private'] as const).map((opt) => {
+              const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+              const isActive = privacyFilter === opt;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  onPress={() => setPrivacyFilter(opt)}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    backgroundColor: isActive ? colors.primary : colors.card,
+                    borderWidth: 1,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {isLoading ? (
           <ActivityIndicator size="large" color={colors.primary} />
-        ) : modules.length === 0 ? (
-          <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
+        ) : filteredModules.length === 0 ? (
+          <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
         ) : (
           <FlatList
-            data={modules}
+            data={filteredModules}
             keyExtractor={item => item.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity

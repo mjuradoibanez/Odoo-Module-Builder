@@ -4,8 +4,8 @@ import { authRegister } from '@/core/auth/actions/auth-actions';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
-
 import { Ionicons } from '@expo/vector-icons';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 export default function RegisterScreen() {
   const isDarkMode = useThemeStore(state => state.isDarkMode);
@@ -59,7 +59,7 @@ export default function RegisterScreen() {
       const user = await authRegister({ email, password, username });
       if (user) {
         setSuccessMsg('¡Registro exitoso! Ya puedes iniciar sesión.');
-        setTimeout(() => router.replace('/auth/login'), 1500);
+        setTimeout(() => { blurActiveElement(); router.replace('/auth/login'); }, 1500);
       } else {
         setErrorMsg('No se pudo registrar el usuario');
       }
@@ -88,10 +88,7 @@ export default function RegisterScreen() {
           padding: 40,
           flexDirection: 'column',
           alignItems: 'center',
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
+          boxShadow: `0 8px 16px ${colors.primary}26`,
           elevation: 8,
         }}
       >
@@ -241,7 +238,7 @@ export default function RegisterScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => router.replace('/auth/login')}
+          onPress={() => { blurActiveElement(); router.replace('/auth/login'); }}
         >
           <Text
             style={{

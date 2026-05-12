@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, useWindowDimensions, ScrollView, Modal, TextInput, Switch } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
-import { ModuleCard } from '@/components/shared/ModuleCard';
 import { getColors } from '@/constants/theme';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { useModuleFullStore } from '@/presentation/store/useModuleFullStore';
@@ -104,7 +104,10 @@ const DeployScreen = () => {
 
   const closeModal = () => {
     setShowResultModal(false);
-    resetResult();
+    // Esperar a que termine la animación de cierre antes de limpiar el resultado
+    setTimeout(() => {
+      resetResult();
+    }, 300);
   };
 
   const selectedModule = modules.find(m => m.id === selectedModuleId);
@@ -399,9 +402,18 @@ const DeployScreen = () => {
         onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {deployResult?.success ? 'Despliegue exitoso' : 'Error en el despliegue'}
+          <View style={[styles.modalContent, { backgroundColor: colors.card }, deployResult?.success ? styles.modalSuccessBorder : styles.modalErrorBorder]}>
+            {/* Icono de estado */}
+            <View style={[styles.statusIconContainer, { backgroundColor: deployResult?.success ? '#27ae60' : '#e74c3c' }]}>
+              <Ionicons
+                name={deployResult?.success ? 'checkmark-circle' : 'close-circle'}
+                size={32}
+                color="#fff"
+              />
+            </View>
+
+            <Text style={[styles.modalTitle, { color: deployResult?.success ? '#27ae60' : '#e74c3c' }]}>
+              {deployResult?.success ? '¡Despliegue exitoso!' : 'Error en el despliegue'}
             </Text>
             
             <ScrollView style={styles.modalScroll}>
@@ -412,7 +424,7 @@ const DeployScreen = () => {
               )}
               
               {deployResult?.error && (
-                <View style={[styles.errorBox, { backgroundColor: colors.background }]}>
+                <View style={[styles.errorBox, { backgroundColor: colors.background, borderLeftColor: '#e74c3c' }]}>
                   <Text style={[styles.errorText, { color: '#e74c3c' }]}>
                     {deployResult.error}
                   </Text>
@@ -432,9 +444,15 @@ const DeployScreen = () => {
             </ScrollView>
 
             <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: colors.primary }]}
+              style={[styles.closeButton, { backgroundColor: deployResult?.success ? '#27ae60' : '#e74c3c' }]}
               onPress={closeModal}
             >
+              <Ionicons
+                name={deployResult?.success ? 'checkmark-circle' : 'close-circle'}
+                size={18}
+                color="#fff"
+                style={{ marginRight: 6 }}
+              />
               <Text style={styles.closeButtonText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
@@ -447,6 +465,23 @@ const DeployScreen = () => {
 const styles = StyleSheet.create({
   selectedCard: {
     borderWidth: 2,
+  },
+  modalSuccessBorder: {
+    borderWidth: 2,
+    borderColor: '#27ae60',
+  },
+  modalErrorBorder: {
+    borderWidth: 2,
+    borderColor: '#e74c3c',
+  },
+  statusIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 12,
   },
   deployButton: {
     marginTop: 24,
@@ -473,10 +508,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
   },
   modalTitle: {
     fontSize: 20,
@@ -520,7 +552,9 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 14,
     borderRadius: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 8,
   },
   closeButtonText: {
@@ -587,10 +621,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
   },
   selectorModalHeader: {
     flexDirection: 'row',

@@ -11,6 +11,10 @@ export async function duplicateModule(
     if (options?.technicalName) body.technicalName = options.technicalName;
 
     const { data } = await ombApi.post(`/modules/${moduleId}/duplicate`, body);
+    // Notificar a otras pantallas que los módulos han cambiado
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('modules-updated'));
+    }
     return { success: true, data };
     
   } catch (error: any) {

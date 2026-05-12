@@ -13,6 +13,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
 import { useUserModels } from '@/presentation/hooks/useUserModels';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
 import { checkDependencies } from '@/core/helpers/checkDependencies';
 import { getModuleFull } from '@/core/actions/get-module-full';
@@ -547,6 +548,7 @@ const ModuleEditorScreen = () => {
       setSuccessMessage('¡Módulo creado correctamente!');
       setRedirectMessage('Redirigiendo a la lista de módulos...');
       setTimeout(() => {
+        blurActiveElement();
         router.push('/(stack)/(drawer)/(tabs)/modules');
       }, 2000);
     } else {
@@ -1059,6 +1061,7 @@ const ModuleEditorScreen = () => {
                       setShowSummaryModal('discard');
                     } else {
                       resetForm();
+                      blurActiveElement();
                       router.push('/(stack)/(drawer)/(tabs)/modules');
                     }
                   }}
@@ -1078,6 +1081,7 @@ const ModuleEditorScreen = () => {
                   setShowSummaryModal(false);
                   if (showSummaryModal === 'discard') {
                     resetForm();
+                    blurActiveElement();
                     router.push('/(stack)/(drawer)/(tabs)/modules');
                   } else {
                     handleUpdate();

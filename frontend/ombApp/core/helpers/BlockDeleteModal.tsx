@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors } from '@/constants/theme';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 // Bloquea eliminar un módulo si tiene dependencias
 interface BlockDeleteModalProps {
@@ -46,7 +47,7 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
       onRequestClose={onClose}
     >
       <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
-        <View style={{ backgroundColor: colors.card, borderRadius: 18, padding: 32, width: 500, maxWidth: '98%', shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 16, elevation: 8 }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: 18, padding: 32, width: 500, maxWidth: '98%', boxShadow: '0 0 16px rgba(0,0,0,0.18)', elevation: 8 }}>
           <Text style={{ fontWeight: 'bold', fontSize: 24, color: '#e74c3c', marginBottom: 16, letterSpacing: 0.2 }}>
             {type === 'model' ? 'No se puede eliminar el modelo' : 'No se puede eliminar el módulo'}
           </Text>
@@ -59,10 +60,11 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
           
           <ScrollView style={{ maxHeight: 320, marginBottom: 18 }}>
             {relatedModules.map((rel, idx) => (
-              <View key={idx} style={{ marginBottom: 14, padding: 14, backgroundColor: isDarkMode ? '#2A1A1A' : '#f8eaea', borderRadius: 10, borderLeftWidth: 5, borderLeftColor: '#e74c3c', shadowColor: '#e74c3c', shadowOpacity: 0.08, shadowRadius: 2 }}>
+              <View key={idx} style={{ marginBottom: 14, padding: 14, backgroundColor: isDarkMode ? '#2A1A1A' : '#f8eaea', borderRadius: 10, borderLeftWidth: 5, borderLeftColor: '#e74c3c', boxShadow: '0 0 2px rgba(231,76,60,0.08)' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <TouchableOpacity
                     onPress={() => {
+                      blurActiveElement();
                       router.push({ pathname: '/module-editor', params: { moduleId: rel.moduleId } });
                       onClose();
                     }}
@@ -74,6 +76,7 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
                   
                   <TouchableOpacity
                     onPress={() => {
+                      blurActiveElement();
                       router.push({ pathname: '/module-editor', params: { moduleId: rel.moduleId } });
                       onClose();
                     }}
@@ -115,8 +118,8 @@ export const BlockDeleteModal: React.FC<BlockDeleteModalProps> = ({ visible, onC
               </TouchableOpacity>
             )}
             
-            <TouchableOpacity onPress={onClose} style={{ marginTop: 2, paddingVertical: 10, paddingHorizontal: 32, backgroundColor: colors.border, borderRadius: 10, minWidth: 260 }}>
-              <Text style={{ color: colors.text, fontWeight: 'bold', fontSize: 17, textAlign: 'center' }}>Cerrar</Text>
+            <TouchableOpacity onPress={onClose} style={{ marginTop: 2, paddingVertical: 10, paddingHorizontal: 32, backgroundColor: colors.primary, borderRadius: 10, minWidth: 260 }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 17, textAlign: 'center' }}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -2,6 +2,10 @@
 -- Odoo Module Builder - Schema para Symfony / MySQL
 -- ---------------------------------------------------
 
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET collation_connection = utf8mb4_unicode_ci;
+
 -- -----------------------------
 -- Tabla users
 -- -----------------------------
@@ -13,7 +17,7 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT uq_email_user UNIQUE (email, username)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla modules
@@ -32,7 +36,7 @@ CREATE TABLE modules (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT uq_technical_name_module UNIQUE (technical_name, user_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla models
@@ -45,7 +49,7 @@ CREATE TABLE models (
   module_id INT,
   CONSTRAINT fk_models_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
   CONSTRAINT uq_technical_name_model UNIQUE (technical_name, module_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla fields
@@ -67,7 +71,7 @@ CREATE TABLE fields (
   model_id INT,
   CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
   CONSTRAINT uq_technical_name_field UNIQUE (technical_name, model_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla views
@@ -80,7 +84,7 @@ CREATE TABLE views (
   configuration JSON, -- Configuraciones de las vistas
   model_id INT,
   CONSTRAINT fk_views_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla favorites
@@ -94,7 +98,7 @@ CREATE TABLE favorites (
   CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_favorites_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
   CONSTRAINT uq_user_module_favorite UNIQUE (user_id, module_id)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
 -- Tabla deployments
@@ -107,4 +111,4 @@ CREATE TABLE deployments (
   log TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_deployments_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

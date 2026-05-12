@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 
 export default function LoginScreen() {
 
@@ -47,6 +48,7 @@ export default function LoginScreen() {
   // Si ya está autenticado, redirigir a home
   useEffect(() => {
     if (status === 'authenticated') {
+      blurActiveElement();
       router.replace('/dashboard');
     }
   }, [status]);
@@ -69,10 +71,7 @@ export default function LoginScreen() {
           padding: 40,
           flexDirection: 'column',
           alignItems: 'center',
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.15,
-          shadowRadius: 16,
+          boxShadow: `0 8px 16px ${colors.primary}26`,
           elevation: 8,
         }}
       >
@@ -162,7 +161,7 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => router.push('/auth/register')}
+          onPress={() => { blurActiveElement(); router.push('/auth/register'); }}
         >
           <Text
             style={{

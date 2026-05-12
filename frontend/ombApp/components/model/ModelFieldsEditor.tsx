@@ -611,7 +611,7 @@ const FieldForm = ({
                   }))
                 }
               >
-                <Text style={{ color: colors.text }}>{opt.label}</Text>
+                <Text style={{ color: form.relationSubtype === opt.value ? '#fff' : colors.text }}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -897,8 +897,8 @@ export default function ModelFieldsEditor({
             <Text style={styles.buttonText}>Añadir campo</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.button, { backgroundColor: colors.border, marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
-            <Text style={[styles.buttonText, { color: colors.text }]}>Cancelar</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary, marginTop: 6 }]} onPress={() => setShowNewFieldForm(false)}>
+            <Text style={[styles.buttonText, { color: colors.primary }]}>Cancelar</Text>
           </TouchableOpacity>
         </View>
       )}

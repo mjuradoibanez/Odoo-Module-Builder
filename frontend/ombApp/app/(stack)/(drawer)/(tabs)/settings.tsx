@@ -72,6 +72,7 @@ const SettingAction = ({
   rightText,
   danger = false,
   colors,
+  withoutArrow = false,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -80,6 +81,7 @@ const SettingAction = ({
   rightText?: string;
   danger?: boolean;
   colors: ReturnType<typeof getColors>;
+  withoutArrow?: boolean;
 }) => (
   <TouchableOpacity style={styles.settingRow} onPress={onPress} activeOpacity={0.6}>
     <View style={[styles.settingIconContainer, { backgroundColor: colors.background }]}>
@@ -93,7 +95,7 @@ const SettingAction = ({
     
     {rightText && <Text style={[styles.settingRightText, { color: colors.icon }]}>{rightText}</Text>}
     
-    <Ionicons name="chevron-forward" size={18} color={colors.icon} />
+    {withoutArrow == false && <Ionicons name="chevron-forward" size={18} color={colors.icon} />}
   </TouchableOpacity>
 );
 
@@ -384,6 +386,188 @@ const DeleteAccountModal = ({
   );
 };
 
+// ──────────────────────────────────────────────
+//  MODALES DE INFORMACIÓN
+// ──────────────────────────────────────────────
+
+// Modal de versión de la aplicación
+const VersionModal = ({
+  visible,
+  onClose,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  colors: ReturnType<typeof getColors>;
+}) => {
+  const buildDate = "2026-05-11";
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Versión de la aplicación</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color={colors.icon} />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ gap: 16, marginBottom: 24 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.background }}>
+              <Text style={{ color: colors.icon, fontSize: 14 }}>Nombre del proyecto</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Odoo Module Builder</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.background }}>
+              <Text style={{ color: colors.icon, fontSize: 14 }}>Versión actual</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>v1.0.0</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.background }}>
+              <Text style={{ color: colors.icon, fontSize: 14 }}>Fecha de compilación</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{buildDate}</Text>
+            </View>
+          </View>
+
+          <Text style={{ color: colors.icon, fontSize: 13, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Tecnologías usadas</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+            {['React Native', 'Symfony', 'MySQL', 'Odoo', 'Docker'].map((tech) => (
+              <View key={tech} style={{ backgroundColor: colors.background, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}>
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '500' }}>{tech}</Text>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.modalSubmitButton, { backgroundColor: colors.primary, alignSelf: 'center' }]}
+            onPress={onClose}
+          >
+            <Text style={styles.modalSubmitText}>Cerrar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// Modal de términos y condiciones
+const TermsModal = ({
+  visible,
+  onClose,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  colors: ReturnType<typeof getColors>;
+}) => (
+  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <View style={styles.modalOverlay}>
+      <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Términos y condiciones</Text>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={24} color={colors.icon} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ marginBottom: 24, gap: 12 }}>
+          <Text style={{ color: colors.text, fontSize: 14, lineHeight: 22 }}>
+            La aplicación tiene fines educativos.
+          </Text>
+          <Text style={{ color: colors.text, fontSize: 14, lineHeight: 22 }}>
+            Los módulos generados son responsabilidad del usuario.
+          </Text>
+          <Text style={{ color: colors.text, fontSize: 14, lineHeight: 22 }}>
+            El sistema no garantiza compatibilidad con versiones modificadas de Odoo.
+          </Text>
+          <Text style={{ color: colors.text, fontSize: 14, lineHeight: 22 }}>
+            El uso indebido puede generar errores en entornos de prueba.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.modalSubmitButton, { backgroundColor: colors.primary, alignSelf: 'center' }]}
+          onPress={onClose}
+        >
+          <Text style={styles.modalSubmitText}>Cerrar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
+// Modal de política de privacidad
+const PrivacyModal = ({
+  visible,
+  onClose,
+  colors,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  colors: ReturnType<typeof getColors>;
+}) => (
+  <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <View style={styles.modalOverlay}>
+      <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>Política de privacidad</Text>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={24} color={colors.icon} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={{ color: colors.icon, fontSize: 13, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+          Qué datos guarda la app
+        </Text>
+        <View style={{ marginBottom: 16, gap: 6 }}>
+          {[
+            'Correo electrónico',
+            'Nombre de usuario',
+            'Configuraciones de módulos',
+            'Historial de despliegues',
+          ].map((item) => (
+            <View key={item} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="document-text" size={14} color={colors.primary} />
+              <Text style={{ color: colors.text, fontSize: 14 }}>{item}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={{ color: colors.icon, fontSize: 13, fontWeight: '600', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
+          Para qué se usan
+        </Text>
+        <View style={{ marginBottom: 16, gap: 6 }}>
+          {[
+            'Autenticación',
+            'Persistencia del proyecto',
+            'Trazabilidad de instalaciones',
+          ].map((item) => (
+            <View key={item} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="checkmark-circle" size={14} color="#27ae60" />
+              <Text style={{ color: colors.text, fontSize: 14 }}>{item}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={{ backgroundColor: colors.background, borderRadius: 10, padding: 14, marginBottom: 24 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="shield-checkmark" size={18} color={colors.primary} />
+            <Text style={{ color: colors.text, fontSize: 14, lineHeight: 20, flex: 1 }}>
+              No compartimos tus datos con terceros.
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.modalSubmitButton, { backgroundColor: colors.primary, alignSelf: 'center' }]}
+          onPress={onClose}
+        >
+          <Text style={styles.modalSubmitText}>Cerrar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+);
+
 // Pantalla principal de ajustes
 export default function SettingsScreen() {
   const { width } = useWindowDimensions();
@@ -408,6 +592,11 @@ export default function SettingsScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Estado para modales de información
+  const [showVersionModal, setShowVersionModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const startEditingUsername = () => {
     setUsernameDraft(user?.username || '');
@@ -571,15 +760,6 @@ export default function SettingsScreen() {
             colors={colors}
           />
           <View style={[styles.separator, { backgroundColor: colors.background }]} />
-
-          <SettingAction
-            icon="language-outline"
-            label="Idioma"
-            description="Idioma de la aplicación"
-            onPress={() => {}}
-            rightText="Español"
-            colors={colors}
-          />
         </SettingsSection>
 
         {/* Cuenta */}
@@ -609,16 +789,17 @@ export default function SettingsScreen() {
             icon="information-circle-outline"
             label="Versión"
             description="Versión actual de la aplicación"
-            onPress={() => {}}
+            onPress={() => setShowVersionModal(true)}
             rightText="1.0.0"
             colors={colors}
+            withoutArrow
           />
           <View style={[styles.separator, { backgroundColor: colors.background }]} />
 
           <SettingAction
             icon="document-text-outline"
             label="Términos y condiciones"
-            onPress={() => {}}
+            onPress={() => setShowTermsModal(true)}
             colors={colors}
           />
           <View style={[styles.separator, { backgroundColor: colors.background }]} />
@@ -626,7 +807,7 @@ export default function SettingsScreen() {
           <SettingAction
             icon="shield-checkmark-outline"
             label="Política de privacidad"
-            onPress={() => {}}
+            onPress={() => setShowPrivacyModal(true)}
             colors={colors}
           />
         </SettingsSection>
@@ -654,6 +835,27 @@ export default function SettingsScreen() {
         onConfirm={confirmDeleteAccount}
         deleting={isDeleting}
         error={deleteError}
+        colors={colors}
+      />
+
+      {/* Modal de versión */}
+      <VersionModal
+        visible={showVersionModal}
+        onClose={() => setShowVersionModal(false)}
+        colors={colors}
+      />
+
+      {/* Modal de términos y condiciones */}
+      <TermsModal
+        visible={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        colors={colors}
+      />
+
+      {/* Modal de política de privacidad */}
+      <PrivacyModal
+        visible={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
         colors={colors}
       />
     </View>
@@ -688,10 +890,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
     elevation: 3,
   },
   avatarContainer: {
@@ -759,10 +958,7 @@ const styles = StyleSheet.create({
   sectionContent: {
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 1 },
+    boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
     elevation: 2,
   },
   // Filas de configuración
@@ -812,10 +1008,7 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
     elevation: 10,
   },
   modalHeader: {

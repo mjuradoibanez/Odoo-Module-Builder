@@ -35,7 +35,7 @@ export const ModuleDetail: React.FC<ModuleDetailProps> = ({ moduleId }) => {
       </View>
       {module.models && module.models.length > 0 ? (
         module.models.map((model: any) => (
-          <View key={model.id} style={[styles.modelBox, { backgroundColor: colors.card, shadowColor: colors.border }]}>
+          <View key={model.id} style={[styles.modelBox, { backgroundColor: colors.card }]}>
             <Text style={[styles.modelName, { color: colors.text }]}>{model.name} <Text style={[styles.modelTech, { color: colors.icon }]}>({model.technicalName})</Text></Text>
             {/* Campos */}
             <Text style={[styles.subSectionTitle, { color: colors.primary }]}>Campos</Text>
@@ -91,8 +91,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 18,
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
+    boxShadow: '0 0 2px rgba(0,0,0,0.04)',
     elevation: 1,
   },
   modelName: {
