@@ -146,11 +146,17 @@ const HorizontalScrollRow = ({
   onPressModule,
   emptyMessage,
   colors,
+  favoriteMap,
+  onToggleFavorite,
+  toggleIds,
 }: {
   data: Module[];
   onPressModule: (id: number) => void;
   emptyMessage: string;
   colors: ReturnType<typeof getColors>;
+  favoriteMap?: Map<number, number>;
+  onToggleFavorite?: (id: number) => void;
+  toggleIds?: Set<number>;
 }) => {
   if (data.length === 0) {
     return (
@@ -172,6 +178,9 @@ const HorizontalScrollRow = ({
           module={item}
           onPress={() => onPressModule(item.id)}
           colors={colors}
+          isFavorite={favoriteMap?.has(item.id) ?? false}
+          onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.id) : undefined}
+          isToggling={toggleIds?.has(item.id) ?? false}
         />
       ))}
     </ScrollView>
@@ -290,6 +299,9 @@ const DashboardScreen = () => {
             onPressModule={handlePressModule}
             emptyMessage="Aún no tienes módulos favoritos."
             colors={colors}
+            favoriteMap={favoriteMap}
+            onToggleFavorite={handleToggleFavorite}
+            toggleIds={toggleIds}
           />
         )}
 
