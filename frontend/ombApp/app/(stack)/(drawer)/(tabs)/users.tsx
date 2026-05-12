@@ -43,6 +43,13 @@ const UsersScreen = () => {
         loadUsers();
     }, [loadUsers]);
 
+    // Recargar usuarios cuando se actualice el avatar
+    useEffect(() => {
+        const handler = () => loadUsers();
+        window.addEventListener('avatar-updated', handler);
+        return () => window.removeEventListener('avatar-updated', handler);
+    }, [loadUsers]);
+
     const handleUserPress = (user: User) => {
         blurActiveElement();
         router.push({ pathname: '/modules', params: { userId: user.id } });
