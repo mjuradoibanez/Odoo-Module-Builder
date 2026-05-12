@@ -53,6 +53,12 @@ const TabsLayout = () => {
           tabBarButton: () => null,
         }}
       />
+      <Tabs.Screen
+        name='users'
+        options={{
+          tabBarButton: () => null,
+        }}
+      />
     </Tabs>
   )
 }

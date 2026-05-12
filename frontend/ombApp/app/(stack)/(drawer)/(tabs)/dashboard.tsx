@@ -265,7 +265,7 @@ const DashboardScreen = () => {
 
   const handleSeeAll = useCallback(() => {
     blurActiveElement();
-    router.push({ pathname: '/modules' });
+    router.push({ pathname: '/users' });
   }, []);
 
   // Añadir o eliminar de favoritos y recargar la lista
@@ -337,7 +337,7 @@ const DashboardScreen = () => {
         )}
 
         {/* Sección: Módulos públicos de la comunidad */}
-        <SectionHeader title="Módulos públicos de la comunidad" colors={colors} />
+        <SectionHeader title="Módulos públicos de la comunidad" colors={colors} onSeeAll={handleSeeAll}/>
         {isLoadingPublic ? (
           <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 20 }} />
         ) : communityModules.length === 0 ? (
