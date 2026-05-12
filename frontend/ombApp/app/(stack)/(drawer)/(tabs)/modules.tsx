@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, useWindowDimensions, FlatList, TouchableOpacity, Text, ActivityIndicator, ScrollView, Modal, TextInput } from 'react-native';
+import { View, useWindowDimensions, FlatList, TouchableOpacity, Text, ActivityIndicator, ScrollView, Modal, TextInput, Image } from 'react-native';
 import { ModuleCard } from '@/components/shared/ModuleCard';
 import { ModuleDetail } from '@/components/shared/ModuleDetail';
 import { checkDependencies } from '@/core/helpers/checkDependencies';
@@ -14,6 +14,7 @@ import { getColors, Fonts } from '@/constants/theme';
 import { useLocalSearchParams, router } from 'expo-router';
 import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
+import { getAvatarSource } from '@/core/constants/avatars';
 
 // Pantalla de mis módulos y detalles
 const ModuleEditorScreen = () => {
@@ -166,6 +167,7 @@ const ModuleEditorScreen = () => {
     if (!isViewingOtherUser || !targetUser) return null;
     const username = targetUser.username || 'Usuario';
     const userInitial = username.charAt(0).toUpperCase();
+    const avatarSource = targetUser.avatar ? getAvatarSource(targetUser.avatar) : null;
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 }}>
         <TouchableOpacity
@@ -174,9 +176,13 @@ const ModuleEditorScreen = () => {
         >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>{userInitial}</Text>
-        </View>
+        {avatarSource ? (
+          <Image source={avatarSource} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
+        ) : (
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}>{userInitial}</Text>
+          </View>
+        )}
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{username}</Text>
           <Text style={{ fontSize: 13, color: colors.icon }}>Módulos de {username}</Text>

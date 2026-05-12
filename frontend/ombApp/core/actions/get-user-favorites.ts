@@ -15,6 +15,7 @@ export interface FavoriteRecord {
     id: number;
     username: string;
     email: string;
+    avatar?: string;
   };
   favoritedAt: string;
 }
@@ -23,6 +24,7 @@ export async function getUserFavorites(userId: number): Promise<FavoriteRecord[]
   try {
     const { data } = await ombApi.get(`/user/${userId}/favorites`);
     return data;
+    
   } catch (error: any) {
     console.log('GET USER FAVORITES ERROR:', error?.response?.data);
     return null;

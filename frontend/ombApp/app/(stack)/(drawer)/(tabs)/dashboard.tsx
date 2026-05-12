@@ -7,12 +7,14 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
 import { useUserModules } from '@/presentation/hooks/useUserModules';
+import { getAvatarSource } from '@/core/constants/avatars';
 import { usePublicModules } from '@/presentation/hooks/usePublicModules';
 import { useUserFavorites } from '@/presentation/hooks/useUserFavorites';
 import { useAddFavorite } from '@/presentation/hooks/useAddFavorite';
@@ -139,9 +141,14 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
           }}
           activeOpacity={0.6}
         >
-          <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.userAvatarText}>{userInitial}</Text>
-          </View>
+          {/* Avatar del usuario */}
+          {module.user?.avatar ? (
+            <Image source={getAvatarSource(module.user.avatar)} style={[styles.userAvatar, { backgroundColor: undefined }]} resizeMode="cover" />
+          ) : (
+            <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.userAvatarText}>{userInitial}</Text>
+            </View>
+          )}
           <Text
             style={[styles.userName, { color: colors.icon }]}
             numberOfLines={1}

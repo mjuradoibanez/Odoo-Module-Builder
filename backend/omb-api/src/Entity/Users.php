@@ -68,6 +68,15 @@ class Users
      */
     private $createdAt = null;
 
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="avatar", type="string", length=50, nullable=true)
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $avatar = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTime();
@@ -106,6 +115,16 @@ class Users
     public function setCreatedAt(?\DateTime $createdAt): void
     {
         $this->createdAt = $createdAt;
+    }
+
+    public function getAvatar(): ?string
+    {
+        return $this->avatar;
+    }
+
+    public function setAvatar(?string $avatar): void
+    {
+        $this->avatar = $avatar;
     }
 
 }

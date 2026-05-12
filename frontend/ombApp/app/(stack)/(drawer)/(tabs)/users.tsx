@@ -7,6 +7,7 @@ import {
     ActivityIndicator,
     useWindowDimensions,
     StyleSheet,
+    Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { User } from '@/core/interface/user';
 import { getColors } from '@/constants/theme';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
+import { getAvatarSource } from '@/core/constants/avatars';
 
 const UsersScreen = () => {
     const { width } = useWindowDimensions();
@@ -62,6 +64,7 @@ const UsersScreen = () => {
     const renderUserItem = ({ item }: { item: User }) => {
         const username = item.username || 'Usuario';
         const userInitial = username.charAt(0).toUpperCase();
+        const avatarSource = item.avatar ? getAvatarSource(item.avatar) : null;
 
         return (
             <TouchableOpacity
@@ -69,9 +72,13 @@ const UsersScreen = () => {
                 onPress={() => handleUserPress(item)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                    <Text style={styles.avatarText}>{userInitial}</Text>
-                </View>
+                {avatarSource ? (
+                    <Image source={avatarSource} style={styles.avatarImage} resizeMode="cover" />
+                ) : (
+                    <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.avatarText}>{userInitial}</Text>
+                    </View>
+                )}
                 <View style={styles.userInfo}>
                     <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
                         {username}
@@ -191,6 +198,11 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    avatarImage: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
     },
     avatarText: {
         color: '#fff',

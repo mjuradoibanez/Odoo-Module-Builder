@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   useWindowDimensions,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/presentation/auth/store/useAuthStore';
@@ -19,6 +20,8 @@ import { useUpdateUser } from '@/presentation/hooks/useUpdateUser';
 import { deleteAccount } from '@/core/actions/delete-account';
 import { getColors } from '@/constants/theme';
 import { useThemeStore } from '@/presentation/store/useThemeStore';
+import AvatarSelectorModal from '@/components/shared/AvatarSelectorModal';
+import { getAvatarSource } from '@/core/constants/avatars';
 
 // Apartado del formulario (para hacer secciones)
 const SettingsSection = ({ title, children, colors }: { title: string; children: React.ReactNode; colors: ReturnType<typeof getColors> }) => (
@@ -593,6 +596,9 @@ export default function SettingsScreen() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Estado para modal de avatar
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
   // Estado para modales de información
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
@@ -682,6 +688,19 @@ export default function SettingsScreen() {
 
   const memberSince = formatDate(user?.createdAt);
 
+  const handleAvatarSelect = async (avatarName: string) => {
+    if (!user?.id) return;
+    // Si se pasa cadena vacía, enviar null para quitar la foto
+    const avatarValue = avatarName === '' ? null : avatarName;
+    const updatedUser = await update(user.id, { avatar: avatarValue });
+    if (updatedUser) {
+      useAuthStore.setState({ user: updatedUser });
+      setShowAvatarModal(false);
+    }
+  };
+
+  const userAvatar = user?.avatar ? getAvatarSource(user.avatar) : null;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }, isDesktop && styles.containerDesktop]}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -691,9 +710,16 @@ export default function SettingsScreen() {
 
         {/* Tarjeta de perfil */}
         <View style={[styles.profileCard, { backgroundColor: colors.card }]}>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle" size={64} color={colors.primary} />
-          </View>
+          <TouchableOpacity style={styles.avatarContainer} onPress={() => setShowAvatarModal(true)} activeOpacity={0.7}>
+            {userAvatar ? (
+              <Image source={userAvatar} style={{ width: 64, height: 64, borderRadius: 32 }} resizeMode="cover" />
+            ) : (
+              <Ionicons name="person-circle" size={64} color={colors.primary} />
+            )}
+            <View style={[styles.avatarEditBadge, { backgroundColor: colors.primary }]}>
+              <Ionicons name="camera" size={14} color="#fff" />
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.profileInfo}>
             {editingUsername ? (
@@ -858,6 +884,15 @@ export default function SettingsScreen() {
         onClose={() => setShowPrivacyModal(false)}
         colors={colors}
       />
+
+      {/* Modal selector de avatar */}
+      <AvatarSelectorModal
+        visible={showAvatarModal}
+        onClose={() => setShowAvatarModal(false)}
+        currentAvatar={user?.avatar}
+        onSelect={handleAvatarSelect}
+        colors={colors}
+      />
     </View>
   );
 }
@@ -895,6 +930,19 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     marginRight: 16,
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 12,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   profileInfo: {
     flex: 1,

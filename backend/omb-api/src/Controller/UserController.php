@@ -55,10 +55,18 @@ class UserController extends AbstractController
             }
 
 
+            // Lista de avatares predeterminados
+            $defaultAvatars = [
+                'avatar_01.png', 'avatar_02.png', 'avatar_03.png', 'avatar_04.png',
+                'avatar_05.png', 'avatar_06.png', 'avatar_07.png', 'avatar_08.png',
+            ];
+
             $user = new Users();
             $user->setEmail($data['email']);
             $user->setUsername($username);
             $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
+            // Asignar un avatar aleatorio por defecto
+            $user->setAvatar($defaultAvatars[array_rand($defaultAvatars)]);
             $entityManager->persist($user);
             $entityManager->flush();
 
@@ -120,6 +128,11 @@ class UserController extends AbstractController
             // Actualizar username si se envía
             if (isset($data['username'])) {
                 $user->setUsername($data['username']);
+            }
+
+            // Actualizar avatar si se envía (incluye null para quitar la foto)
+            if (array_key_exists('avatar', $data)) {
+                $user->setAvatar($data['avatar']);
             }
 
             // Cambiar contraseña: requiere la contraseña actual para verificar
