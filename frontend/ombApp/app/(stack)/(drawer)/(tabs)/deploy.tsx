@@ -226,13 +226,15 @@ const DeployScreen = () => {
       {/* Separador */}
       <View style={{ height: 1, backgroundColor: colors.icon, opacity: 0.2, marginVertical: 24, marginHorizontal: 16 }} />
 
-      {/* Sección de despliegue de módulo */}
+      {/* Sección de descarga de módulo */}
       <View style={{ padding: 16, paddingTop: 0 }}>
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 8, color: colors.primary }}>
-          Desplegar módulo Odoo
+          {isDesktop ? 'Desplegar módulo Odoo' : 'Descargar módulo'}
         </Text>
         <Text style={{ color: colors.icon, marginBottom: 16, fontSize: 14 }}>
-          Selecciona un módulo y elige cómo deseas desplegarlo:
+          {isDesktop
+            ? 'Selecciona un módulo y elige cómo deseas desplegarlo:'
+            : 'Selecciona un módulo para descargar su ZIP:'}
         </Text>
 
         {/* Selector de módulo tipo dropdown */}
@@ -269,26 +271,29 @@ const DeployScreen = () => {
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.deployButton,
-                { backgroundColor: '#27ae60', marginTop: 12 },
-                (!isComplete || isDeploying) && { opacity: 0.5 },
-              ]}
-              onPress={handleDeployToOdoo}
-              disabled={!isComplete || isDeploying}
-            >
-              {isDeploying ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
-                  <Text style={styles.deployButtonText}>Desplegando en Odoo...</Text>
-                </View>
-              ) : (
-                <Text style={styles.deployButtonText}>
-                  Desplegar en Odoo - {selectedModule.name}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {/* Botón "Desplegar en Odoo" solo visible en desktop */}
+            {isDesktop && (
+              <TouchableOpacity
+                style={[
+                  styles.deployButton,
+                  { backgroundColor: '#27ae60', marginTop: 12 },
+                  (!isComplete || isDeploying) && { opacity: 0.5 },
+                ]}
+                onPress={handleDeployToOdoo}
+                disabled={!isComplete || isDeploying}
+              >
+                {isDeploying ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.deployButtonText}>Desplegando en Odoo...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.deployButtonText}>
+                    Desplegar en Odoo - {selectedModule.name}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
