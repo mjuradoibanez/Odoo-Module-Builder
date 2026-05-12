@@ -32,6 +32,7 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
   isFavorite,
   onToggleFavorite,
   isToggling = false,
+  showUser = false,
 }: {
   module: Module;
   onPress: () => void;
@@ -39,6 +40,7 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
   isToggling?: boolean;
+  showUser?: boolean;
 }) {
   const category = (module.category || 'otra')
     .toLowerCase()
@@ -53,6 +55,9 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
 
   const showFavorite =
     typeof isFavorite === 'boolean' && !!onToggleFavorite;
+
+  const username = module.user?.username || 'Usuario';
+  const userInitial = username.charAt(0).toUpperCase();
 
   return (
     <TouchableOpacity
@@ -123,6 +128,21 @@ const CompactModuleCard = React.memo(function CompactModuleCard({
       >
         {module.technicalName}
       </Text>
+
+      {/* Información del usuario (solo para módulos de otros) */}
+      {showUser && (
+        <View style={styles.userRow}>
+          <View style={[styles.userAvatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.userAvatarText}>{userInitial}</Text>
+          </View>
+          <Text
+            style={[styles.userName, { color: colors.icon }]}
+            numberOfLines={1}
+          >
+            {username}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 });
@@ -149,6 +169,7 @@ const HorizontalScrollRow = ({
   favoriteMap,
   onToggleFavorite,
   toggleIds,
+  showUser = false,
 }: {
   data: Module[];
   onPressModule: (id: number) => void;
@@ -157,6 +178,7 @@ const HorizontalScrollRow = ({
   favoriteMap?: Map<number, number>;
   onToggleFavorite?: (id: number) => void;
   toggleIds?: Set<number>;
+  showUser?: boolean;
 }) => {
   if (data.length === 0) {
     return (
@@ -181,6 +203,7 @@ const HorizontalScrollRow = ({
           isFavorite={favoriteMap?.has(item.id) ?? false}
           onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.id) : undefined}
           isToggling={toggleIds?.has(item.id) ?? false}
+          showUser={showUser}
         />
       ))}
     </ScrollView>
@@ -302,6 +325,7 @@ const DashboardScreen = () => {
             favoriteMap={favoriteMap}
             onToggleFavorite={handleToggleFavorite}
             toggleIds={toggleIds}
+            showUser
           />
         )}
 
@@ -328,6 +352,7 @@ const DashboardScreen = () => {
                 onToggleFavorite={() => handleToggleFavorite(item.id)}
                 isToggling={toggleIds.has(item.id)}
                 colors={colors}
+                showUser
               />
             ))}
           </ScrollView>
@@ -425,6 +450,28 @@ const styles = StyleSheet.create({
     height: 26,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  userAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatarText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  userName: {
+    fontSize: 11,
+    flex: 1,
   },
 });
 
