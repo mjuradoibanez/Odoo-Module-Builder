@@ -475,6 +475,21 @@ const ModuleEditorScreen = () => {
       const isOwnModule = modules.some(m => m.id === selectedModuleId && m.user?.id === userId);
       return (
         <View style={{ flex: 1, padding: 16, backgroundColor: colors.background }}>
+          {/* Botón de volver atrás en móvil */}
+          <TouchableOpacity
+            onPress={() => { blurActiveElement(); setSelectedModuleId(null); }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginBottom: 12,
+              gap: 6,
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+            <Text style={{ color: colors.primary, fontSize: 16, fontWeight: '600' }}>Volver al listado</Text>
+          </TouchableOpacity>
+
           <ScrollView contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={true}>
             <ModuleDetail moduleId={selectedModuleId as number} />
 
