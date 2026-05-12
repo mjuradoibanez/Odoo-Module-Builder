@@ -33,6 +33,10 @@ const ModuleEditorScreen = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const { modules: allModules = [], isLoading: loadingAllModules, reload } = useAllModules();
 
+  // Filtros
+  const [searchText, setSearchText] = useState('');
+  const [privacyFilter, setPrivacyFilter] = useState<'all' | 'public' | 'private'>('all');
+
   const showSuccess = useCallback((msg: string) => {
     setSuccessMessage(msg);
     setErrorMessage('');
@@ -59,6 +63,23 @@ const ModuleEditorScreen = () => {
   // Filtrar los módulos del usuario
   const modules = allModules.filter(m => m.user?.id === userId);
   const isLoading = loadingAllModules;
+
+  // Aplicar filtros de búsqueda y privacidad
+  const filteredModules = modules.filter(m => {
+    // Filtro por nombre
+    if (searchText.trim() && !m.name.toLowerCase().includes(searchText.trim().toLowerCase())) {
+      return false;
+    }
+    // Filtro por privacidad
+    if (privacyFilter === 'public' && !m.isPublic) return false;
+    if (privacyFilter === 'private' && m.isPublic) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setSearchText('');
+    setPrivacyFilter('all');
+  };
 
   // Si hay un id en la ruta, mostrar ese módulo aunque no sea del usuario
   const showOtherModule = id && (!modules.some(m => m.id === Number(id)));
@@ -128,15 +149,65 @@ const ModuleEditorScreen = () => {
             <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
               Todos tus módulos
             </Text>
+
+            {/* Filtros: buscador + chips de privacidad */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <TextInput
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Buscar por nombre..."
+                placeholderTextColor={colors.icon}
+                style={{
+                  flex: 1,
+                  backgroundColor: colors.background,
+                  color: colors.text,
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 14,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                }}
+              />
+              {searchText.trim() || privacyFilter !== 'all' ? (
+                <TouchableOpacity onPress={clearFilters}>
+                  <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Limpiar buscador</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {/* Chips de privacidad */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {(['all', 'public', 'private'] as const).map((opt) => {
+                const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+                const isActive = privacyFilter === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    onPress={() => setPrivacyFilter(opt)}
+                    style={{
+                      paddingVertical: 6,
+                      paddingHorizontal: 14,
+                      borderRadius: 20,
+                      backgroundColor: isActive ? colors.primary : colors.card,
+                      borderWidth: 1,
+                      borderColor: isActive ? colors.primary : colors.border,
+                    }}
+                  >
+                    <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {isLoading ? (
             <ActivityIndicator size="large" color={colors.primary} />
-          ) : modules.length === 0 ? (
-            <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
+          ) : filteredModules.length === 0 ? (
+            <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
           ) : (
             <FlatList
-              data={modules}
+              data={filteredModules}
               keyExtractor={item => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -510,15 +581,65 @@ const ModuleEditorScreen = () => {
           <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: colors.primary }}>
             Todos tus módulos
           </Text>
+
+          {/* Filtros: buscador + chips de privacidad */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Buscar por nombre..."
+              placeholderTextColor={colors.icon}
+              style={{
+                flex: 1,
+                backgroundColor: colors.background,
+                color: colors.text,
+                borderRadius: 10,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                fontSize: 14,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            />
+            {searchText.trim() || privacyFilter !== 'all' ? (
+              <TouchableOpacity onPress={clearFilters}>
+                <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Limpiar buscador</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          {/* Chips de privacidad */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            {(['all', 'public', 'private'] as const).map((opt) => {
+              const label = opt === 'all' ? 'Todos' : opt === 'public' ? 'Públicos' : 'Privados';
+              const isActive = privacyFilter === opt;
+              return (
+                <TouchableOpacity
+                  key={opt}
+                  onPress={() => setPrivacyFilter(opt)}
+                  style={{
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    borderRadius: 20,
+                    backgroundColor: isActive ? colors.primary : colors.card,
+                    borderWidth: 1,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  }}
+                >
+                  <Text style={{ color: isActive ? '#fff' : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
         {isLoading ? (
           <ActivityIndicator size="large" color={colors.primary} />
-        ) : modules.length === 0 ? (
-          <Text style={{ color: colors.icon }}>No tienes módulos creados todavía.</Text>
+        ) : filteredModules.length === 0 ? (
+          <Text style={{ color: colors.icon, marginHorizontal: 30 }}>No tienes módulos creados todavía.</Text>
         ) : (
           <FlatList
-            data={modules}
+            data={filteredModules}
             keyExtractor={item => item.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity
