@@ -430,14 +430,6 @@ const DeployScreen = () => {
                   </Text>
                 </View>
               )}
-
-              {deployResult?.restored && !deployResult?.success && (
-                <View style={{ marginTop: 12, padding: 12, backgroundColor: '#fff3cd', borderRadius: 8, borderLeftWidth: 4, borderLeftColor: '#ffc107' }}>
-                  <Text style={{ color: '#856404', fontSize: 13, lineHeight: 18 }}>
-                    Se ha restaurado la versión anterior del módulo. El despliegue ha fallado, pero tu módulo anterior sigue funcionando correctamente.
-                  </Text>
-                </View>
-              )}
               
               {deployResult?.log && (
                 <View style={{ marginTop: 12 }}>

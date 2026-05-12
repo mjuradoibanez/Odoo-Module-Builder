@@ -9,6 +9,7 @@ use App\Entity\Fields;
 use App\Entity\Views;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -44,7 +45,6 @@ class OdooDeployController extends AbstractController
         $addonsPath = $this->getParameter('odoo_addons_path');
         $targetPath = $addonsPath . '/' . $technicalName;
         $backupPath = $addonsPath . '/.' . $technicalName . '_backup';
-        $backupUsed = false;
 
         try {
             // 2. Construir el JSON completo del módulo
@@ -56,10 +56,10 @@ class OdooDeployController extends AbstractController
                 return $this->json(['success' => false, 'error' => 'Failed to generate module ZIP'], 500);
             }
 
-            // 4. Hacer backup del módulo existente (si lo hay) antes de tocarlo
+            // 4. Hacer backup del módulo existente (solo para proteger la extracción del ZIP)
+            $backupUsed = false;
             if (is_dir($targetPath)) {
                 $this->removeDirectory($backupPath);
-                // Mover en lugar de copiar para que sea instantáneo
                 if (rename($targetPath, $backupPath)) {
                     $backupUsed = true;
                 }
@@ -68,41 +68,34 @@ class OdooDeployController extends AbstractController
             // 5. Extraer el ZIP en la carpeta addons de Odoo
             $extractResult = $this->extractZipToDirectory($zipData, $targetPath);
             if ($extractResult['success'] === false) {
-                // Restaurar backup si existe
                 if ($backupUsed) {
                     $this->restoreBackup($backupPath, $targetPath);
                 }
                 return $this->json(['success' => false, 'error' => $extractResult['error']], 500);
             }
 
-            // 6. Instalar (o actualizar) el módulo en Odoo
+            // 6. La extracción fue bien: el backup ya no es necesario, eliminar
+            if ($backupUsed) {
+                $this->removeDirectory($backupPath);
+                $backupUsed = false;
+            }
+
+            // 7. Instalar (o actualizar) el módulo en Odoo
             $installResult = $this->installOrUpgradeModuleInOdoo($technicalName);
 
-            // 7. Si hay error, restaurar backup y notificar
+            // 8. Si hay error en la instalación, NO restauramos backup para dejar los nuevos archivos
             if (!$installResult['success']) {
                 $errorMsg = $installResult['error'] ?? 'Unknown error during installation';
-
-                // Restaurar la versión anterior
-                $this->removeDirectory($targetPath);
-                if ($backupUsed) {
-                    $this->restoreBackup($backupPath, $targetPath);
-                }
-
                 $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
 
                 return $this->json([
                     'success' => false,
                     'error' => $errorMsg,
                     'log' => $installResult['log'] ?? '',
-                    'restored' => $backupUsed,
                 ], 500);
             }
 
-            // 8. Éxito: eliminar backup
-            if ($backupUsed) {
-                $this->removeDirectory($backupPath);
-            }
-
+            // 9. Éxito
             $successMsg = "Module '{$technicalName}' deployed and installed successfully in Odoo";
             $this->recordDeployment($module, 'success', $successMsg, $entityManager);
 
@@ -111,12 +104,14 @@ class OdooDeployController extends AbstractController
                 'message' => $successMsg,
             ]);
         } catch (\Exception $e) {
-            // Error inesperado: restaurar backup si existe
-            if ($backupUsed && !is_dir($targetPath)) {
-                $this->restoreBackup($backupPath, $targetPath);
-            } elseif ($backupUsed && is_dir($targetPath)) {
-                $this->removeDirectory($targetPath);
-                $this->restoreBackup($backupPath, $targetPath);
+            // Error inesperado: restaurar backup solo si la extracción falló
+            if ($backupUsed) {
+                if (!is_dir($targetPath)) {
+                    $this->restoreBackup($backupPath, $targetPath);
+                } else {
+                    $this->removeDirectory($targetPath);
+                    $this->restoreBackup($backupPath, $targetPath);
+                }
             }
 
             $errorMsg = 'Unexpected error: ' . $e->getMessage();
@@ -125,7 +120,6 @@ class OdooDeployController extends AbstractController
             return $this->json([
                 'success' => false,
                 'error' => $errorMsg,
-                'restored' => $backupUsed,
             ], 500);
         }
     }

@@ -5,7 +5,6 @@ export interface DeployResult {
   message?: string;
   error?: string;
   log?: string;
-  restored?: boolean;
 }
 
 // Desplegar un módulo directamente en Odoo (copiar a addons, instalar, verificar log)
