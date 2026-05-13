@@ -16,7 +16,6 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 RUN a2enmod rewrite
 
 # Añade www-data al grupo root para que pueda escribir en volúmenes montados
-# (el volumen /mnt/extra-addons tiene grupo root con permisos de escritura)
 RUN usermod -aG root www-data
 
 # Copia el virtualhost si lo tienes personalizado (opcional)
