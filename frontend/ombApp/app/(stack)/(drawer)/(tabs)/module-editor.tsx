@@ -581,8 +581,11 @@ const ModuleEditorScreen = () => {
 
     if (result === true) {
       setShowUpdateSuccess(true);
-      setTimeout(() => setShowUpdateSuccess(false), 3000);
-      if (typeof reload === 'function') reload();
+      setTimeout(() => {
+        setShowUpdateSuccess(false);
+        blurActiveElement();
+        router.push(`/(stack)/(drawer)/(tabs)/modules?id=${moduleFull.id}`);
+      }, 1500);
     } else {
       setGeneralError(typeof result === 'string' ? result : 'Error al guardar los cambios');
     }
@@ -1059,6 +1062,8 @@ const ModuleEditorScreen = () => {
                 <TouchableOpacity
                   style={[styles.button, { flex: 1, backgroundColor: colors.primary }]}
                   onPress={() => {
+                    setNoChangesError(false);
+
                     if (editingModelId !== null) {
                       setShowModuleEditError(editingModelId);
                       return;
