@@ -1,5 +1,5 @@
 {
-    'name': 'Academia',
+    'name': 'Academia modificado',
     'version': '1.0',
     'author': 'Admin',
     'category': 'educacion',

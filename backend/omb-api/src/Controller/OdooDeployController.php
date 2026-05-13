@@ -44,7 +44,6 @@ class OdooDeployController extends AbstractController
         $technicalName = $module->getTechnicalName();
         $addonsPath = $this->getParameter('odoo_addons_path');
         $targetPath = $addonsPath . '/' . $technicalName;
-        $backupPath = $addonsPath . '/.' . $technicalName . '_backup';
 
         try {
             // 2. Construir el JSON completo del módulo
@@ -56,34 +55,16 @@ class OdooDeployController extends AbstractController
                 return $this->json(['success' => false, 'error' => 'Failed to generate module ZIP'], 500);
             }
 
-            // 4. Hacer backup del módulo existente (solo para proteger la extracción del ZIP)
-            $backupUsed = false;
-            if (is_dir($targetPath)) {
-                $this->removeDirectory($backupPath);
-                if (rename($targetPath, $backupPath)) {
-                    $backupUsed = true;
-                }
+            // 4. Desplegar los archivos en Odoo usando docker exec (evita problemas de permisos)
+            $deployResult = $this->deployModuleFilesViaDocker($zipData, $technicalName, $targetPath);
+            if ($deployResult['success'] === false) {
+                return $this->json(['success' => false, 'error' => $deployResult['error']], 500);
             }
 
-            // 5. Extraer el ZIP en la carpeta addons de Odoo
-            $extractResult = $this->extractZipToDirectory($zipData, $targetPath);
-            if ($extractResult['success'] === false) {
-                if ($backupUsed) {
-                    $this->restoreBackup($backupPath, $targetPath);
-                }
-                return $this->json(['success' => false, 'error' => $extractResult['error']], 500);
-            }
-
-            // 6. La extracción fue bien: el backup ya no es necesario, eliminar
-            if ($backupUsed) {
-                $this->removeDirectory($backupPath);
-                $backupUsed = false;
-            }
-
-            // 7. Instalar (o actualizar) el módulo en Odoo
+            // 5. Instalar (o actualizar) el módulo en Odoo
             $installResult = $this->installOrUpgradeModuleInOdoo($technicalName);
 
-            // 8. Si hay error en la instalación, NO restauramos backup para dejar los nuevos archivos
+            // 6. Si hay error en la instalación
             if (!$installResult['success']) {
                 $errorMsg = $installResult['error'] ?? 'Unknown error during installation';
                 $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
@@ -95,7 +76,7 @@ class OdooDeployController extends AbstractController
                 ], 500);
             }
 
-            // 9. Éxito
+            // 7. Éxito
             $successMsg = "Module '{$technicalName}' deployed and installed successfully in Odoo";
             $this->recordDeployment($module, 'success', $successMsg, $entityManager);
 
@@ -104,16 +85,6 @@ class OdooDeployController extends AbstractController
                 'message' => $successMsg,
             ]);
         } catch (\Exception $e) {
-            // Error inesperado: restaurar backup solo si la extracción falló
-            if ($backupUsed) {
-                if (!is_dir($targetPath)) {
-                    $this->restoreBackup($backupPath, $targetPath);
-                } else {
-                    $this->removeDirectory($targetPath);
-                    $this->restoreBackup($backupPath, $targetPath);
-                }
-            }
-
             $errorMsg = 'Unexpected error: ' . $e->getMessage();
             $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
 
@@ -125,9 +96,70 @@ class OdooDeployController extends AbstractController
     }
 
     // ──────────────────────────────────────────────
-    //  INSTALACIÓN EN ODOO (install / upgrade / reinstall)
+    //  DESPLIEGUE DE ARCHIVOS
     // ──────────────────────────────────────────────
 
+    // Extrae el ZIP directamente desde PHP al volumen compartido
+    private function deployModuleFilesViaDocker(string $zipData, string $technicalName, string $targetPath): array
+    {
+        // 1. Eliminar el directorio antiguo del módulo si existe
+        $this->removeDirectory($targetPath);
+
+        // 2. Guardar el ZIP temporalmente
+        $tempZip = sys_get_temp_dir() . '/' . $technicalName . '_' . uniqid() . '.zip';
+        file_put_contents($tempZip, $zipData);
+
+        // 3. Extraer el ZIP directamente en el directorio destino
+        $zip = new \ZipArchive();
+        $result = $zip->open($tempZip);
+        if ($result !== true) {
+            @unlink($tempZip);
+            return ['success' => false, 'error' => 'Could not open ZIP file (code: ' . $result . ')'];
+        }
+
+        if (!is_dir($targetPath)) {
+            @mkdir($targetPath, 0777, true);
+        }
+
+        $zip->extractTo($targetPath);
+        $zip->close();
+        @unlink($tempZip);
+
+        // 4. Verificar que el manifiesto existe
+        if (!file_exists($targetPath . '/__manifest__.py')) {
+            $this->removeDirectory($targetPath);
+            return ['success' => false, 'error' => 'Invalid module: __manifest__.py not found in ZIP'];
+        }
+
+        return ['success' => true, 'path' => $targetPath];
+    }
+
+    // Elimina un directorio recursivamente usando rm -rf
+    private function removeDirectory(string $dir): void
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+
+        exec('rm -rf ' . escapeshellarg($dir) . ' 2>&1', $_, $code);
+        if ($code !== 0) {
+            // Fallback a PHP si rm falla
+            $it = new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS);
+            $files = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    @rmdir($file->getRealPath());
+                } else {
+                    @unlink($file->getRealPath());
+                }
+            }
+            @rmdir($dir);
+        }
+    }
+
+    // ──────────────────────────────────────────────
+    //  INSTALACIÓN EN ODOO (install / upgrade / reinstall)
+    // ──────────────────────────────────────────────
     
     // Instala el módulo si no existe, o lo actualiza si ya existe.
     // Si el upgrade falla, intenta desinstalar y reinstalar desde cero.
@@ -155,7 +187,7 @@ class OdooDeployController extends AbstractController
             // Si no se encuentra, actualizar la lista de módulos y buscar de nuevo
             if ($moduleInfo === null) {
                 $this->updateModuleList($baseUrl, $uid, $odooDb, $odooPassword);
-                usleep(500000); // 0.5 segundos para que Odoo procese
+                usleep(500000);
                 $moduleInfo = $this->findModule($baseUrl, $uid, $odooDb, $odooPassword, $technicalName);
             }
 
@@ -172,18 +204,14 @@ class OdooDeployController extends AbstractController
             $state = $moduleInfo['state'];
 
             if ($state === 'uninstalled') {
-                // No instalado: instalar
                 return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
             } elseif ($state === 'installed' || $state === 'to upgrade') {
-                // Ya instalado: intentar upgrade primero (recarga modelos, vistas, etc.)
                 $upgradeResult = $this->odooUpgradeModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
                 if ($upgradeResult['success']) {
                     return $upgradeResult;
                 }
-                // Si upgrade falla: desinstalar y reinstalar desde cero
                 return $this->odooReinstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
             } else {
-                // Estado desconocido (to remove, etc.): intentar instalar
                 return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
             }
         } catch (\Exception $e) {
@@ -291,7 +319,6 @@ class OdooDeployController extends AbstractController
         }
     }
 
-    // Instala un módulo en estado 'uninstalled'
     private function odooInstallModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
     {
         try {
@@ -334,7 +361,6 @@ class OdooDeployController extends AbstractController
         }
     }
 
-    // Actualiza un módulo ya instalado (recarga modelos, vistas, campos desde los ficheros)
     private function odooUpgradeModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
     {
         try {
@@ -377,7 +403,6 @@ class OdooDeployController extends AbstractController
         }
     }
 
-    // Desinstala y reinstala un módulo (para forzar nuevos ficheros)
     private function odooReinstallModule(string $baseUrl, int $uid, string $db, string $password, int $moduleId, string $technicalName): array
     {
         // 1. Desinstalar
@@ -406,8 +431,7 @@ class OdooDeployController extends AbstractController
             // Si falla la desinstalación, continuamos e intentamos instalar igualmente
         }
 
-        // Pequeña pausa para que Odoo procese la desinstalación
-        usleep(500000); // 0.5 segundos
+        usleep(500000);
 
         // 2. Reinstalar
         return $this->odooInstallModule($baseUrl, $uid, $db, $password, $moduleId, $technicalName);
@@ -504,7 +528,6 @@ class OdooDeployController extends AbstractController
         ];
     }
 
-    // Genera el ZIP del módulo a través del servidor Java (misma lógica que ModuleController)
     private function generateZipFromJava(array $moduleData): ?string
     {
         $json = json_encode($moduleData, JSON_UNESCAPED_UNICODE);
@@ -526,7 +549,6 @@ class OdooDeployController extends AbstractController
         $command = "GENERATE_MODULE;" . $json . "\n";
         socket_write($socket, $command, strlen($command));
 
-        // Leer respuesta de control
         $control = '';
         while (($char = socket_read($socket, 1)) !== false && $char !== "\n" && $char !== "") {
             $control .= $char;
@@ -538,7 +560,6 @@ class OdooDeployController extends AbstractController
             return null;
         }
 
-        // Leer tamaño del ZIP (4 bytes)
         $sizeData = socket_read($socket, 4);
         if ($sizeData === false || strlen($sizeData) < 4) {
             socket_close($socket);
@@ -564,50 +585,8 @@ class OdooDeployController extends AbstractController
         return $zipData;
     }
 
-    // Extrae un ZIP en el directorio especificado (el directorio ya debe existir)
-    private function extractZipToDirectory(string $zipData, string $targetPath): array
-    {
-        // Crear el directorio destino
-        if (!@mkdir($targetPath, 0777, true) && !is_dir($targetPath)) {
-            return ['success' => false, 'error' => 'Could not create target module directory'];
-        }
-
-        // Guardar ZIP temporal y extraer
-        $tempZip = sys_get_temp_dir() . '/' . basename($targetPath) . '_' . uniqid() . '.zip';
-        file_put_contents($tempZip, $zipData);
-
-        $zip = new \ZipArchive();
-        $result = $zip->open($tempZip);
-        if ($result !== true) {
-            @unlink($tempZip);
-            $this->removeDirectory($targetPath);
-            return ['success' => false, 'error' => 'Could not open ZIP file'];
-        }
-
-        $zip->extractTo($targetPath);
-        $zip->close();
-        @unlink($tempZip);
-
-        // Verificar que se haya extraído correctamente
-        if (!file_exists($targetPath . '/__manifest__.py')) {
-            $this->removeDirectory($targetPath);
-            return ['success' => false, 'error' => 'Invalid module: __manifest__.py not found in ZIP'];
-        }
-
-        return ['success' => true, 'path' => $targetPath];
-    }
-
-    // Restaura el backup renombrándolo de vuelta a su lugar original
-    private function restoreBackup(string $backupPath, string $targetPath): void
-    {
-        if (!is_dir($backupPath)) {
-            return;
-        }
-        rename($backupPath, $targetPath);
-    }
-
     // ──────────────────────────────────────────────
-    //  LIMPIEZA Y REGISTRO
+    //  REGISTRO
     // ──────────────────────────────────────────────
 
     private function recordDeployment(Modules $module, string $status, string $log, $entityManager): void
@@ -621,41 +600,6 @@ class OdooDeployController extends AbstractController
             $entityManager->flush();
         } catch (\Exception $e) {
             // Ignorar si falla
-        }
-    }
-
-    private function removeDirectory(string $dir): void
-    {
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        $escapedDir = escapeshellarg($dir);
-        shell_exec("rm -rf {$escapedDir} 2>&1");
-
-        if (!is_dir($dir)) {
-            return;
-        }
-
-        // Fallback con PHP
-        try {
-            $iterator = new \RecursiveIteratorIterator(
-                new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS),
-                \RecursiveIteratorIterator::CHILD_FIRST
-            );
-
-            foreach ($iterator as $item) {
-                if ($item->isDir()) {
-                    @rmdir($item);
-                } else {
-                    @chmod($item, 0777);
-                    @unlink($item);
-                }
-            }
-
-            @rmdir($dir);
-        } catch (\Exception $e) {
-            // Ignorar
         }
     }
 }

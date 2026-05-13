@@ -14,22 +14,6 @@ class Alumno(models.Model):
     fecha_nacimiento = fields.Date(string='Fecha de nacimiento')
     telefono = fields.Char(string='Teléfono')
     cursos_ids = fields.Many2many('academia.curso', string='Cursos')
-    @api.constrains('nombre')
-    def _check_unique_nombre(self):
-        for record in self:
-            domain = [('nombre', '=', record.nombre), ('id', '!=', record.id)]
-            count = self.search_count(domain)
-            if count > 0:
-                raise ValidationError('¡Error! Ya existe un registro con el valor único en Nombre')
-
-    @api.constrains('email')
-    def _check_unique_email(self):
-        for record in self:
-            domain = [('email', '=', record.email), ('id', '!=', record.id)]
-            count = self.search_count(domain)
-            if count > 0:
-                raise ValidationError('¡Error! Ya existe un registro con el valor único en Email')
-
     @api.constrains('fecha_nacimiento', 'telefono', 'edad', 'email')
     def _check_business_rules(self):
         for record in self:
@@ -74,14 +58,6 @@ class Curso(models.Model):
     ], string='Estado', default='activo')
     alumnos_ids = fields.Many2many('academia.alumno', string='Alumnos')
     profesor_id = fields.Many2one('academia.profesor', string='Profesor')
-    @api.constrains('titulo')
-    def _check_unique_titulo(self):
-        for record in self:
-            domain = [('titulo', '=', record.titulo), ('id', '!=', record.id)]
-            count = self.search_count(domain)
-            if count > 0:
-                raise ValidationError('¡Error! Ya existe un registro con el valor único en Título')
-
     @api.constrains('horas')
     def _check_business_rules(self):
         for record in self:
@@ -107,22 +83,6 @@ class Profesor(models.Model):
         ('informatica', 'Informática'),
     ], string='Especialidad')
     cursos_ids = fields.One2many('academia.curso', 'profesor_id', string='Cursos')
-    @api.constrains('nombre')
-    def _check_unique_nombre(self):
-        for record in self:
-            domain = [('nombre', '=', record.nombre), ('id', '!=', record.id)]
-            count = self.search_count(domain)
-            if count > 0:
-                raise ValidationError('¡Error! Ya existe un registro con el valor único en Nombre')
-
-    @api.constrains('email')
-    def _check_unique_email(self):
-        for record in self:
-            domain = [('email', '=', record.email), ('id', '!=', record.id)]
-            count = self.search_count(domain)
-            if count > 0:
-                raise ValidationError('¡Error! Ya existe un registro con el valor único en Email')
-
     @api.constrains('email')
     def _check_business_rules(self):
         for record in self:
