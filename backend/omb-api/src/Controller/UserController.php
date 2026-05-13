@@ -54,6 +54,15 @@ class UserController extends AbstractController
                 return new Response("Email already exists", 409);
             }
 
+            // Verificar username duplicado
+            $existing = $entityManager
+                ->getRepository(Users::class)
+                ->findOneBy(['username' => $username]);
+
+            if ($existing) {
+                return new Response("Username already exists", 409);
+            }
+
 
             // Lista de avatares predeterminados
             $defaultAvatars = [
@@ -127,6 +136,14 @@ class UserController extends AbstractController
 
             // Actualizar username si se envía
             if (isset($data['username'])) {
+                $existing = $entityManager
+                    ->getRepository(Users::class)
+                    ->findOneBy(['username' => $data['username']]);
+
+                if ($existing && $existing->getId() != $user->getId()) {
+                    return new Response("Username already exists", 409);
+                }
+
                 $user->setUsername($data['username']);
             }
 
