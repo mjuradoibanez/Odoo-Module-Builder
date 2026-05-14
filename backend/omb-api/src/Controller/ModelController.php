@@ -47,21 +47,24 @@ class ModelController extends AbstractController
 
             $entityManager = $this->getDoctrine()->getManager();
 
-            // Verificar duplicados
-            $existing = $entityManager
-                ->getRepository(Models::class)
-                ->findOneBy(['technicalName' => $data['technicalName']]);
-
-            if ($existing){
-                return new Response("Model already exists", 404);
-            }
-
             $module = $entityManager
                 ->getRepository(Modules::class)
                 ->findOneBy(['id' => $data['module_id']]);
 
             if (!$module){
                 return new Response("Module not found", 404);
+            }
+
+            // Verificar duplicados dentro del mismo módulo
+            $existing = $entityManager
+                ->getRepository(Models::class)
+                ->findOneBy([
+                    'technicalName' => $data['technicalName'],
+                    'module' => $module
+                ]);
+
+            if ($existing){
+                return new Response("Model already exists in this module", 409);
             }
 
             // Crear modelo
@@ -139,13 +142,16 @@ class ModelController extends AbstractController
                 ['object_to_populate' => $model]
             );
 
-            // Validar duplicados
+            // Validar duplicados dentro del mismo módulo
             $existing = $entityManager
                 ->getRepository(Models::class)
-                ->findOneBy(['technicalName' => $model->getTechnicalName()]);
+                ->findOneBy([
+                    'technicalName' => $model->getTechnicalName(),
+                    'module' => $model->getModule()
+                ]);
 
             if ($existing && $existing->getId() != $model->getId()){
-                return new Response("technicalName already exists", 409);
+                return new Response("technicalName already exists in this module", 409);
             }
 
             // Relación module
@@ -228,7 +234,7 @@ class ModelController extends AbstractController
                 return new Response("No modules found for user", 404);
             }
 
-            // Buscar todos los modelos de esos módulos
+            // Buscar todos los modelos de esos módulos (findBy no funciona con arrays)
             $models = $entityManager
                 ->getRepository(Models::class)
                 ->createQueryBuilder('m')

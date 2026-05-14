@@ -112,11 +112,14 @@ class OdooDeployController extends AbstractController
         // 3. Extraer el ZIP directamente en el directorio destino
         $zip = new \ZipArchive();
         $result = $zip->open($tempZip);
+
+        // Si falla lo elimina
         if ($result !== true) {
             @unlink($tempZip);
             return ['success' => false, 'error' => 'Could not open ZIP file (code: ' . $result . ')'];
         }
 
+        // Asegurarse de que el directorio destino existe y tiene permisos
         if (!is_dir($targetPath)) {
             @mkdir($targetPath, 0777, true);
         }
@@ -195,8 +198,7 @@ class OdooDeployController extends AbstractController
             if ($moduleInfo === null) {
                 return [
                     'success' => false,
-                    'error' => "Module '{$technicalName}' not found in Odoo even after update_list. "
-                        . "Check that the module files are correctly placed in the addons directory.",
+                    'error' => "Module '{$technicalName}' not found in Odoo even after update_list. Check that the module files are correctly placed in the addons directory.",
                 ];
             }
 
@@ -247,6 +249,7 @@ class OdooDeployController extends AbstractController
             $data = json_decode($response->getContent(), true);
             $uid = $data['result'] ?? null;
 
+            // El UID debe ser un número entero positivo
             return (is_numeric($uid) && $uid > 0) ? (int)$uid : null;
         } catch (\Exception $e) {
             return null;

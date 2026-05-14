@@ -462,7 +462,7 @@ class ModuleController extends AbstractController
         $command = "GENERATE_MODULE;" . $json . "\n";
         socket_write($socket, $command, strlen($command));
 
-        // Leer la respuesta del servidor Java mientras no sea un salto de línea
+        // Leer la respuesta del servidor Java
         $control = '';
         while (($char = socket_read($socket, 1)) !== false && $char !== "\n" && $char !== "") {
             $control .= $char;
