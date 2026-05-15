@@ -169,7 +169,6 @@ const ModuleEditorScreen = () => {
   const [error, setError] = useState('');
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [redirectMessage, setRedirectMessage] = useState('');
 
   const clearForm = () => {
     setName('');
@@ -533,7 +532,6 @@ const ModuleEditorScreen = () => {
 
     setError('');
     setSuccessMessage('');
-    setRedirectMessage('');
 
     const result = await create({
       name,
@@ -546,11 +544,10 @@ const ModuleEditorScreen = () => {
 
     if (result && !result.error) {
       setSuccessMessage('¡Módulo creado correctamente!');
-      setRedirectMessage('Redirigiendo a la lista de módulos...');
       setTimeout(() => {
         blurActiveElement();
         router.push('/(stack)/(drawer)/(tabs)/modules');
-      }, 2000);
+      }, 800);
     } else {
       setError(result?.error || 'Error al crear el módulo');
     }
@@ -1192,7 +1189,6 @@ const ModuleEditorScreen = () => {
         />
 
         {successMessage ? <Text style={{ color: '#2ecc40', marginTop: 10 }}>{successMessage}</Text> : null}
-        {redirectMessage ? <Text style={{ color: colors.icon, marginTop: 4 }}>{redirectMessage}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {backendError && !error ? <Text style={styles.error}>{backendError}</Text> : null}
 

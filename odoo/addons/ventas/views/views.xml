@@ -1,0 +1,151 @@
+<odoo>
+  <data>
+    <record id="view_cliente_list" model="ir.ui.view">
+      <field name="name">cliente.list</field>
+      <field name="model">ventas.cliente</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="nombre"/>
+          <field name="email"/>
+          <field name="telefono"/>
+          <field name="tipo_cliente"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_cliente_form" model="ir.ui.view">
+      <field name="name">cliente.form</field>
+      <field name="model">ventas.cliente</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="nombre" required="1"/>
+            <field name="email"/>
+            <field name="telefono"/>
+            <field name="tipo_cliente"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_cliente_search" model="ir.ui.view">
+      <field name="name">cliente.search</field>
+      <field name="model">ventas.cliente</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="nombre"/>
+          <field name="email"/>
+          <field name="tipo_cliente"/>
+        </search>
+      </field>
+    </record>
+    <record id="view_cliente_kanban" model="ir.ui.view">
+      <field name="name">cliente.kanban</field>
+      <field name="model">ventas.cliente</field>
+      <field name="arch" type="xml">
+        <kanban default_group_by="tipo_cliente">
+          <templates>
+            <t t-name="card">
+              <div class="oe_kanban_global_click">
+                <div class="oe_kanban_details">
+                  <strong class="o_kanban_record_title">
+                    <field name="nombre"/>
+                  </strong>
+                </div>
+              </div>
+            </t>
+          </templates>
+        </kanban>
+      </field>
+    </record>
+    <record id="view_pedido_list" model="ir.ui.view">
+      <field name="name">pedido.list</field>
+      <field name="model">ventas.pedido</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="cliente_id"/>
+          <field name="fecha"/>
+          <field name="estado"/>
+          <field name="total"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_pedido_form" model="ir.ui.view">
+      <field name="name">pedido.form</field>
+      <field name="model">ventas.pedido</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="cliente_id" required="1"/>
+            <field name="fecha" required="1"/>
+            <field name="estado"/>
+            <field name="total"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="view_pedido_search" model="ir.ui.view">
+      <field name="name">pedido.search</field>
+      <field name="model">ventas.pedido</field>
+      <field name="arch" type="xml">
+        <search>
+          <field name="cliente_id"/>
+          <field name="estado"/>
+        </search>
+      </field>
+    </record>
+    <record id="view_pedido_graph" model="ir.ui.view">
+      <field name="name">pedido.graph</field>
+      <field name="model">ventas.pedido</field>
+      <field name="arch" type="xml">
+        <graph string="Gráfico de pedidos" type="bar">
+          <field name="estado" type="row"/>
+          <field name="total" type="measure"/>
+        </graph>
+      </field>
+    </record>
+    <record id="view_linea_pedido_list" model="ir.ui.view">
+      <field name="name">linea_pedido.list</field>
+      <field name="model">ventas.linea_pedido</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="pedido_id"/>
+          <field name="producto"/>
+          <field name="cantidad"/>
+          <field name="precio_unitario"/>
+        </list>
+      </field>
+    </record>
+    <record id="view_linea_pedido_form" model="ir.ui.view">
+      <field name="name">linea_pedido.form</field>
+      <field name="model">ventas.linea_pedido</field>
+      <field name="arch" type="xml">
+        <form>
+          <group>
+            <field name="pedido_id" required="1"/>
+            <field name="producto" required="1"/>
+            <field name="cantidad" required="1"/>
+            <field name="precio_unitario" required="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+    <record id="action_cliente" model="ir.actions.act_window">
+      <field name="name">Cliente</field>
+      <field name="res_model">ventas.cliente</field>
+      <field name="view_mode">list,form,kanban</field>
+    </record>
+    <record id="action_pedido" model="ir.actions.act_window">
+      <field name="name">Pedido</field>
+      <field name="res_model">ventas.pedido</field>
+      <field name="view_mode">list,form,graph</field>
+    </record>
+    <record id="action_linea_pedido" model="ir.actions.act_window">
+      <field name="name">Línea de pedido</field>
+      <field name="res_model">ventas.linea_pedido</field>
+      <field name="view_mode">list,form</field>
+    </record>
+    <menuitem id="menu_root_ventas" name="Ventas" sequence="1"/>
+    <menuitem id="menu_cliente" name="Cliente" action="action_cliente" parent="menu_root_ventas"/>
+    <menuitem id="menu_pedido" name="Pedido" action="action_pedido" parent="menu_root_ventas"/>
+    <menuitem id="menu_linea_pedido" name="Línea de pedido" action="action_linea_pedido" parent="menu_root_ventas"/>
+  </data>
+</odoo>
