@@ -1,9 +1,9 @@
 {
-    'name': 'examen gestion restaurante',
+    'name': 'SG Restaurante',
     'version': '1.0',
-    'author': 'null',
+    'author': 'admin',
     'category': 'inventario',
-    'description': 'probando a generar el examen',
+    'description': 'Modulo del examen final de sistemas de gestión',
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',

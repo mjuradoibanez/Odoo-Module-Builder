@@ -100,7 +100,8 @@ public class ModuleGenerator {
         sb.append("{\n");
         sb.append("    'name': '").append(module.name).append("',\n");
         sb.append("    'version': '").append(module.version).append("',\n");
-        sb.append("    'author': '").append(module.author).append("',\n");
+        String author = (module.author != null) ? module.author : "Admin";
+        sb.append("    'author': '").append(author).append("',\n");
         sb.append("    'category': '").append(module.category).append("',\n");
         if (module.description != null && !module.description.equals("null") && !module.description.isEmpty()) {
             sb.append("    'description': '").append(module.description).append("',\n");
@@ -241,7 +242,15 @@ public class ModuleGenerator {
                         sb.append("compute='").append(computeMethod).append("'");
                         hasPrev = true;
                         boolean store = computedRule.get("store") == null || Boolean.TRUE.equals(computedRule.get("store"));
-                        if (!store) {
+                        if (store) {
+                            if (hasPrev) sb.append(", ");
+                            sb.append("store=True");
+                            hasPrev = true;
+                            // Añadir group_operator='sum' para campos computados almacenados (necesario para gráficos)
+                            if (hasPrev) sb.append(", ");
+                            sb.append("group_operator='sum'");
+                            hasPrev = true;
+                        } else {
                             if (hasPrev) sb.append(", ");
                             sb.append("store=False");
                             hasPrev = true;
@@ -312,16 +321,19 @@ public class ModuleGenerator {
             StringBuilder constraintFields = new StringBuilder();
             StringBuilder constraintBody = new StringBuilder();
 
+            // Tipos de regla que son solo advertencias (no constraints)
+            Set<String> warningTypes = new HashSet<>(Arrays.asList("warn_sel_is", "warn_num_less", "warn_num_greater", "warn_date_soon"));
+
             for (ModuleRequest.FieldDTO field : model.fields) {
                 if (field.rules == null || field.rules.isEmpty()) continue;
                 for (Map<String, Object> rule : field.rules) {
+                    String ruleType = (String) rule.get("type");
                     // Ignorar avisos (se manejan en onchange) y reglas computed
-                    if (rule.get("isWarning") != null && (boolean)rule.get("isWarning")) continue;
-                    if ("computed".equals(rule.get("type"))) continue;
+                    if (warningTypes.contains(ruleType)) continue;
+                    if ("computed".equals(ruleType)) continue;
 
                     hasConstraints = true;
                     String fname = getSafeFieldName(field.technicalName);
-                    String ruleType = (String) rule.get("type");
                     Object ruleValue = rule.get("value");
                     String rVal = ruleValue != null ? getSafeFieldName(ruleValue.toString()) : "";
 
@@ -380,7 +392,7 @@ public class ModuleGenerator {
 
             // 3. Notificaciones (Onchange)
             for (ModuleRequest.FieldDTO field : model.fields) {
-                if (field.rules != null && field.rules.stream().anyMatch(r -> r.get("isWarning") != null && (boolean)r.get("isWarning"))) {
+                if (field.rules != null && field.rules.stream().anyMatch(r -> warningTypes.contains((String) r.get("type")))) {
                     String fname = getSafeFieldName(field.technicalName);
                     sb.append("    @api.onchange('" + fname + "')\n");
                     sb.append("    def _onchange_warnings_" + fname + "(self):\n");
@@ -388,7 +400,7 @@ public class ModuleGenerator {
                     sb.append("            return\n");
                     
                     for (Map<String, Object> rule : field.rules) {
-                        if (rule.get("isWarning") != null && (boolean)rule.get("isWarning")) {
+                        if (warningTypes.contains(rule.get("type"))) {
                             String ruleType = (String) rule.get("type");
                             Object ruleValue = rule.get("value");
                             String msg = "¡Aviso! " + field.name + ": ";
@@ -585,8 +597,8 @@ public class ModuleGenerator {
                         if (view.configuration != null) {
                             Object row = view.configuration.get("row_field");
                             Object measure = view.configuration.get("measure_field");
-                            if (row != null && !row.toString().isEmpty()) sb.append("          <field name=\"" + row.toString() + "\" type=\"row\"/>\n");
-                            if (measure != null && !measure.toString().isEmpty()) sb.append("          <field name=\"" + measure.toString() + "\" type=\"measure\"/>\n");
+                            if (row != null && !row.toString().isEmpty()) sb.append("          <field name=\"" + getSafeFieldName(row.toString()) + "\" type=\"row\"/>\n");
+                            if (measure != null && !measure.toString().isEmpty()) sb.append("          <field name=\"" + getSafeFieldName(measure.toString()) + "\" type=\"measure\"/>\n");
                         }
                         sb.append("        </graph>\n");
                     }
