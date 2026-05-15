@@ -336,7 +336,18 @@ const ModuleEditorScreen = () => {
       for (let j = 0; j < fields.length; j++) {
         const f = fields[j];
         const of = origFields.find((of: any) => of.id === f.id);
-        if (!of || f.name !== of.name || f.technicalName !== of.technicalName || f.type !== of.type) return true;
+        if (!of) return true;
+        // Comparar todos los atributos relevantes del campo
+        if (f.name !== of.name ||
+            f.technicalName !== of.technicalName ||
+            f.type !== of.type ||
+            f.relationModel !== of.relationModel ||
+            f.relationField !== of.relationField ||
+            f.required !== of.required ||
+            f.unique !== of.unique ||
+            f.defaultValue !== of.defaultValue ||
+            JSON.stringify(f.selectionOptions) !== JSON.stringify(of.selectionOptions) ||
+            JSON.stringify(f.rules) !== JSON.stringify(of.rules)) return true;
       }
 
       // Vistas
@@ -434,9 +445,13 @@ const ModuleEditorScreen = () => {
 
     } else if (editingModelId !== null) {
       // Editar modelo existente
+      const oldModel = localModels.find(m => m.id === editingModelId);
+      const oldTechnicalName = oldModel?.technicalName;
+      const newTechnicalName = modelForm.technicalName;
+
       const hasModelChanges = localModels.some(m =>
         m.id === editingModelId &&
-        (m.name !== modelForm.name || m.technicalName !== modelForm.technicalName)
+        (m.name !== modelForm.name || m.technicalName !== newTechnicalName)
       );
 
       if (!hasModelChanges) {
@@ -450,7 +465,20 @@ const ModuleEditorScreen = () => {
         const fieldsChanged = fields.length !== origFields.length ||
           fields.some((f: any, idx: number) => {
             const of = origFields[idx];
-            return !of || f.name !== of.name || f.technicalName !== of.technicalName || f.type !== of.type;
+            if (!of) return true;
+            // Comparar todos los atributos relevantes del campo
+            return (
+              f.name !== of.name ||
+              f.technicalName !== of.technicalName ||
+              f.type !== of.type ||
+              f.relationModel !== of.relationModel ||
+              f.relationField !== of.relationField ||
+              f.required !== of.required ||
+              f.unique !== of.unique ||
+              f.defaultValue !== of.defaultValue ||
+              JSON.stringify(f.selectionOptions) !== JSON.stringify(of.selectionOptions) ||
+              JSON.stringify(f.rules) !== JSON.stringify(of.rules)
+            );
           });
 
         const viewsChanged = views.length !== origViews.length ||
@@ -463,6 +491,28 @@ const ModuleEditorScreen = () => {
           setModelFieldErrors({ technicalName: 'No hay cambios para aceptar' });
           return;
         }
+      }
+
+      // Actualizar relationModel en campos de otros modelos cuando cambia el nombre técnico de un modelo
+      if (oldTechnicalName && newTechnicalName && oldTechnicalName !== newTechnicalName) {
+        // Construir los nombres completos (módulo.modelo) antiguo y nuevo
+        const oldFullName = technicalName + '.' + oldTechnicalName;
+        const newFullName = technicalName + '.' + newTechnicalName;
+
+        setModelFieldsMap(prev => {
+          const updated: any = {};
+          for (const [modelId, fields] of Object.entries(prev)) {
+            const modelIdNum = Number(modelId);
+            updated[modelIdNum] = (fields as any[]).map(f => {
+              // Si el campo referencia al modelo cuyo nombre cambió, actualizarlo
+              if (f.relationModel === oldFullName) {
+                return { ...f, relationModel: newFullName };
+              }
+              return f;
+            });
+          }
+          return updated;
+        });
       }
 
       setLocalModels(prev =>
@@ -533,12 +583,16 @@ const ModuleEditorScreen = () => {
     setError('');
     setSuccessMessage('');
 
+    // Usar el nombre de usuario como author por defecto
+    const authorName = user?.username || user?.email || 'Admin';
+
     const result = await create({
       name,
       technicalName,
       description,
       category,
       isPublic,
+      author: authorName,
       user_id: user?.id ?? 0,
     });
 
@@ -556,6 +610,25 @@ const ModuleEditorScreen = () => {
   // Handlers para actualizar módulo
   const handleUpdate = async () => {
     if (!moduleFull) return;
+
+    // Actualizar relationModel cuando cambia el nombre técnico del módulo
+    const oldModuleTechName = moduleFull.technicalName;
+    if (oldModuleTechName !== technicalName) {
+      setModelFieldsMap(prev => {
+        const updated: any = {};
+        for (const [modelId, fields] of Object.entries(prev)) {
+          const modelIdNum = Number(modelId);
+          updated[modelIdNum] = (fields as any[]).map(f => {
+            if (f.relationModel && f.relationModel.startsWith(oldModuleTechName + '.')) {
+              const newRelationModel = f.relationModel.replace(oldModuleTechName + '.', technicalName + '.');
+              return { ...f, relationModel: newRelationModel };
+            }
+            return f;
+          });
+        }
+        return updated;
+      });
+    }
 
     const result = await update(moduleFull.id, {
       name,
@@ -683,7 +756,16 @@ const ModuleEditorScreen = () => {
             changeType: 'new',
           });
         } else {
-          const fEdited = lf.name !== of2.name || lf.technicalName !== of2.technicalName || lf.type !== of2.type;
+          const fEdited = lf.name !== of2.name ||
+            lf.technicalName !== of2.technicalName ||
+            lf.type !== of2.type ||
+            lf.relationModel !== of2.relationModel ||
+            lf.relationField !== of2.relationField ||
+            lf.required !== of2.required ||
+            lf.unique !== of2.unique ||
+            lf.defaultValue !== of2.defaultValue ||
+            JSON.stringify(lf.selectionOptions) !== JSON.stringify(of2.selectionOptions) ||
+            JSON.stringify(lf.rules) !== JSON.stringify(of2.rules);
           if (fEdited) {
             fieldsSummary.push({
               id: lf.id,

@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_camarero,sg_restaurante_2.camarero,model_sg_restaurante_2_camarero,base.group_user,1,1,1,1
+access_pedido,sg_restaurante_2.pedido,model_sg_restaurante_2_pedido,base.group_user,1,1,1,1
+access_mesa,sg_restaurante_2.mesa,model_sg_restaurante_2_mesa,base.group_user,1,1,1,1
+access_plato,sg_restaurante_2.plato,model_sg_restaurante_2_plato,base.group_user,1,1,1,1

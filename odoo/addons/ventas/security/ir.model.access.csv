@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_cliente,ventas.cliente,model_ventas_cliente,base.group_user,1,1,1,1
-access_pedido,ventas.pedido,model_ventas_pedido,base.group_user,1,1,1,1
-access_linea_pedido,ventas.linea_pedido,model_ventas_linea_pedido,base.group_user,1,1,1,1

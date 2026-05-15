@@ -2,23 +2,23 @@
   <data>
     <record id="view_camarero_list" model="ir.ui.view">
       <field name="name">camarero.list</field>
-      <field name="model">examen_gestion_restaurante.camarero</field>
+      <field name="model">sg_restaurante.camarero</field>
       <field name="arch" type="xml">
         <list>
           <field name="user_id"/>
-          <field name="pedidos_ids"/>
+          <field name="pedidos_id"/>
           <field name="total_pedidos"/>
         </list>
       </field>
     </record>
     <record id="view_camarero_form" model="ir.ui.view">
       <field name="name">camarero.form</field>
-      <field name="model">examen_gestion_restaurante.camarero</field>
+      <field name="model">sg_restaurante.camarero</field>
       <field name="arch" type="xml">
         <form>
           <group>
             <field name="user_id" required="1"/>
-            <field name="pedidos_ids"/>
+            <field name="pedidos_id"/>
             <field name="total_pedidos"/>
           </group>
         </form>
@@ -26,7 +26,7 @@
     </record>
     <record id="view_camarero_graph" model="ir.ui.view">
       <field name="name">camarero.graph</field>
-      <field name="model">examen_gestion_restaurante.camarero</field>
+      <field name="model">sg_restaurante.camarero</field>
       <field name="arch" type="xml">
         <graph string="Graph view" type="bar">
           <field name="user_id" type="row"/>
@@ -36,7 +36,7 @@
     </record>
     <record id="view_pedido_list" model="ir.ui.view">
       <field name="name">pedido.list</field>
-      <field name="model">examen_gestion_restaurante.pedido</field>
+      <field name="model">sg_restaurante.pedido</field>
       <field name="arch" type="xml">
         <list>
           <field name="mesa_id"/>
@@ -50,7 +50,7 @@
     </record>
     <record id="view_pedido_form" model="ir.ui.view">
       <field name="name">pedido.form</field>
-      <field name="model">examen_gestion_restaurante.pedido</field>
+      <field name="model">sg_restaurante.pedido</field>
       <field name="arch" type="xml">
         <form>
           <group>
@@ -66,42 +66,44 @@
     </record>
     <record id="view_pedido_calendar" model="ir.ui.view">
       <field name="name">pedido.calendar</field>
-      <field name="model">examen_gestion_restaurante.pedido</field>
+      <field name="model">sg_restaurante.pedido</field>
       <field name="arch" type="xml">
-        <calendar string="Calendar view" date_start="tiempo_pedido" color="camarero_id">
+        <calendar string="Calendar view" date_start="tiempo_pedido" color="mesa_id">
           <field name="mesa_id"/>
         </calendar>
       </field>
     </record>
     <record id="view_mesa_list" model="ir.ui.view">
       <field name="name">mesa.list</field>
-      <field name="model">examen_gestion_restaurante.mesa</field>
+      <field name="model">sg_restaurante.mesa</field>
       <field name="arch" type="xml">
         <list>
           <field name="numero"/>
-          <field name="capacidad"/>
           <field name="descripcion"/>
+          <field name="capacidad"/>
           <field name="estado"/>
+          <field name="ubicacion"/>
         </list>
       </field>
     </record>
     <record id="view_mesa_form" model="ir.ui.view">
       <field name="name">mesa.form</field>
-      <field name="model">examen_gestion_restaurante.mesa</field>
+      <field name="model">sg_restaurante.mesa</field>
       <field name="arch" type="xml">
         <form>
           <group>
             <field name="numero" required="1"/>
-            <field name="capacidad" required="1"/>
             <field name="descripcion"/>
-            <field name="estado"/>
+            <field name="capacidad" required="1"/>
+            <field name="estado" required="1"/>
+            <field name="ubicacion"/>
           </group>
         </form>
       </field>
     </record>
     <record id="view_mesa_kanban" model="ir.ui.view">
       <field name="name">mesa.kanban</field>
-      <field name="model">examen_gestion_restaurante.mesa</field>
+      <field name="model">sg_restaurante.mesa</field>
       <field name="arch" type="xml">
         <kanban default_group_by="estado">
           <templates>
@@ -120,35 +122,35 @@
     </record>
     <record id="view_plato_list" model="ir.ui.view">
       <field name="name">plato.list</field>
-      <field name="model">examen_gestion_restaurante.plato</field>
+      <field name="model">sg_restaurante.plato</field>
       <field name="arch" type="xml">
         <list>
-          <field name="proveedor_id"/>
           <field name="nombre"/>
           <field name="categoria"/>
           <field name="precio"/>
           <field name="descripcion"/>
+          <field name="proveedor_id"/>
         </list>
       </field>
     </record>
     <record id="view_plato_form" model="ir.ui.view">
       <field name="name">plato.form</field>
-      <field name="model">examen_gestion_restaurante.plato</field>
+      <field name="model">sg_restaurante.plato</field>
       <field name="arch" type="xml">
         <form>
           <group>
-            <field name="proveedor_id"/>
             <field name="nombre" required="1"/>
             <field name="categoria"/>
             <field name="precio" required="1"/>
             <field name="descripcion"/>
+            <field name="proveedor_id"/>
           </group>
         </form>
       </field>
     </record>
     <record id="view_plato_graph" model="ir.ui.view">
       <field name="name">plato.graph</field>
-      <field name="model">examen_gestion_restaurante.plato</field>
+      <field name="model">sg_restaurante.plato</field>
       <field name="arch" type="xml">
         <graph string="Graph view" type="bar">
           <field name="categoria" type="row"/>
@@ -158,28 +160,28 @@
     </record>
     <record id="action_camarero" model="ir.actions.act_window">
       <field name="name">Camarero</field>
-      <field name="res_model">examen_gestion_restaurante.camarero</field>
+      <field name="res_model">sg_restaurante.camarero</field>
       <field name="view_mode">list,form,graph</field>
     </record>
     <record id="action_pedido" model="ir.actions.act_window">
       <field name="name">Pedido</field>
-      <field name="res_model">examen_gestion_restaurante.pedido</field>
+      <field name="res_model">sg_restaurante.pedido</field>
       <field name="view_mode">list,form,calendar</field>
     </record>
     <record id="action_mesa" model="ir.actions.act_window">
       <field name="name">Mesa</field>
-      <field name="res_model">examen_gestion_restaurante.mesa</field>
+      <field name="res_model">sg_restaurante.mesa</field>
       <field name="view_mode">list,form,kanban</field>
     </record>
     <record id="action_plato" model="ir.actions.act_window">
       <field name="name">Plato</field>
-      <field name="res_model">examen_gestion_restaurante.plato</field>
+      <field name="res_model">sg_restaurante.plato</field>
       <field name="view_mode">list,form,graph</field>
     </record>
-    <menuitem id="menu_root_examen_gestion_restaurante" name="examen gestion restaurante" sequence="1"/>
-    <menuitem id="menu_camarero" name="Camarero" action="action_camarero" parent="menu_root_examen_gestion_restaurante"/>
-    <menuitem id="menu_pedido" name="Pedido" action="action_pedido" parent="menu_root_examen_gestion_restaurante"/>
-    <menuitem id="menu_mesa" name="Mesa" action="action_mesa" parent="menu_root_examen_gestion_restaurante"/>
-    <menuitem id="menu_plato" name="Plato" action="action_plato" parent="menu_root_examen_gestion_restaurante"/>
+    <menuitem id="menu_root_sg_restaurante" name="SG Restaurante" sequence="1"/>
+    <menuitem id="menu_camarero" name="Camarero" action="action_camarero" parent="menu_root_sg_restaurante"/>
+    <menuitem id="menu_pedido" name="Pedido" action="action_pedido" parent="menu_root_sg_restaurante"/>
+    <menuitem id="menu_mesa" name="Mesa" action="action_mesa" parent="menu_root_sg_restaurante"/>
+    <menuitem id="menu_plato" name="Plato" action="action_plato" parent="menu_root_sg_restaurante"/>
   </data>
 </odoo>

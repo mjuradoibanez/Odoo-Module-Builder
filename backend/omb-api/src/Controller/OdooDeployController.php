@@ -107,7 +107,14 @@ class OdooDeployController extends AbstractController
     private function deployModuleFilesViaDocker(string $zipData, string $technicalName, string $targetPath): array
     {
         // 1. Eliminar el directorio antiguo del módulo si existe
-        $this->removeDirectory($targetPath);
+        //    Usamos docker exec -u 0 (root) porque los archivos pueden ser propiedad
+        //    del usuario 'odoo' dentro del contenedor, y PHP (www-data) no puede
+        //    sobrescribirlos con extractTo().
+        exec('docker exec -u 0 omb_odoo rm -rf ' . escapeshellarg($targetPath) . ' 2>&1', $_, $code);
+        if ($code !== 0) {
+            // Fallback: intentar con rm -rf local
+            $this->removeDirectory($targetPath);
+        }
 
         // 2. Guardar el ZIP temporalmente
         $tempZip = sys_get_temp_dir() . '/' . $technicalName . '_' . uniqid() . '.zip';
@@ -129,7 +136,10 @@ class OdooDeployController extends AbstractController
         $zip->close();
         @unlink($tempZip);
 
-        // 4. Verificar que el manifiesto existe
+        // 4. Fijar permisos 777 para que Odoo (usuario odoo) pueda leer los archivos
+        exec('chmod -R 777 ' . escapeshellarg($targetPath) . ' 2>&1');
+
+        // 5. Verificar que el manifiesto existe
         if (!file_exists($targetPath . '/__manifest__.py')) {
             $this->removeDirectory($targetPath);
             return ['success' => false, 'error' => 'Invalid module: __manifest__.py not found in ZIP'];
@@ -209,10 +219,6 @@ class OdooDeployController extends AbstractController
             if ($state === 'uninstalled') {
                 return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
             } elseif ($state === 'installed' || $state === 'to upgrade') {
-                $upgradeResult = $this->odooUpgradeModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
-                if ($upgradeResult['success']) {
-                    return $upgradeResult;
-                }
                 return $this->odooReinstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
             } else {
                 return $this->odooInstallModule($baseUrl, $uid, $odooDb, $odooPassword, $moduleId, $technicalName);
