@@ -1,9 +1,9 @@
 {
-    'name': 'Ventas',
+    'name': 'SG Restaurante',
     'version': '1.0',
-    'author': 'Usuario',
-    'category': 'ventas',
-    'description': 'Gestión de clientes, pedidos y facturación.',
+    'author': 'admin',
+    'category': 'inventario',
+    'description': 'Modulo del examen final de sistemas de gestión',
     'depends': ['base'],
     'data': [
         'security/ir.model.access.csv',
