@@ -1,5 +1,5 @@
 {
-    'name': 'SG Restaurante',
+    'name': 'SG Restaurante 2',
     'version': '1.0',
     'author': 'admin',
     'category': 'inventario',

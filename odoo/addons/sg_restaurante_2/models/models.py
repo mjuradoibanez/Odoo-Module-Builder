@@ -3,7 +3,7 @@ from odoo.exceptions import ValidationError
 from datetime import timedelta
 
 class Camarero(models.Model):
-    _name = 'sg_restaurante.camarero'
+    _name = 'sg_restaurante_2.camarero'
     _description = 'Camarero'
     _rec_name = 'user_id'
 
@@ -17,7 +17,7 @@ class Camarero(models.Model):
 
 
 class Pedido(models.Model):
-    _name = 'sg_restaurante.pedido'
+    _name = 'sg_restaurante_2.pedido'
     _description = 'Pedido'
     _rec_name = 'mesa_id'
 
@@ -44,7 +44,7 @@ class Pedido(models.Model):
 
 
 class Mesa(models.Model):
-    _name = 'sg_restaurante.mesa'
+    _name = 'sg_restaurante_2.mesa'
     _description = 'Mesa'
     _rec_name = 'numero'
 
@@ -71,7 +71,7 @@ class Mesa(models.Model):
 
 
 class Plato(models.Model):
-    _name = 'sg_restaurante.plato'
+    _name = 'sg_restaurante_2.plato'
     _description = 'Plato'
     _rec_name = 'nombre'
 
