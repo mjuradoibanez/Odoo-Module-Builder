@@ -277,8 +277,8 @@ class ModuleController extends AbstractController
                         // Procesar vistas
                         $views = $entityManager->getRepository(Views::class);
                         $currentViews = $views->findBy(['model' => $model]);
-                        $currentViewIds = array_column($currentViews, 'id'); // IDs de vistas actuales
-                        $sentViewIds = array_column($modelData['views'] ?? [], 'id'); // IDs de vistas enviadas desde el frontend
+                        $currentViewIds = array_map(function($v) { return $v->getId(); }, $currentViews); // IDs actuales
+                        $sentViewIds = array_filter(array_column($modelData['views'] ?? [], 'id')); // IDs enviados en el request
 
                         // Eliminar vistas que ya no están
                         foreach ($currentViews as $curView) {
@@ -462,7 +462,7 @@ class ModuleController extends AbstractController
         $command = "GENERATE_MODULE;" . $json . "\n";
         socket_write($socket, $command, strlen($command));
 
-        // Leer la respuesta del servidor Java mientras no sea un salto de línea
+        // Leer la respuesta del servidor Java
         $control = '';
         while (($char = socket_read($socket, 1)) !== false && $char !== "\n" && $char !== "") {
             $control .= $char;

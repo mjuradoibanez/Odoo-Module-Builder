@@ -12,7 +12,7 @@ import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { Ionicons } from '@expo/vector-icons';
 import { getColors, Fonts } from '@/constants/theme';
 import { useLocalSearchParams, router } from 'expo-router';
-import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { BlockDeleteModal } from '@/components/model/BlockDeleteModal';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { getAvatarSource } from '@/core/constants/avatars';
 

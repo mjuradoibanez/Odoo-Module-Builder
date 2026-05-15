@@ -107,6 +107,7 @@ export default function ModelViewsEditor({
           <View>
             <Text style={[styles.label, { color: colors.text }]}>Campos de búsqueda</Text>
             <Text style={{ fontSize: 12, color: colors.icon, marginBottom: 4 }}>Selecciona los campos por los que se podrá buscar</Text>
+            
             <View style={styles.fieldsContainer}>
                 {modelFields.map((f: any) => {
                     const selected = (view.configuration.fields || []).includes(f.technicalName);
@@ -136,6 +137,7 @@ export default function ModelViewsEditor({
         return (
           <View>
             <Text style={[styles.label, { color: colors.text }]}>Agrupar por defecto por:</Text>
+            
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.group_by}
@@ -155,6 +157,7 @@ export default function ModelViewsEditor({
         return (
           <View>
             <Text style={[styles.label, { color: colors.text }]}>Campo de inicio *</Text>
+            
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.date_start}
@@ -167,6 +170,7 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
+
             <Text style={[styles.label, { color: colors.text }]}>Campo de fin (opcional)</Text>
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
@@ -180,6 +184,7 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
+
             <Text style={[styles.label, { color: colors.text }]}>Color (por campo)</Text>
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
@@ -200,6 +205,7 @@ export default function ModelViewsEditor({
         return (
           <View>
             <Text style={[styles.label, { color: colors.text }]}>Tipo de gráfico</Text>
+            
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
                     selectedValue={view.configuration.graph_type}
@@ -211,6 +217,7 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
+
             <Text style={[styles.label, { color: colors.text }]}>Agrupar por (Row)</Text>
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
@@ -224,6 +231,7 @@ export default function ModelViewsEditor({
                     ))}
                 </Picker>
             </View>
+
             <Text style={[styles.label, { color: colors.text }]}>Medida (Measure)</Text>
             <View style={[styles.pickerContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Picker
@@ -317,6 +325,7 @@ export default function ModelViewsEditor({
             <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAdd}>
               <Text style={styles.buttonText}>Añadir</Text>
             </TouchableOpacity>
+            
             <TouchableOpacity style={[styles.button, { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.primary }]} onPress={resetForm}>
               <Text style={[styles.buttonText, { color: colors.primary }]}>Cancelar</Text>
             </TouchableOpacity>

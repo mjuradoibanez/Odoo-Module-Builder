@@ -8,7 +8,10 @@ use Symfony\Component\Serializer\Annotation\Groups;
 /**
  * Users
  *
- * @ORM\Table(name="users")
+ * @ORM\Table(name="users", uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="uq_email", columns={"email"}),
+ *     @ORM\UniqueConstraint(name="uq_username", columns={"username"})
+ * })
  * @ORM\Entity
  */
 class Users

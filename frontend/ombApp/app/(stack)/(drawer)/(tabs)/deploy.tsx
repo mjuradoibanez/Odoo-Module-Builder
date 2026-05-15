@@ -84,13 +84,6 @@ const DeployScreen = () => {
     }
   }, [deployResult]);
 
-  const handleSelect = (id: number) => {
-    const full = moduleDetails[id];
-    const complete = full ? isModuleComplete(full) : false;
-    if (!complete) return; // No permitir seleccionar módulos incompletos
-    setSelectedModuleId(prev => (prev === id ? null : id));
-  };
-
   const handleDownloadZip = async () => {
     if (!selectedModuleId || !selectedFull) return;
     await generateAndDownload(selectedFull);

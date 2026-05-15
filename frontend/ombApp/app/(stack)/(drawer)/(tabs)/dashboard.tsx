@@ -182,7 +182,7 @@ const HorizontalScrollRow = ({
   colors,
   favoriteMap,
   onToggleFavorite,
-  toggleIds,
+  togglingId,
   showUser = false,
 }: {
   data: Module[];
@@ -191,7 +191,7 @@ const HorizontalScrollRow = ({
   colors: ReturnType<typeof getColors>;
   favoriteMap?: Map<number, number>;
   onToggleFavorite?: (id: number) => void;
-  toggleIds?: Set<number>;
+  togglingId?: number | null;
   showUser?: boolean;
 }) => {
   if (data.length === 0) {
@@ -216,7 +216,7 @@ const HorizontalScrollRow = ({
           colors={colors}
           isFavorite={favoriteMap?.has(item.id) ?? false}
           onToggleFavorite={onToggleFavorite ? () => onToggleFavorite(item.id) : undefined}
-          isToggling={toggleIds?.has(item.id) ?? false}
+          isToggling={togglingId === item.id}
           showUser={showUser}
         />
       ))}
@@ -241,7 +241,7 @@ const DashboardScreen = () => {
 
   // Mapa de moduleId - favoriteId para poder eliminar
   const [favoriteMap, setFavoriteMap] = useState<Map<number, number>>(new Map());
-  const [toggleIds, setToggleIds] = useState<Set<number>>(new Set());
+  const [togglingId, setTogglingId] = useState<number | null>(null);
 
   // Sincronizar favoritos desde el hook
   useEffect(() => {
@@ -287,9 +287,9 @@ const DashboardScreen = () => {
 
   // Añadir o eliminar de favoritos y recargar la lista
   const handleToggleFavorite = useCallback(async (moduleId: number) => {
-    if (!userId) return;
+    if (!userId || togglingId !== null) return;
 
-    setToggleIds((prev) => new Set(prev).add(moduleId));
+    setTogglingId(moduleId);
 
     const favoriteId = favoriteMap.get(moduleId);
     if (favoriteId) {
@@ -299,12 +299,8 @@ const DashboardScreen = () => {
     }
 
     await reloadFavs();
-    setToggleIds((prev) => {
-      const next = new Set(prev);
-      next.delete(moduleId);
-      return next;
-    });
-  }, [userId, favoriteMap, add, remove, reloadFavs]);
+    setTogglingId(null);
+  }, [userId, favoriteMap, add, remove, reloadFavs, togglingId]);
 
   if (!userId) {
     return (
@@ -348,7 +344,7 @@ const DashboardScreen = () => {
             colors={colors}
             favoriteMap={favoriteMap}
             onToggleFavorite={handleToggleFavorite}
-            toggleIds={toggleIds}
+            togglingId={togglingId}
             showUser
           />
         )}
@@ -374,7 +370,7 @@ const DashboardScreen = () => {
                 onPress={() => handlePressModule(item.id)}
                 isFavorite={favoriteMap.has(item.id)}
                 onToggleFavorite={() => handleToggleFavorite(item.id)}
-                isToggling={toggleIds.has(item.id)}
+                isToggling={togglingId === item.id}
                 colors={colors}
                 showUser
               />

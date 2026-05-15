@@ -1,0 +1,1081 @@
+{
+  "info": {
+    "_postman_id": "99187b8d-0490-4e13-bd87-e4f38eb45c7f",
+    "name": "OMB",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "48500466",
+    "_collection_link": "https://go.postman.co/collection/48500466-99187b8d-0490-4e13-bd87-e4f38eb45c7f?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "modules",
+      "item": [
+        {
+          "name": "modules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/modules",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "modules",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"RRHH\",\n  \"technicalName\": \"rrhh\",\n  \"user_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/modules",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "module",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/modules/4",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "4"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "module",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/modules/10",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "10"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "module",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Academia Pro\",\n  \"technicalName\": \"academia\",\n  \"description\": \"Modulo actualizado\",\n  \"user_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/modules/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "module_full",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/modules/5/full",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "5",
+                "full"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "duplicate",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user_id\": 1,\n    \"name\": \"Mi módulo duplicado\",\n    \"technicalName\": \"mi_modulo_duplicado\"\n}\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/modules/1/duplicate",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "1",
+                "duplicate"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "modules_user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/user/1/modules",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "user",
+                "1",
+                "modules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "generarModulo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": 1,\n    \"name\": \"Academia\",\n    \"technicalName\": \"academia\",\n    \"description\": null,\n    \"version\": \"1.0\",\n    \"author\": \"Admin\",\n    \"createdAt\": \"2026-04-21T08:27:47+00:00\",\n    \"category\": \"educacion\",\n    \"user\": {\n        \"id\": 1,\n        \"username\": \"admin\",\n        \"email\": \"admin@omb.com\"\n    },\n    \"models\": [\n        {\n            \"id\": 1,\n            \"name\": \"Alumno\",\n            \"technicalName\": \"alumno\",\n            \"fields\": [\n                {\n                    \"id\": 1,\n                    \"name\": \"Nombre\",\n                    \"technicalName\": \"nombre\",\n                    \"type\": \"char\",\n                    \"required\": true,\n                    \"unique\": true,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 2,\n                    \"name\": \"Edad\",\n                    \"technicalName\": \"edad\",\n                    \"type\": \"integer\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 3,\n                    \"name\": \"Cursos\",\n                    \"technicalName\": \"cursos_ids\",\n                    \"type\": \"many2many\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.curso\",\n                    \"relationField\": \"alumnos_ids\"\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": 1,\n                    \"type\": \"list\",\n                    \"name\": \"alumno_list\"\n                },\n                {\n                    \"id\": 2,\n                    \"type\": \"form\",\n                    \"name\": \"alumno_form\"\n                }\n            ]\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Curso\",\n            \"technicalName\": \"curso\",\n            \"fields\": [\n                {\n                    \"id\": 4,\n                    \"name\": \"Titulo\",\n                    \"technicalName\": \"titulo\",\n                    \"type\": \"char\",\n                    \"required\": true,\n                    \"unique\": true,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 5,\n                    \"name\": \"Descripcion\",\n                    \"technicalName\": \"descripcion\",\n                    \"type\": \"text\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 6,\n                    \"name\": \"Alumnos\",\n                    \"technicalName\": \"alumnos_ids\",\n                    \"type\": \"many2many\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.alumno\",\n                    \"relationField\": \"cursos_ids\"\n                },\n                {\n                    \"id\": 7,\n                    \"name\": \"Profesor\",\n                    \"technicalName\": \"profesor_id\",\n                    \"type\": \"many2one\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.profesor\",\n                    \"relationField\": null\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": 3,\n                    \"type\": \"list\",\n                    \"name\": \"curso_list\"\n                },\n                {\n                    \"id\": 4,\n                    \"type\": \"form\",\n                    \"name\": \"curso_form\"\n                }\n            ]\n        }\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/api/generate-module",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "api",
+                "generate-module"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "generarModulo",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"id\": 1,\n    \"name\": \"Academia\",\n    \"technicalName\": \"academia\",\n    \"description\": null,\n    \"version\": \"1.0\",\n    \"author\": \"Admin\",\n    \"createdAt\": \"2026-04-21T08:27:47+00:00\",\n    \"category\": \"educacion\",\n    \"user\": {\n        \"id\": 1,\n        \"username\": \"admin\",\n        \"email\": \"admin@omb.com\"\n    },\n    \"models\": [\n        {\n            \"id\": 1,\n            \"name\": \"Alumno\",\n            \"technicalName\": \"alumno\",\n            \"fields\": [\n                {\n                    \"id\": 1,\n                    \"name\": \"Nombre\",\n                    \"technicalName\": \"nombre\",\n                    \"type\": \"char\",\n                    \"required\": true,\n                    \"unique\": true,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 2,\n                    \"name\": \"Edad\",\n                    \"technicalName\": \"edad\",\n                    \"type\": \"integer\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 3,\n                    \"name\": \"Cursos\",\n                    \"technicalName\": \"cursos_ids\",\n                    \"type\": \"many2many\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.curso\",\n                    \"relationField\": \"alumnos_ids\"\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": 1,\n                    \"type\": \"list\",\n                    \"name\": \"alumno_list\"\n                },\n                {\n                    \"id\": 2,\n                    \"type\": \"form\",\n                    \"name\": \"alumno_form\"\n                }\n            ]\n        },\n        {\n            \"id\": 2,\n            \"name\": \"Curso\",\n            \"technicalName\": \"curso\",\n            \"fields\": [\n                {\n                    \"id\": 4,\n                    \"name\": \"Titulo\",\n                    \"technicalName\": \"titulo\",\n                    \"type\": \"char\",\n                    \"required\": true,\n                    \"unique\": true,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 5,\n                    \"name\": \"Descripcion\",\n                    \"technicalName\": \"descripcion\",\n                    \"type\": \"text\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": null,\n                    \"relationField\": null\n                },\n                {\n                    \"id\": 6,\n                    \"name\": \"Alumnos\",\n                    \"technicalName\": \"alumnos_ids\",\n                    \"type\": \"many2many\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.alumno\",\n                    \"relationField\": \"cursos_ids\"\n                },\n                {\n                    \"id\": 7,\n                    \"name\": \"Profesor\",\n                    \"technicalName\": \"profesor_id\",\n                    \"type\": \"many2one\",\n                    \"required\": false,\n                    \"unique\": false,\n                    \"relationModel\": \"academia.profesor\",\n                    \"relationField\": null\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": 3,\n                    \"type\": \"list\",\n                    \"name\": \"curso_list\"\n                },\n                {\n                    \"id\": 4,\n                    \"type\": \"form\",\n                    \"name\": \"curso_form\"\n                }\n            ]\n        }\n    ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{local_host}}/api/generate-module",
+                  "host": [
+                    "{{local_host}}"
+                  ],
+                  "path": [
+                    "api",
+                    "generate-module"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Date",
+                  "value": "Tue, 21 Apr 2026 12:00:56 GMT"
+                },
+                {
+                  "key": "Server",
+                  "value": "Apache/2.4.65 (Debian)"
+                },
+                {
+                  "key": "X-Powered-By",
+                  "value": "PHP/8.1.34"
+                },
+                {
+                  "key": "Cache-Control",
+                  "value": "max-age=0, must-revalidate, private"
+                },
+                {
+                  "key": "Content-Disposition",
+                  "value": "attachment; filename=\"module_20260421_120056.zip\""
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Access-Control-Allow-Methods",
+                  "value": "GET, POST, PUT, DELETE, OPTIONS"
+                },
+                {
+                  "key": "Access-Control-Allow-Headers",
+                  "value": "Content-Type, Authorization"
+                },
+                {
+                  "key": "X-Debug-Token",
+                  "value": "1522a5"
+                },
+                {
+                  "key": "X-Debug-Token-Link",
+                  "value": "http://localhost:8082/_profiler/1522a5"
+                },
+                {
+                  "key": "X-Robots-Tag",
+                  "value": "noindex"
+                },
+                {
+                  "key": "Expires",
+                  "value": "Tue, 21 Apr 2026 12:00:56 GMT"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5, max=100"
+                },
+                {
+                  "key": "Connection",
+                  "value": "Keep-Alive"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/zip"
+                }
+              ],
+              "cookie": [],
+              "body": "PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000f\u0000\u0000\u0000__manifest__.py5�=\u000e�0\fF���[\u0016����\u001d�\u0010��X`)?U��T��Ӥ�\u0007K~O�>�~+�����\n\u0010\f9\u0006u��LQ8��.��(��\u000e���q�\u001bFH�\nq-�LF��zHC\u0013y#�{�\u0011�Գ\tHPh�*\u0011�\u001c9�\u0003G�!�\u0001�D4�|���1-2Ԯ?Ϊj�Y���Z\u0018my�\u001e3���dy���UD��\u0003PK\u0007\bI)܀�\u0000\u0000\u0000\u0006\u0001\u0000\u0000PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0012\u0000\u0000\u0000models/__init__.pyK+��U�S��-�/*Q��OI�)�\u0002\u0000PK\u0007\b;4��\u0017\u0000\u0000\u0000\u0015\u0000\u0000\u0000PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0010\u0000\u0000\u0000models/models.py�RMk�0\u0010��WLN�a1���%�\u001cr\u000b�R�Q�qv��ٌ������\u001e�?V�rֻ%��ު�$�ޛ/�I�\u0001\u001bf w`��ؠ\r\u001b�\b�ɧ:�\u0006�A�!\u0012��4ڪ\u0010��&繫��\u001c��\u0006�\u001a�r\b[h�V\u0006\u001d�A�ܶ�\u0006�\u0016��\u0015��\t��}�\"����^I'x�H�lo%a?��(���}�;��b:I�0�\t+�F�o�]޺����Vͻ��ssQ\u0014�е��\u000558��������}±�]@;-=�5���f1@\u001e\n�bs\u001cv9z���1�\u0006�mުj���\u0006��L�.N@2���p���9ZI4\u0004T������D�\u0019��E�\u0016^��UVn;��'\u000f�%���J��k~�/\u0017�Ae\u001e���|��._�sl\u000fh᫲y\b�~x�\f��8�G����_f��AOzf�B�b��w�,\u0011t���o�!.��\u0016}�o\u0016/W�Ax���e�������j\u0017������%��������\u001c��7PK\u0007\b;�S,�\u0001\u0000\u0000�\u0004\u0000\u0000PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000b\u0000\u0000\u0000__init__.pyK+��U�S��-�/*Q��OI�)�\u0002\u0000PK\u0007\b;4��\u0017\u0000\u0000\u0000\u0015\u0000\u0000\u0000PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001c\u0000\u0000\u0000security/ir.model.access.csvu�A\n\u00031\bE�=�\ft;�\tV�Hc2��^�\u0005\u0013(����\u001fy_\u0019\u001a��u�Z�wexz�c�!n�\u0005'�]OI�o�8Z���!��Q���\u000eH�b���9�����![.�\u0010�{�rQ��Qe�3ey%�\u0000PK\u0007\bT^1�l\u0000\u0000\u0000�\u0000\u0000\u0000PK\u0003\u0004\u0014\u0000\b\b\b\u0000\u001c`�\\\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u000f\u0000\u0000\u0000views/views.xml�V�n� \f}�WD<O���V��!\u0011\u0003wC\nqfȺ����K�4�]^Z\u001cll�s�(Q\"n\u001f����r�pK\rM�,�L�\r�FE���KЊ���\u001a6lw�\r�u�\b��\u0015�\u0010\u0002�$�\u0011�\n�\u0015�;�`U+cY�QB�a��N�~��(\u0017wPP˔���m��}dY��A�p��NU�1l,��xe��l��C��\u001a��O�m^�������\u0003H.G�EG\u0006M���;�E?�E�e\u0011�\u001c�����A�#�\rZ��\u0002�\u0017®�\u0019�;#�2E {*���,�=�W��\u000e{�.�$�X#�\u0010�X�!�/�n��j\u001cѲ\u0004#H�Ba3�\u0015\u00053\u0004y߫%<�Arn�3\u0018��\u0015s\u0011YX:\u0016?aa�T$ffO�]��R5��ߚ\".��4]m}�����Q5\u0012G��M�T\u0004�Z~�\u0005y�0���|���dgA,�\u001b�Oim��I�.m���p\",=\u0011�\u0015{�a��\u0004�\u001d|c\u0014w3$�b�}4��O.SǗE|��E|\u0005}\u0001PK\u0007\b��@\u0014�\u0001\u0000\u0000\r\t\u0000\u0000PK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\I)܀�\u0000\u0000\u0000\u0006\u0001\u0000\u0000\u000f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000__manifest__.pyPK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\;4��\u0017\u0000\u0000\u0000\u0015\u0000\u0000\u0000\u0012\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000�\u0000\u0000\u0000models/__init__.pyPK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\;�S,�\u0001\u0000\u0000�\u0004\u0000\u0000\u0010\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u00004\u0001\u0000\u0000models/models.pyPK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\;4��\u0017\u0000\u0000\u0000\u0015\u0000\u0000\u0000\u000b\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u001b\u0003\u0000\u0000__init__.pyPK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\T^1�l\u0000\u0000\u0000�\u0000\u0000\u0000\u001c\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000k\u0003\u0000\u0000security/ir.model.access.csvPK\u0001\u0002\u0014\u0000\u0014\u0000\b\b\b\u0000\u001c`�\\��@\u0014�\u0001\u0000\u0000\r\t\u0000\u0000\u000f\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000!\u0004\u0000\u0000views/views.xmlPK\u0005\u0006\u0000\u0000\u0000\u0000\u0006\u0000\u0006\u0000{\u0001\u0000\u0000\u0003\u0006\u0000\u0000\u0000\u0000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "models",
+      "item": [
+        {
+          "name": "models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/models",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "model",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Prueba\",\n  \"technicalName\": \"prueba\",\n  \"module_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/models",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "model",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/models/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "model",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/models/6",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models",
+                "6"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "model",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Prueba Pro\",\n  \"technicalName\": \"prueba pro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/models/7",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models",
+                "7"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "models_module",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/modules/1/models",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "modules",
+                "1",
+                "models"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "models_user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/user/2/models",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "user",
+                "2",
+                "models"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "fields",
+      "item": [
+        {
+          "name": "fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/fields",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "fields"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "field",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Departamento\",\n    \"technicalName\": \"department_id\",\n    \"type\": \"many2one\",\n    \"required\": false,\n    \"relationModel\": \"hr.department\",\n    \"model_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/fields",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "fields"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "field",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/fields/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "fields",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "field",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/fields/10",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "fields",
+                "10"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "field",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Nombre empleado PRO\",\n    \"technicalName\": \"employee_name_pro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/fields/8",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "fields",
+                "8"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "fields_model",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/models/8/fields",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models",
+                "8",
+                "fields"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "item": [
+        {
+          "name": "users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/users",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "users",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@test.com\",\n    \"password\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/users",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/users/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "users",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/users/5",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "users",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "users",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"nuevo@ejemplo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/users/3",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "users",
+                "3"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/login",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "views",
+      "item": [
+        {
+          "name": "views",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/views",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "views"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "views",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"kanban\",\n    \"name\": \"Vista kanban empleado\",\n    \"model_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/views",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "views"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "view",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/views/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "views",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "view",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/views/5",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "views",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "view",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"type\": \"kanban\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/views/5",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "views",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "views_model",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/models/9/views",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "models",
+                "9",
+                "views"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "deployments",
+      "item": [
+        {
+          "name": "deployments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/deployments",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "deployments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deployments",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"module_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/deployments",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "deployments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deployment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/deployments/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "deployments",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deployment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/deployments/5",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "deployments",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deployments_user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/user/1/deployments",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "user",
+                "1",
+                "deployments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "deploy_to_odoo",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/api/deploy-to-odoo/1",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "api",
+                "deploy-to-odoo",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "favorites",
+      "item": [
+        {
+          "name": "favorites_user",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/user/1/favorites",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "user",
+                "1",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "favorites_user",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"module_id\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{local_host}}/user/1/favorites",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "user",
+                "1",
+                "favorites"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "favorite",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{local_host}}/favorites/5",
+              "host": [
+                "{{local_host}}"
+              ],
+              "path": [
+                "favorites",
+                "5"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "local_host",
+      "value": ""
+    }
+  ]
+}

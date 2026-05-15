@@ -8,6 +8,8 @@ import { useThemeStore } from '@/presentation/store/useThemeStore';
 import ReactDatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
+// Componente para editar un modelo y sus campos
+
 // Tipos de campo disponibles
 const FIELD_TYPES = [
   { label: 'Texto', value: 'char' },
@@ -27,14 +29,14 @@ const RELATION_SUBTYPES = [
   { label: 'Uno a uno', value: 'one2one' },
 ];
 
-//Obtiene el nombre completo del modelo (módulo.n_técnico o solo n_técnico)
+// Obtiene el nombre completo del modelo (módulo.n_técnico o solo n_técnico)
 const getFullModelName = (m: any) => {
   if (!m) return '';
   if (m.module && m.module.technicalName) return `${m.module.technicalName}.${m.technicalName}`;
   return m.technicalName;
 };
 
-// Estado inicial reutilizable
+// Estado inicial
 const INITIAL_FIELD = {
   name: '',
   technicalName: '',
@@ -66,6 +68,7 @@ const validateField = (field: any) => {
   // Validar reglas/constraints
   if (field.rules && field.rules.length > 0) {
     const ruleErrors: string[] = [];
+    
     field.rules.forEach((rule: any, index: number) => {
       const ruleType = rule.type;
       const ruleValue = rule.value;

@@ -5,7 +5,6 @@ FROM php:8.1-apache
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git unzip zip libzip-dev libpng-dev libonig-dev libxml2-dev \
-        docker.io \
     && docker-php-ext-install pdo pdo_mysql zip sockets
 
 # Instala Composer
@@ -17,7 +16,6 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 RUN a2enmod rewrite
 
 # Añade www-data al grupo root para que pueda escribir en volúmenes montados
-# donde el grupo propietario es root (ej. /mnt/extra-addons con permisos 775)
 RUN usermod -aG root www-data
 
 # Copia el virtualhost si lo tienes personalizado (opcional)

@@ -34,7 +34,6 @@ class UserController extends AbstractController
                 return new Response("Invalid JSON", 400);
             }
 
-
             if (empty($data['email']) || empty($data['password'])) {
                 return new Response("Missing required fields", 400);
             }
@@ -54,6 +53,14 @@ class UserController extends AbstractController
                 return new Response("Email already exists", 409);
             }
 
+            // Verificar username duplicado
+            $existing = $entityManager
+                ->getRepository(Users::class)
+                ->findOneBy(['username' => $username]);
+
+            if ($existing) {
+                return new Response("Username already exists", 409);
+            }
 
             // Lista de avatares predeterminados
             $defaultAvatars = [
@@ -127,6 +134,14 @@ class UserController extends AbstractController
 
             // Actualizar username si se envía
             if (isset($data['username'])) {
+                $existing = $entityManager
+                    ->getRepository(Users::class)
+                    ->findOneBy(['username' => $data['username']]);
+
+                if ($existing && $existing->getId() != $user->getId()) {
+                    return new Response("Username already exists", 409);
+                }
+
                 $user->setUsername($data['username']);
             }
 
@@ -138,12 +153,15 @@ class UserController extends AbstractController
             // Cambiar contraseña: requiere la contraseña actual para verificar
             if (isset($data['password'])) {
                 $currentPassword = $data['currentPassword'] ?? null;
+
                 if (!$currentPassword) {
                     return new Response("Current password is required", 400);
                 }
+                
                 if (!password_verify($currentPassword, $user->getPassword())) {
                     return new Response("Current password is incorrect", 401);
                 }
+
                 $user->setPassword(password_hash($data['password'], PASSWORD_BCRYPT));
             }
 
@@ -176,7 +194,6 @@ class UserController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-
         if (!$data) {
             return new Response("Invalid JSON", 400);
         }
@@ -191,7 +208,6 @@ class UserController extends AbstractController
         $user = $this->getDoctrine()
             ->getRepository(Users::class)
             ->findOneBy(['email' => $email]);
-
 
         if (!$user) {
             return new Response("User not found", 404);

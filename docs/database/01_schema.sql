@@ -17,7 +17,8 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL,
   avatar VARCHAR(50) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT uq_email_user UNIQUE (email, username)
+  CONSTRAINT uq_email UNIQUE (email),
+  CONSTRAINT uq_username UNIQUE (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------
@@ -67,7 +68,7 @@ CREATE TABLE fields (
   relation_field VARCHAR(255),
   relation_module VARCHAR(255),
   default_value VARCHAR(255),
-  selection_options JSON,
+  selection_options JSON, -- Para campos tipo selección (dropdown)
   rules JSON, -- Para validaciones de campos (constraints, avisos, etc.)
   model_id INT,
   CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,

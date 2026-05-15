@@ -10,6 +10,9 @@ services:
       - ./odoo/addons:/mnt/extra-addons
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
+      APP_ENV: ${APP_ENV}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
       ODOO_ADDONS_PATH: ${BACKEND_ODOO_ADDONS_PATH}
       ODOO_HOST: ${BACKEND_ODOO_HOST}
       ODOO_PORT: ${BACKEND_ODOO_PORT}

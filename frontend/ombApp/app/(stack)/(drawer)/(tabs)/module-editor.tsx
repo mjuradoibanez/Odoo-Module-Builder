@@ -14,7 +14,7 @@ import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
 import { useUserModels } from '@/presentation/hooks/useUserModels';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
-import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { BlockDeleteModal } from '@/components/model/BlockDeleteModal';
 import { checkDependencies } from '@/core/helpers/checkDependencies';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { ombApi } from '@/core/auth/api/ombApi';
@@ -132,7 +132,7 @@ const ModuleFormFields: React.FC<ModuleFormFieldsProps> = ({
         {isPublic && <View style={[styles.radioDot, { backgroundColor: colors.primary }]} />}
       </TouchableOpacity>
       <Text style={{ marginRight: 24, color: colors.text }}>Público</Text>
-      
+
       <TouchableOpacity
         style={[styles.radio, { borderColor: colors.primary }]}
         onPress={() => setIsPublic(false)}
@@ -581,8 +581,11 @@ const ModuleEditorScreen = () => {
 
     if (result === true) {
       setShowUpdateSuccess(true);
-      setTimeout(() => setShowUpdateSuccess(false), 3000);
-      if (typeof reload === 'function') reload();
+      setTimeout(() => {
+        setShowUpdateSuccess(false);
+        blurActiveElement();
+        router.push(`/(stack)/(drawer)/(tabs)/modules?id=${moduleFull.id}`);
+      }, 1500);
     } else {
       setGeneralError(typeof result === 'string' ? result : 'Error al guardar los cambios');
     }
@@ -592,12 +595,43 @@ const ModuleEditorScreen = () => {
   const buildModuleSummary = () => {
     if (!moduleFull) return null;
 
-    const general: string[] = [];
-    if (name !== moduleFull.name) general.push(`Nombre: "${moduleFull.name}" → "${name}"`);
-    if (technicalName !== moduleFull.technicalName) general.push(`Nombre técnico: "${moduleFull.technicalName}" → "${technicalName}"`);
-    if (description !== (moduleFull.description || '')) general.push('Descripción modificada');
-    if (category !== (moduleFull.category || 'otra')) general.push(`Categoría: "${moduleFull.category}" → "${category}"`);
-    if (isPublic !== moduleFull.isPublic) general.push(`Visibilidad: ${moduleFull.isPublic ? 'Público' : 'Privado'} → ${isPublic ? 'Público' : 'Privado'}`);
+    const buildChange = (label: string, changed: boolean, value?: string, prevValue?: string) => ({
+      type: changed ? 'edit' as const : 'unchanged' as const,
+      label,
+      value: changed ? value : prevValue,
+      prevValue: changed ? prevValue : undefined,
+    });
+
+    const nameChange = buildChange(
+      'Nombre',
+      name !== moduleFull.name,
+      name,
+      moduleFull.name
+    );
+    const technicalNameChange = buildChange(
+      'Nombre técnico',
+      technicalName !== moduleFull.technicalName,
+      technicalName,
+      moduleFull.technicalName
+    );
+    const descriptionChange = buildChange(
+      'Descripción',
+      description !== (moduleFull.description || ''),
+      description ? 'Modificada' : '(vacía)',
+      moduleFull.description || '(vacía)'
+    );
+    const categoryChange = buildChange(
+      'Categoría',
+      category !== (moduleFull.category || 'otra'),
+      category,
+      moduleFull.category || 'otra'
+    );
+    const isPublicChange = buildChange(
+      'Visibilidad',
+      isPublic !== moduleFull.isPublic,
+      isPublic ? 'Público' : 'Privado',
+      moduleFull.isPublic ? 'Público' : 'Privado'
+    );
 
     const models: any[] = [];
     const origModels = moduleFull.models || [];
@@ -706,24 +740,22 @@ const ModuleEditorScreen = () => {
         }
       }
 
-      if (isEdited || fieldsSummary.length > 0 || viewsSummary.length > 0) {
-        models.push({
-          id: localModel.id,
-          name: localModel.name,
-          technicalName: localModel.technicalName,
-          changeType: isEdited ? 'edit' : 'unchanged',
-          fields: fieldsSummary,
-          views: viewsSummary,
-        });
-      }
+      models.push({
+        id: localModel.id,
+        name: localModel.name,
+        technicalName: localModel.technicalName,
+        changeType: isEdited ? 'edit' : 'unchanged',
+        fields: fieldsSummary,
+        views: viewsSummary,
+      });
     }
 
     return {
-      name: general[0],
-      technicalName: general[1],
-      description: general[2],
-      category: general[3],
-      isPublic: general[4],
+      name: nameChange,
+      technicalName: technicalNameChange,
+      description: descriptionChange,
+      category: categoryChange,
+      isPublic: isPublicChange,
       models,
     };
   };
@@ -1030,6 +1062,8 @@ const ModuleEditorScreen = () => {
                 <TouchableOpacity
                   style={[styles.button, { flex: 1, backgroundColor: colors.primary }]}
                   onPress={() => {
+                    setNoChangesError(false);
+
                     if (editingModelId !== null) {
                       setShowModuleEditError(editingModelId);
                       return;
