@@ -1,0 +1,133 @@
+<?php
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+
+/**
+ * Users
+ *
+ * @ORM\Table(name="users", uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="uq_email", columns={"email"}),
+ *     @ORM\UniqueConstraint(name="uq_username", columns={"username"})
+ * })
+ * @ORM\Entity
+ */
+class Users
+{
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="username", type="string", length=255, nullable=false)
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $username;
+
+    public function getUsername(): string
+    {
+        return $this->username;
+    }
+
+    public function setUsername(string $username): void
+    {
+        $this->username = $username;
+    }
+    /**
+     * @var int
+     *
+     * @ORM\Column(name="id", type="integer", nullable=false)
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="IDENTITY")
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $id;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="email", type="string", length=255, nullable=false)
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $email;
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="password", type="string", length=255, nullable=false)
+     *
+     */
+    private $password;
+
+    /**
+     * @var \DateTime|null
+     *
+     * @ORM\Column(name="created_at", type="datetime", nullable=true, options={"default"="CURRENT_TIMESTAMP"})
+     *
+     * @Groups({"users:read"})
+     */
+    private $createdAt = null;
+
+    /**
+     * @var string|null
+     *
+     * @ORM\Column(name="avatar", type="string", length=50, nullable=true)
+     *
+     * @Groups({"users:read", "modules:read"})
+     */
+    private $avatar = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): void
+    {
+        $this->email = $email;
+    }
+
+    public function getPassword(): string
+    {
+        return $this->password;
+    }
+
+    public function setPassword(string $password): void
+    {
+        $this->password = $password;
+    }
+
+    public function getCreatedAt(): ?\DateTime
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(?\DateTime $createdAt): void
+    {
+        $this->createdAt = $createdAt;
+    }
+
+    public function getAvatar(): ?string
+    {
+        return $this->avatar;
+    }
+
+    public function setAvatar(?string $avatar): void
+    {
+        $this->avatar = $avatar;
+    }
+
+}

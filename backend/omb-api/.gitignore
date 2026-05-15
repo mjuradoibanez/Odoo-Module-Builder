@@ -1,0 +1,24 @@
+# Symfony / PHP
+/vendor/
+/var/
+/bin/
+/provisioning/sites-enabled/
+/.idea/
+/.env.local
+/.env.webapp
+/data/db/
+
+# Symfony / PHP
+/vendor/
+/var/
+/bin/
+/provisioning/sites-enabled/
+/idea/
+/.env.local
+/.env
+*.env
+/data/db/
+
+# OS
+.DS_Store
+Thumbs.db

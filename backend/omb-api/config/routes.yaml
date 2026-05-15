@@ -1,0 +1,138 @@
+#index:
+#    path: /
+#    controller: App\Controller\DefaultController::index
+
+# Modules
+modules:
+  path: /modules
+  controller: App\Controller\ModuleController::modules
+  methods: [ GET, POST, OPTIONS ]
+
+module:
+  path: /modules/{id}
+  controller: App\Controller\ModuleController::module
+  methods: [ GET, DELETE, PUT, OPTIONS ]
+
+module_full:
+  path: /modules/{id}/full
+  controller: App\Controller\ModuleController::module_full
+  methods: [ GET ]
+
+module_duplicate:
+  path: /modules/{id}/duplicate
+  controller: App\Controller\ModuleController::duplicateModule
+  methods: [ POST, OPTIONS ]
+
+modules_user:
+  path: /user/{user_id}/modules
+  controller: App\Controller\ModuleController::modulesUser
+  methods: [ GET ]
+
+# Generación de módulos Odoo
+generate_module:
+  path: /api/generate-module
+  controller: App\Controller\ModuleController::generateModule
+  methods: [ POST, OPTIONS ]
+
+# Models
+models:
+  path: /models
+  controller: App\Controller\ModelController::models
+  methods: [ GET, POST, OPTIONS ]
+
+model:
+  path: /models/{id}
+  controller: App\Controller\ModelController::model
+  methods: [ GET, DELETE, PUT, OPTIONS ]
+
+models_module:
+  path: /modules/{id}/models
+  controller: App\Controller\ModelController::modelsModule
+  methods: [ GET ]
+
+models_user:
+  path: /user/{user_id}/models
+  controller: App\Controller\ModelController::modelsUser
+  methods: [ GET ]
+
+# Fields
+fields:
+  path: /fields
+  controller: App\Controller\FieldController::fields
+  methods: [ GET, POST, OPTIONS ]
+
+field:
+  path: /fields/{id}
+  controller: App\Controller\FieldController::field
+  methods: [ GET, DELETE, PUT, OPTIONS ]
+
+fields_model:
+  path: /models/{id}/fields
+  controller: App\Controller\FieldController::fieldsModel
+  methods: [ GET ]
+
+# Users
+users:
+  path: /users
+  controller: App\Controller\UserController::users
+  methods: [ GET, POST, OPTIONS ]
+
+user:
+  path: /users/{id}
+  controller: App\Controller\UserController::user
+  methods: [ GET, DELETE, PUT, OPTIONS ]
+
+# Login
+login:
+  path: /login
+  controller: App\Controller\UserController::login
+  methods: [ POST, OPTIONS ]
+
+# Views
+views:
+  path: /views
+  controller: App\Controller\ViewController::views
+  methods: [ GET, POST, OPTIONS ]
+
+view:
+  path: /views/{id}
+  controller: App\Controller\ViewController::view
+  methods: [ GET, DELETE, PUT, OPTIONS ]
+
+views_model:
+  path: /models/{id}/views
+  controller: App\Controller\ViewController::viewsModel
+  methods: [ GET ]
+  
+# Deployments
+deployments:
+  path: /deployments
+  controller: App\Controller\DeploymentController::deployments
+  methods: [ GET, POST, OPTIONS ]
+
+deployment:
+  path: /deployments/{id}
+  controller: App\Controller\DeploymentController::deployment
+  methods: [ GET, DELETE, OPTIONS ]
+
+deployments_user:
+  path: /user/{user_id}/deployments
+  controller: App\Controller\DeploymentController::userDeployments
+  methods: [ GET, OPTIONS ]
+
+# Deploy a Odoo
+deploy_to_odoo:
+  path: /api/deploy-to-odoo/{id}
+  controller: App\Controller\OdooDeployController::deployToOdoo
+  methods: [ POST, OPTIONS ]
+
+# Favorites
+favorites_user:
+  path: /user/{user_id}/favorites
+  controller: App\Controller\FavoriteController::userFavorites
+  methods: [ GET, POST, OPTIONS ]
+
+favorite:
+  path: /favorites/{id}
+  controller: App\Controller\FavoriteController::favorite
+  methods: [ DELETE, OPTIONS ]

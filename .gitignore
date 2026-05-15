@@ -1,0 +1,54 @@
+# Node/React/Expo
+frontend/ombApp/node_modules/
+frontend/ombApp/.expo/
+frontend/ombApp/.expo-shared/
+frontend/ombApp/.next/
+frontend/ombApp/dist/
+frontend/ombApp/.env
+frontend/ombApp/.DS_Store
+frontend/ombApp/.vscode/
+
+# Symfony/PHP
+backend/omb-api/vendor/
+backend/omb-api/var/
+backend/omb-api/.env.local
+backend/omb-api/.env
+backend/omb-api/.DS_Store
+backend/omb-api/.vscode/
+
+# Python/JetBrains/General
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.DS_Store
+*.log
+*.swp
+*.swo
+*.bak
+*.tmp
+*.idea/
+*.iml
+
+# Docker/Database
+postgres_data/
+odoo_data/
+*.db
+
+# System
+.env
+.DS_Store
+Thumbs.db
+
+# Misc
+*.sqlite3
+*.log
+*.bak
+*.tmp
+*.swp
+*.swo
+*.orig
+*.lock
+
+# VSCode
+.vscode/

@@ -1,0 +1,116 @@
+-- ---------------------------------------------------
+-- Odoo Module Builder - Schema para Symfony / MySQL
+-- ---------------------------------------------------
+
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET collation_connection = utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla users
+-- -----------------------------
+DROP TABLE IF EXISTS users;
+CREATE TABLE users (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NOT NULL,
+  username VARCHAR(255) NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  avatar VARCHAR(50) DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT uq_email UNIQUE (email),
+  CONSTRAINT uq_username UNIQUE (username)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla modules
+-- -----------------------------
+DROP TABLE IF EXISTS modules;
+CREATE TABLE modules (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  description TEXT,
+  version VARCHAR(255),
+  author VARCHAR(255),
+  category VARCHAR(50) DEFAULT 'otra',
+  is_public BOOLEAN DEFAULT FALSE,
+  user_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_modules_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_module UNIQUE (technical_name, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla models
+-- -----------------------------
+DROP TABLE IF EXISTS models;
+CREATE TABLE models (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  module_id INT,
+  CONSTRAINT fk_models_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_model UNIQUE (technical_name, module_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla fields
+-- -----------------------------
+DROP TABLE IF EXISTS fields;
+CREATE TABLE fields (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  technical_name VARCHAR(255) NOT NULL,
+  type VARCHAR(255) NOT NULL,
+  required BOOLEAN DEFAULT FALSE,
+  unique_field BOOLEAN DEFAULT FALSE,
+  relation_model VARCHAR(255),
+  relation_field VARCHAR(255),
+  relation_module VARCHAR(255),
+  default_value VARCHAR(255),
+  selection_options JSON, -- Para campos tipo selección (dropdown)
+  rules JSON, -- Para validaciones de campos (constraints, avisos, etc.)
+  model_id INT,
+  CONSTRAINT fk_fields_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE,
+  CONSTRAINT uq_technical_name_field UNIQUE (technical_name, model_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla views
+-- -----------------------------
+DROP TABLE IF EXISTS views;
+CREATE TABLE views (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  type VARCHAR(255) NOT NULL,
+  name VARCHAR(255),
+  configuration JSON, -- Configuraciones de las vistas
+  model_id INT,
+  CONSTRAINT fk_views_model FOREIGN KEY (model_id) REFERENCES models(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla favorites
+-- -----------------------------
+DROP TABLE IF EXISTS favorites;
+CREATE TABLE favorites (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  user_id INT,
+  module_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_favorites_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE,
+  CONSTRAINT uq_user_module_favorite UNIQUE (user_id, module_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------
+-- Tabla deployments
+-- -----------------------------
+DROP TABLE IF EXISTS deployments;
+CREATE TABLE deployments (
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  module_id INT,
+  status VARCHAR(255),
+  log TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_deployments_module FOREIGN KEY (module_id) REFERENCES modules(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

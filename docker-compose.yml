@@ -1,0 +1,105 @@
+services:
+  # Backend (Symfony API)
+  backend-web:
+    build:
+      context: ./backend/omb-api
+    container_name: omb-api
+    volumes:
+      - ./backend/omb-api:/var/www/html
+      - ./backend/omb-api/provisioning/sites-enabled:/etc/apache2/sites-enabled
+      - ./odoo/addons:/mnt/extra-addons
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      APP_ENV: ${APP_ENV}
+      APP_SECRET: ${APP_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      ODOO_ADDONS_PATH: ${BACKEND_ODOO_ADDONS_PATH}
+      ODOO_HOST: ${BACKEND_ODOO_HOST}
+      ODOO_PORT: ${BACKEND_ODOO_PORT}
+      ODOO_DB: ${BACKEND_ODOO_DB}
+      ODOO_USER: ${BACKEND_ODOO_USER}
+      ODOO_PASSWORD: ${BACKEND_ODOO_PASSWORD}
+    ports:
+      - "8082:80"
+    networks:
+      - omb-net
+    tty: true
+    working_dir: /var/www/html
+    depends_on:
+      - backend-db
+
+  backend-db:
+    image: mysql:8.0
+    container_name: omb-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - backend_mysql_data:/var/lib/mysql
+      - ./docs/database:/docker-entrypoint-initdb.d:ro
+    networks:
+      - omb-net
+
+  # Java Server
+  java-server:
+    build:
+      context: ./server/omb-server
+    container_name: omb_java_server
+    ports:
+      - "5000:5000"
+    networks:
+      - omb-net
+    restart: unless-stopped
+
+  # PostgreSQL (para Odoo)
+  db:
+    image: postgres:15
+    container_name: omb_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - omb-net
+
+  # Odoo
+  odoo:
+    image: odoo:${ODOO_VERSION}
+    container_name: omb_odoo
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    networks:
+      - omb-net
+    volumes:
+      - ./odoo/addons:/mnt/extra-addons
+      - ./odoo/config:/etc/odoo
+      - odoo_data:/var/lib/odoo
+      - ./odoo/entrypoint.sh:/opt/omb-entrypoint.sh:ro
+    entrypoint: ["/bin/bash", "/opt/omb-entrypoint.sh"]
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${POSTGRES_DB}
+      ADMIN_PASSWD: ${ODOO_ADMIN_PASSWD}
+
+volumes:
+  postgres_data:
+  odoo_data:
+  backend_mysql_data:
+
+networks:
+  omb-net:
+    driver: bridge
