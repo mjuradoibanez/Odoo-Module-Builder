@@ -398,7 +398,7 @@ class ModuleController extends AbstractController
                         'selectionOptions' => $field->getSelectionOptions(),
                         'rules' => $field->getRules(),
                         // Solo incluir relationModule si el tipo es relacional y tiene valor
-                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many', 'one2one']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
+                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {

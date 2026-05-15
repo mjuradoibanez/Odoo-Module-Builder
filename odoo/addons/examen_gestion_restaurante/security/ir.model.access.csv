@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_camarero,examen_gestion_restaurante.camarero,model_examen_gestion_restaurante_camarero,base.group_user,1,1,1,1
+access_pedido,examen_gestion_restaurante.pedido,model_examen_gestion_restaurante_pedido,base.group_user,1,1,1,1
+access_mesa,examen_gestion_restaurante.mesa,model_examen_gestion_restaurante_mesa,base.group_user,1,1,1,1
+access_plato,examen_gestion_restaurante.plato,model_examen_gestion_restaurante_plato,base.group_user,1,1,1,1

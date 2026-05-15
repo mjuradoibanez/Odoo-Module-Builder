@@ -15,6 +15,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { BlockDeleteModal } from '@/components/model/BlockDeleteModal';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
 import { getAvatarSource } from '@/core/constants/avatars';
+import { getAllUsers } from '@/core/actions/get-all-users';
 
 // Pantalla de mis módulos y detalles
 const ModuleEditorScreen = () => {
@@ -72,10 +73,32 @@ const ModuleEditorScreen = () => {
   const targetUserId = paramUserId ? Number(paramUserId) : null;
   const isViewingOtherUser = targetUserId !== null && targetUserId !== userId;
 
-  // Obtener información del usuario
-  const targetUser = isViewingOtherUser
+  // Obtener información del usuario desde los módulos (si tiene módulos)
+  const targetUserFromModules = isViewingOtherUser
     ? allModules.find(m => m.user?.id === targetUserId)?.user
     : null;
+
+  // Estado para el usuario objetivo cuando no tiene módulos
+  const [fetchedTargetUser, setFetchedTargetUser] = useState<any>(null);
+
+  // Si el usuario no tiene módulos, obtener su info desde getAllUsers
+  useEffect(() => {
+    if (isViewingOtherUser && !targetUserFromModules) {
+      getAllUsers().then(users => {
+        if (users) {
+          const found = users.find(u => u.id === targetUserId);
+          if (found) {
+            setFetchedTargetUser(found);
+          }
+        }
+      });
+    } else {
+      setFetchedTargetUser(null);
+    }
+  }, [isViewingOtherUser, targetUserId, targetUserFromModules]);
+
+  // Usar el usuario desde módulos o el obtenido por getAllUsers
+  const targetUser = targetUserFromModules || fetchedTargetUser;
 
   // Filtrar los módulos según el usuario
   // Si es otro usuario, solo mostrar módulos públicos
@@ -178,7 +201,7 @@ const ModuleEditorScreen = () => {
     return (
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 }}>
         <TouchableOpacity
-          onPress={() => { blurActiveElement(); router.replace({ pathname: '/modules' }); }}
+          onPress={() => { blurActiveElement(); router.replace({ pathname: '/users' }); }}
           activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color={colors.primary} />

@@ -4,14 +4,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Map;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import java.util.*;
 
 public class ModuleGenerator {
     public static File generateModuleWithThreads(ModuleRequest module) throws Exception {
@@ -175,7 +172,7 @@ public class ModuleGenerator {
             for (ModuleRequest.FieldDTO field : model.fields) {
                 String fname = getSafeFieldName(field.technicalName);
                 String fieldType = field.type.toLowerCase();
-                boolean isRelation = fieldType.equals("many2one") || fieldType.equals("one2many") || fieldType.equals("many2many") || fieldType.equals("one2one");
+                boolean isRelation = fieldType.equals("many2one") || fieldType.equals("one2many") || fieldType.equals("many2many");
                 sb.append("    ").append(fname).append(" = fields.");
 
                 if (isRelation) {
@@ -188,8 +185,6 @@ public class ModuleGenerator {
                         sb.append("One2many(").append(relModel).append(", ").append(relField);
                     } else if (fieldType.equals("many2many")) {
                         sb.append("Many2many(").append(relModel);
-                    } else if (fieldType.equals("one2one")) {
-                        sb.append("One2one(").append(relModel);
                     }
                 } else if (fieldType.equals("selection")) {
                     sb.append("Selection([\n");
@@ -224,17 +219,80 @@ public class ModuleGenerator {
                         sb.append(field.defaultValue.toLowerCase().equals("true") ? "True" : "False");
                     } else if (fieldType.equals("integer") || fieldType.equals("float") || fieldType.equals("monetary")) {
                         sb.append(field.defaultValue);
+                    } else if (field.defaultValue.equals("__now__") && fieldType.equals("datetime")) {
+                        sb.append("lambda self: fields.Datetime.now()");
                     } else {
                         sb.append("'").append(field.defaultValue).append("'");
                     }
                     hasPrev = true;
                 }
+                // Campo computado (integer con regla 'computed')
+                if (field.rules != null) {
+                    Map<String, Object> computedRule = null;
+                    for (Map<String, Object> rule : field.rules) {
+                        if ("computed".equals(rule.get("type"))) {
+                            computedRule = rule;
+                            break;
+                        }
+                    }
+                    if (computedRule != null) {
+                        String computeMethod = computedRule.get("computeMethod") != null ? computedRule.get("computeMethod").toString() : "_compute_" + fname;
+                        if (hasPrev) sb.append(", ");
+                        sb.append("compute='").append(computeMethod).append("'");
+                        hasPrev = true;
+                        boolean store = computedRule.get("store") == null || Boolean.TRUE.equals(computedRule.get("store"));
+                        if (!store) {
+                            if (hasPrev) sb.append(", ");
+                            sb.append("store=False");
+                            hasPrev = true;
+                        }
+                    }
+                }
                 sb.append(")\n");
                 
             }
 
+            // Añadir métodos compute para campos computados
+            for (ModuleRequest.FieldDTO field : model.fields) {
+                if (field.rules != null) {
+                    Map<String, Object> computedRule = null;
+                    for (Map<String, Object> rule : field.rules) {
+                        if ("computed".equals(rule.get("type"))) {
+                            computedRule = rule;
+                            break;
+                        }
+                    }
+                    if (computedRule != null) {
+                        String fname = getSafeFieldName(field.technicalName);
+                        String computeMethod = computedRule.get("computeMethod") != null ? computedRule.get("computeMethod").toString() : "_compute_" + fname;
+                        @SuppressWarnings("unchecked")
+                        List<String> depends = (List<String>) computedRule.get("depends");
+                        
+                        // @api.depends
+                        sb.append("    @api.depends(");
+                        if (depends != null && !depends.isEmpty()) {
+                            for (int i = 0; i < depends.size(); i++) {
+                                if (i > 0) sb.append(", ");
+                                sb.append("'").append(depends.get(i)).append("'");
+                            }
+                        }
+                        sb.append(")\n");
+                        
+                        // Método compute: cuenta registros de la relación one2many/many2many
+                        sb.append("    def ").append(computeMethod).append("(self):\n");
+                        sb.append("        for record in self:\n");
+                        if (depends != null && !depends.isEmpty()) {
+                            sb.append("            record.").append(fname).append(" = len(record.").append(depends.get(0)).append(")\n");
+                        } else {
+                            sb.append("            record.").append(fname).append(" = 0\n");
+                        }
+                        sb.append("\n");
+                    }
+                }
+            }
+
             // Añadir métodos @api.constrains
-            // 1. Unicidad 
+            // 1. Unicidad
             for (ModuleRequest.FieldDTO field : model.fields) {
                 if (field.unique) {
                     String fname = getSafeFieldName(field.technicalName);
@@ -249,83 +307,74 @@ public class ModuleGenerator {
                 }
             }
 
-            // 2. Restricciones (Constraints)
-            boolean hasRules = model.fields.stream().anyMatch(f -> f.rules != null && !f.rules.isEmpty());
-            if (hasRules) {
-                Set<String> triggerFields = new HashSet<>();
-                for (ModuleRequest.FieldDTO field : model.fields) {
-                    if (field.rules != null) {
-                        triggerFields.add(getSafeFieldName(field.technicalName));
-                        for (Map<String, Object> rule : field.rules) {
-                            if (rule.get("type").toString().contains("field") && rule.get("value") != null) {
-                                triggerFields.add(getSafeFieldName(rule.get("value").toString()));
-                            }
-                        }
+            // 2. Restricciones (Constraints) - recorremos campos y sus reglas directamente
+            boolean hasConstraints = false;
+            StringBuilder constraintFields = new StringBuilder();
+            StringBuilder constraintBody = new StringBuilder();
+
+            for (ModuleRequest.FieldDTO field : model.fields) {
+                if (field.rules == null || field.rules.isEmpty()) continue;
+                for (Map<String, Object> rule : field.rules) {
+                    // Ignorar avisos (se manejan en onchange) y reglas computed
+                    if (rule.get("isWarning") != null && (boolean)rule.get("isWarning")) continue;
+                    if ("computed".equals(rule.get("type"))) continue;
+
+                    hasConstraints = true;
+                    String fname = getSafeFieldName(field.technicalName);
+                    String ruleType = (String) rule.get("type");
+                    Object ruleValue = rule.get("value");
+                    String rVal = ruleValue != null ? getSafeFieldName(ruleValue.toString()) : "";
+
+                    // Añadir campo a la lista de @api.constrains
+                    if (constraintFields.length() > 0) constraintFields.append(", ");
+                    constraintFields.append("'").append(fname).append("'");
+                    if (ruleType.contains("field") && ruleValue != null) {
+                        constraintFields.append(", '").append(rVal).append("'");
+                    }
+
+                    // Generar el cuerpo de la regla
+                    constraintBody.append("            # Regla: " + rule.get("label") + " sobre " + field.name + "\n");
+                    constraintBody.append("            if record." + fname + " is not False:\n");
+
+                    if (ruleType.equals("number_min")) {
+                        constraintBody.append("                if record." + fname + " < " + ruleValue + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser menor que " + ruleValue + "')\n");
+                    } else if (ruleType.equals("number_max")) {
+                        constraintBody.append("                if record." + fname + " > " + ruleValue + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser mayor que " + ruleValue + "')\n");
+                    } else if (ruleType.equals("date_no_future")) {
+                        constraintBody.append("                if record." + fname + " > fields.Date.today():\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser una fecha futura')\n");
+                    } else if (ruleType.equals("date_no_past")) {
+                        constraintBody.append("                if record." + fname + " < fields.Date.today():\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser una fecha pasada')\n");
+                    } else if (ruleType.equals("date_after_field")) {
+                        constraintBody.append("                if record." + rVal + " and record." + fname + " < record." + rVal + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " debe ser posterior a " + ruleValue + "')\n");
+                    } else if (ruleType.equals("date_before_field")) {
+                        constraintBody.append("                if record." + rVal + " and record." + fname + " > record." + rVal + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " debe ser anterior a " + ruleValue + "')\n");
+                    } else if (ruleType.equals("date_after_fixed")) {
+                        constraintBody.append("                if record." + fname + " < fields.Date.from_string('" + ruleValue + "'):\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " debe ser posterior a " + ruleValue + "')\n");
+                    } else if (ruleType.equals("date_before_fixed")) {
+                        constraintBody.append("                if record." + fname + " > fields.Date.from_string('" + ruleValue + "'):\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " debe ser anterior a " + ruleValue + "')\n");
+                    } else if (ruleType.equals("char_min_len")) {
+                        constraintBody.append("                if len(record." + fname + ") < " + ruleValue + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " debe tener al menos " + ruleValue + " caracteres')\n");
+                    } else if (ruleType.equals("char_max_len")) {
+                        constraintBody.append("                if len(record." + fname + ") > " + ruleValue + ":\n");
+                        constraintBody.append("                    raise ValidationError('¡Error! " + field.name + " no puede superar los " + ruleValue + " caracteres')\n");
                     }
                 }
+            }
 
-                sb.append("    @api.constrains(");
-                int count = 0;
-                for (String f : triggerFields) {
-                    sb.append("'").append(f).append("'").append(++count < triggerFields.size() ? ", " : "");
-                }
-                sb.append(")\n");
+            if (hasConstraints) {
+                sb.append("    @api.constrains(").append(constraintFields).append(")\n");
                 sb.append("    def _check_business_rules(self):\n");
                 sb.append("        for record in self:\n");
-
-                for (ModuleRequest.FieldDTO field : model.fields) {
-                    if (field.rules != null && !field.rules.isEmpty()) {
-                        // Comprobar si hay alguna regla restrictiva para este campo
-                        boolean hasConstraints = field.rules.stream().anyMatch(r -> r.get("isWarning") == null || !(boolean)r.get("isWarning"));
-                        if (!hasConstraints) continue;
-
-                        String fname = getSafeFieldName(field.technicalName);
-                        for (Map<String, Object> rule : field.rules) {
-                            // Ignorar avisos en este método maestro de constraints
-                            if (rule.get("isWarning") != null && (boolean)rule.get("isWarning")) continue;
-
-                            String ruleType = (String) rule.get("type");
-                            Object ruleValue = rule.get("value");
-                            String rVal = ruleValue != null ? getSafeFieldName(ruleValue.toString()) : "";
-
-                            sb.append("            # Regla: " + rule.get("label") + " sobre " + field.name + "\n");
-                            sb.append("            if record." + fname + " is not False:\n");
-
-                            // Reglas
-                            if (ruleType.equals("number_min")) {
-                                sb.append("                if record." + fname + " < " + ruleValue + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser menor que " + ruleValue + "')\n");
-                            } else if (ruleType.equals("number_max")) {
-                                sb.append("                if record." + fname + " > " + ruleValue + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser mayor que " + ruleValue + "')\n");
-                            } else if (ruleType.equals("date_no_future")) {
-                                sb.append("                if record." + fname + " > fields.Date.today():\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser una fecha futura')\n");
-                            } else if (ruleType.equals("date_no_past")) {
-                                sb.append("                if record." + fname + " < fields.Date.today():\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " no puede ser una fecha pasada')\n");
-                            } else if (ruleType.equals("date_after_field")) {
-                                sb.append("                if record." + rVal + " and record." + fname + " < record." + rVal + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " debe ser posterior a " + ruleValue + "')\n");
-                            } else if (ruleType.equals("date_before_field")) {
-                                sb.append("                if record." + rVal + " and record." + fname + " > record." + rVal + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " debe ser anterior a " + ruleValue + "')\n");
-                            } else if (ruleType.equals("date_after_fixed")) {
-                                sb.append("                if record." + fname + " < fields.Date.from_string('" + ruleValue + "'):\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " debe ser posterior a " + ruleValue + "')\n");
-                            } else if (ruleType.equals("date_before_fixed")) {
-                                sb.append("                if record." + fname + " > fields.Date.from_string('" + ruleValue + "'):\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " debe ser anterior a " + ruleValue + "')\n");
-                            } else if (ruleType.equals("char_min_len")) {
-                                sb.append("                if len(record." + fname + ") < " + ruleValue + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " debe tener al menos " + ruleValue + " caracteres')\n");
-                            } else if (ruleType.equals("char_max_len")) {
-                                sb.append("                if len(record." + fname + ") > " + ruleValue + ":\n");
-                                sb.append("                    raise ValidationError('¡Error! " + field.name + " no puede superar los " + ruleValue + " caracteres')\n");
-                            }
-                        }
-                    }
-                }
+                sb.append(constraintBody);
                 sb.append("\n");
             }
 

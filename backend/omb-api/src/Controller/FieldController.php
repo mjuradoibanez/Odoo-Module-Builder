@@ -74,7 +74,12 @@ class FieldController extends AbstractController
             $field->setTechnicalName($data['technicalName']);
             $field->setType($data['type']);
             $field->setRequired($data['required'] ?? false);
+            $field->setUniqueField($data['uniqueField'] ?? false);
             $field->setRelationModel($data['relationModel'] ?? null);
+            $field->setRelationField($data['relationField'] ?? null);
+            $field->setDefaultValue($data['defaultValue'] ?? null);
+            $field->setSelectionOptions($data['selectionOptions'] ?? null);
+            $field->setRules($data['rules'] ?? null);
             $field->setModel($model);
 
             // Guardar
