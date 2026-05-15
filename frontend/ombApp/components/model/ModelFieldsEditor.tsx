@@ -316,7 +316,7 @@ const FieldForm = ({
               style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
               value={form.defaultValue}
               placeholder={form.type === 'integer' ? 'Ej: 123' : 'Ej: 3.14'}
-              keyboardType="numeric"
+              keyboardType={form.type === 'float' ? 'decimal-pad' : 'numeric'}
               onChangeText={(v) => {
                 // Solo permitir números válidos
                 if (form.type === 'integer') {
@@ -686,12 +686,18 @@ const FieldForm = ({
                   <TextInput
                     style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
                     placeholder="Valor"
-                    keyboardType={['number_min', 'number_max', 'char_min_len', 'char_max_len'].includes(rule.type) ? 'numeric' : 'default'}
+                    keyboardType={['number_min', 'number_max'].includes(rule.type) ? 'decimal-pad' : (['char_min_len', 'char_max_len'].includes(rule.type) ? 'numeric' : (['warn_num_less', 'warn_num_greater'].includes(rule.type) ? 'decimal-pad' : 'default'))}
                     value={String(rule.value || '')}
                     onChangeText={(v) => {
                       const newRules = [...form.rules];
                       // Validación numérica para reglas que requieren números
-                      if (['number_min', 'number_max', 'char_min_len', 'char_max_len'].includes(rule.type)) {
+                      if (['number_min', 'number_max'].includes(rule.type)) {
+                        // Permitir decimales (convertir coma a punto)
+                        if (/^-?\d*(\.|,)?\d*$/.test(v)) {
+                          newRules[index].value = v.replace(',', '.');
+                          setForm((f: any) => ({ ...f, rules: newRules }));
+                        }
+                      } else if (['char_min_len', 'char_max_len'].includes(rule.type)) {
                         if (/^-?\d*$/.test(v)) {
                           newRules[index].value = v;
                           setForm((f: any) => ({ ...f, rules: newRules }));
