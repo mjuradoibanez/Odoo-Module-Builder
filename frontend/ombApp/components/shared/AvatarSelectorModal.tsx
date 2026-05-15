@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { AVATAR_LIST, getAvatarSource } from '@/core/constants/avatars';
 import { getColors } from '@/constants/theme';
 
+// Componente para seleccioanr avatar
+
 interface AvatarSelectorModalProps {
   visible: boolean;
   onClose: () => void;

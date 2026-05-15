@@ -1,6 +1,16 @@
 // Comprobar dependencias de módulos o modelos
 
-export function checkDependencies(allModules: any[], target: { type: 'module'|'model', id: number, technicalName: string, userId?: number, models?: any[], modelTechnicalName?: string }) {
+export function checkDependencies(
+  allModules: any[],
+  target: {
+    type: 'module'|'model',
+    id: number,
+    technicalName: string,
+    userId?: number,
+    models?: any[],
+    modelTechnicalName?: string }
+  ){
+  
   const blockList: any[] = [];
   let circularIds: [number, number] | null = null;
 

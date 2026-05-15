@@ -14,7 +14,7 @@ import { useModuleFull } from '@/presentation/hooks/useModuleFull';
 import { useUpdateModule } from '@/presentation/hooks/useUpdateModule';
 import { useUserModels } from '@/presentation/hooks/useUserModels';
 import { blurActiveElement } from '@/core/helpers/blurActiveElement';
-import { BlockDeleteModal } from '@/core/helpers/BlockDeleteModal';
+import { BlockDeleteModal } from '@/components/model/BlockDeleteModal';
 import { checkDependencies } from '@/core/helpers/checkDependencies';
 import { getModuleFull } from '@/core/actions/get-module-full';
 import { ombApi } from '@/core/auth/api/ombApi';

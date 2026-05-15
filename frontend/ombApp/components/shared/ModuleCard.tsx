@@ -6,7 +6,6 @@ import { useThemeStore } from '@/presentation/store/useThemeStore';
 import { Ionicons } from '@expo/vector-icons';
 import { moduleCategoryIcons } from '@/core/constants/moduleCategoryIcons';
 
-
 export interface ModuleCardProps {
   module: Module;
   selected?: boolean;
