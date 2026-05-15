@@ -7,6 +7,7 @@ use App\Entity\Modules;
 use App\Entity\Models;
 use App\Entity\Fields;
 use App\Entity\Views;
+use App\Helper\OdooErrorParser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,10 +70,13 @@ class OdooDeployController extends AbstractController
                 $errorMsg = $installResult['error'] ?? 'Unknown error during installation';
                 $this->recordDeployment($module, 'error', $errorMsg, $entityManager);
 
+                // Intentar dar un mensaje más descriptivo analizando el error
+                $parsedError = OdooErrorParser::parse($errorMsg);
+
                 return $this->json([
                     'success' => false,
-                    'error' => $errorMsg,
-                    'log' => $installResult['log'] ?? '',
+                    'error' => $parsedError,
+                    'log' => $installResult['log'] ?? $errorMsg,
                 ], 500);
             }
 
