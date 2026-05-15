@@ -46,6 +46,12 @@ export default function RegisterScreen() {
       setIsPosting(false);
       return;
     }
+    if (password.length < 6) {
+      setErrorMsg('La contraseña debe tener al menos 6 caracteres');
+      setSuccessMsg(null);
+      setIsPosting(false);
+      return;
+    }
     if (password !== confirmPassword) {
       setErrorMsg('Las contraseñas no coinciden');
       setSuccessMsg(null);
