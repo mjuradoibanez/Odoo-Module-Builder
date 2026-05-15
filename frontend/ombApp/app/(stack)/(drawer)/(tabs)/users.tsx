@@ -110,7 +110,7 @@ const UsersScreen = () => {
                 <TouchableOpacity
                     onPress={() => {
                         blurActiveElement();
-                        router.back();
+                        router.replace({ pathname: '/dashboard' });
                     }}
                     activeOpacity={0.7}
                     style={styles.backButton}

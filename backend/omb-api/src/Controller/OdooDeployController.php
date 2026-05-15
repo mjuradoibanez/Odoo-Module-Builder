@@ -111,15 +111,12 @@ class OdooDeployController extends AbstractController
 
         // 3. Extraer el ZIP directamente en el directorio destino
         $zip = new \ZipArchive();
-        $result = $zip->open($tempZip);
-
-        // Si falla lo elimina
-        if ($result !== true) {
+        if ($zip->open($tempZip) !== true) {
             @unlink($tempZip);
-            return ['success' => false, 'error' => 'Could not open ZIP file (code: ' . $result . ')'];
+            return ['success' => false, 'error' => 'Could not open ZIP file'];
         }
 
-        // Asegurarse de que el directorio destino existe y tiene permisos
+        // Asegurarse de que el directorio destino existe
         if (!is_dir($targetPath)) {
             @mkdir($targetPath, 0777, true);
         }
@@ -504,7 +501,7 @@ class OdooDeployController extends AbstractController
                         'defaultValue' => $field->getDefaultValue(),
                         'selectionOptions' => $field->getSelectionOptions(),
                         'rules' => $field->getRules(),
-                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many', 'one2one']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
+                        'relationModule' => (in_array($field->getType(), ['many2one', 'one2many', 'many2many']) && $field->getRelationModule()) ? $field->getRelationModule() : null,
                     ];
                 }, $fields),
                 'views' => array_map(function($view) {
@@ -570,6 +567,13 @@ class OdooDeployController extends AbstractController
         }
 
         $size = unpack('N', $sizeData)[1];
+
+        // Si el tamaño es 0, el ZIP está vacío
+        if ($size === 0) {
+            socket_close($socket);
+            return null;
+        }
+
         $zipData = '';
         $received = 0;
 

@@ -28,7 +28,7 @@ export function checkDependencies(
       for (const field of model.fields) {
         // Relación a modelo: formato 'modulo.technicalName.modelo.technicalName'
         if (
-          (field.type === 'relation' || field.type === 'many2one' || field.type === 'many2many' || field.type === 'one2many' || field.type === 'one2one') &&
+          (field.type === 'relation' || field.type === 'many2one' || field.type === 'many2many' || field.type === 'one2many') &&
           field.relationModel
         ) {
           if (target.type === 'module' && target.models) {

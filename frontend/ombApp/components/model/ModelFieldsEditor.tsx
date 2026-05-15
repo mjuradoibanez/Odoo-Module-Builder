@@ -16,17 +16,31 @@ const FIELD_TYPES = [
   { label: 'Entero', value: 'integer' },
   { label: 'Decimal', value: 'float' },
   { label: 'Booleano', value: 'boolean' },
-  { label: 'Fecha', value: 'date' },
+  { label: 'Fecha+Hora', value: 'datetime' },
   { label: 'Selección', value: 'selection' },
   { label: 'Relación', value: 'relation' },
 ];
+
+// Helper para obtener la regla "computed" de un field
+const getComputedRule = (rules: any[] | undefined | null): any | null => {
+  if (!rules) return null;
+  return rules.find(r => r.type === 'computed') || null;
+};
+
+// Helper para actualizar/quitar la regla "computed" en un array de rules
+const setComputedRule = (rules: any[] | undefined | null, computedData: any | null): any[] => {
+  const base = (rules || []).filter(r => r.type !== 'computed');
+  if (computedData) {
+    return [...base, computedData];
+  }
+  return base;
+};
 
 // Subtipos de relación
 const RELATION_SUBTYPES = [
   { label: 'Muchos a uno', value: 'many2one' },
   { label: 'Uno a muchos', value: 'one2many' },
   { label: 'Muchos a muchos', value: 'many2many' },
-  { label: 'Uno a uno', value: 'one2one' },
 ];
 
 // Obtiene el nombre completo del modelo (módulo.n_técnico o solo n_técnico)
@@ -282,7 +296,7 @@ const FieldForm = ({
       </View>
 
       {/* VALOR POR DEFECTO */}
-      {form.type !== 'relation' && form.type !== 'selection' && (
+      {form.type !== 'relation' && form.type !== 'selection' && !(form.type === 'integer' && getComputedRule(form.rules)) && (
         <View style={{ marginTop: 12 }}>
           <Text style={[styles.label, { color: colors.text }]}>Valor por defecto</Text>
           
@@ -313,18 +327,44 @@ const FieldForm = ({
               }}
             />
 
-          ) : form.type === 'date' ? ( // Calendario para elegir fecha por defecto
+          ) : form.type === 'datetime' ? ( // Calendario para elegir fecha por defecto
             <div style={{ marginTop: 4 }}>
-              <ReactDatePicker
-                selected={form.defaultValue ? new Date(form.defaultValue) : null}
-                onChange={(date: Date | null) => {
-                  setForm((f: any) => ({ ...f, defaultValue: date ? date.toISOString().slice(0, 10) : '' }));
-                }}
-                dateFormat="yyyy-MM-dd"
-                placeholderText="AAAA-MM-DD"
-                className="react-datepicker__input-text"
-                popperPlacement='top' // Se muestra encima del input
-              />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <ReactDatePicker
+                  selected={form.defaultValue && form.defaultValue !== '__now__' ? new Date(form.defaultValue) : null}
+                  onChange={(date: Date | null) => {
+                    setForm((f: any) => ({ ...f, defaultValue: date ? date.toISOString() : '' }));
+                  }}
+                  showTimeSelect
+                  dateFormat="yyyy-MM-dd HH:mm:ss"
+                  placeholderText="AAAA-MM-DD HH:mm:ss"
+                  className="react-datepicker__input-text"
+                  popperPlacement='top'
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    setForm((f: any) => ({
+                      ...f,
+                      defaultValue: f.defaultValue === '__now__' ? '' : '__now__',
+                    }));
+                  }}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: 6,
+                    backgroundColor: form.defaultValue === '__now__' ? '#4CAF50' : (isDarkMode ? '#555' : '#e0e0e0'),
+                  }}
+                >
+                  <Text style={{ color: form.defaultValue === '__now__' ? '#fff' : (isDarkMode ? '#fff' : '#333'), fontWeight: '600', fontSize: 13 }}>
+                    Hoy
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              {form.defaultValue === '__now__' && (
+                <Text style={{ color: '#4CAF50', fontSize: 12, fontStyle: 'italic' }}>
+                  Se generará como: default=lambda self: fields.Datetime.now()
+                </Text>
+              )}
             </div>
 
           ) : ( // Input de texto para otros tipos
@@ -438,13 +478,22 @@ const FieldForm = ({
           {(form.rules || []).map((rule: any, index: number) => (
             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
               <Text style={{ flex: 1, color: colors.text }}>{`• ${rule.label} ${rule.value || ''}`}</Text>
-              <TouchableOpacity onPress={() => {
-                const newRules = [...form.rules];
-                newRules.splice(index, 1);
-                setForm((f: any) => ({ ...f, rules: newRules }));
-              }}>
-                <Text style={{ color: 'red', marginLeft: 10 }}>Eliminar</Text>
-              </TouchableOpacity>
+              {rule.type !== 'computed' ? (
+                <TouchableOpacity onPress={() => {
+                  const newRules = [...form.rules];
+                  newRules.splice(index, 1);
+                  setForm((f: any) => ({ ...f, rules: newRules }));
+                }}>
+                  <Text style={{ color: 'red', marginLeft: 10 }}>Eliminar</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity onPress={() => {
+                  const newRules = setComputedRule(form.rules, null);
+                  setForm((f: any) => ({ ...f, rules: newRules }));
+                }}>
+                  <Text style={{ color: 'red', marginLeft: 10 }}>Desactivar</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ))}
 
@@ -466,6 +515,10 @@ const FieldForm = ({
                 selectedValue=""
                 onValueChange={(type) => {
                   if (!type) return;
+                  
+                  // Si ya existe una regla computed, no permitir anadir otra
+                  if (type === 'computed' && getComputedRule(form.rules)) return;
+
                   let label = "";
                   let value: any = "";
                   
@@ -479,8 +532,21 @@ const FieldForm = ({
                   if (type === 'char_max_len') label = "Longitud máxima";
                   if (type === 'warn_sel_is') label = "Aviso si se selecciona";
 
-                  const newRule = { type, value, label };
-                  setForm((f: any) => ({ ...f, rules: [...(f.rules || []), newRule] }));
+                  if (type === 'computed') {
+                    // Anadir regla computed con valores por defecto
+                    const methodName = `_compute_${form.technicalName || 'field'}`;
+                    const newRules = setComputedRule(form.rules, {
+                      type: 'computed',
+                      computeMethod: methodName,
+                      depends: [],
+                      store: true,
+                      label: 'Campo computado',
+                    });
+                    setForm((f: any) => ({ ...f, rules: newRules, defaultValue: '' }));
+                  } else {
+                    const newRule = { type, value, label };
+                    setForm((f: any) => ({ ...f, rules: [...(f.rules || []), newRule] }));
+                  }
                 }}
               >
                 <Picker.Item label="Selecciona una validación..." value="" />
@@ -488,6 +554,9 @@ const FieldForm = ({
                   <>
                     <Picker.Item label="Valor mínimo (>= X)" value="number_min" />
                     <Picker.Item label="Valor máximo (<= X)" value="number_max" />
+                    {form.type === 'integer' && (
+                      <Picker.Item label="Campo computado" value="computed" />
+                    )}
                   </>
                 )}
                 {form.type === 'date' && (
@@ -520,7 +589,61 @@ const FieldForm = ({
               <View key={index} style={{ marginTop: 8, padding: 6, backgroundColor: colors.background, borderRadius: 4 }}>
                 <Text style={{ fontSize: 12, color: colors.text }}>Configura {rule.label}:</Text>
                 
-                {rule.type.includes('field') ? (
+                {rule.type === 'computed' ? (
+                  <View style={{ gap: 8 }}>
+                    <View>
+                      <Text style={[styles.label, { color: colors.text }]}>Metodo compute</Text>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: colors.background, borderColor: colors.border, color: colors.text }]}
+                        value={rule.computeMethod || ''}
+                        placeholder="Ej: _compute_total_pedidos"
+                        autoCapitalize="none"
+                        onChangeText={(v) => {
+                          const newRules = [...form.rules];
+                          newRules[index] = { ...newRules[index], computeMethod: v };
+                          setForm((f: any) => ({ ...f, rules: newRules }));
+                        }}
+                      />
+                    </View>
+
+                    <View>
+                      <Text style={[styles.label, { color: colors.text }]}>Campo del que depende (one2many/many2many)</Text>
+                      <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
+                        <Picker
+                          style={{ color: colors.text }}
+                          selectedValue={(rule.depends || [])[0] || ''}
+                          onValueChange={(v) => {
+                            const newRules = [...form.rules];
+                            const newDepends = v ? [v] : [];
+                            newRules[index] = { ...newRules[index], depends: newDepends };
+                            setForm((f: any) => ({ ...f, rules: newRules }));
+                          }}
+                        >
+                          <Picker.Item label="Selecciona campo..." value="" />
+                          {(allFields || [])
+                            .filter((f: any) => f.technicalName !== form.technicalName && (f.type === 'one2many' || f.type === 'many2many' || f.type === 'relation'))
+                            .map((f: any) => (
+                              <Picker.Item key={f.technicalName} label={`${f.name || f.technicalName} (${f.technicalName})`} value={f.technicalName} />
+                            ))}
+                        </Picker>
+                      </View>
+                      <Text style={{ fontSize: 11, color: colors.icon, marginTop: 2 }}>Selecciona el campo de relación (one2many/many2many) para contar sus registros</Text>
+                    </View>
+
+                    <View style={styles.switchRow}>
+                      <Text style={{ color: colors.text }}>Almacenar en BD (store=True)</Text>
+                      <Switch
+                        value={rule.store !== false}
+                        onValueChange={(v) => {
+                          const newRules = [...form.rules];
+                          newRules[index] = { ...newRules[index], store: v };
+                          setForm((f: any) => ({ ...f, rules: newRules }));
+                        }}
+                      />
+                    </View>
+                  </View>
+                  
+                ) : rule.type.includes('field') ? (
                   <View style={[styles.input, { padding: 0, backgroundColor: colors.background, borderColor: colors.border }]}>
                     <Picker
                       style={{ color: colors.text }}
@@ -753,7 +876,7 @@ export default function ModelFieldsEditor({
     };
 
     // Solo añadir relationModule si es relacional
-    if (["many2one", "one2many", "many2many", "one2one"].includes(fieldToSave.type) && relationModule) {
+    if (["many2one", "one2many", "many2many"].includes(fieldToSave.type) && relationModule) {
       fieldToSave.relationModule = relationModule;
     }
 
@@ -783,7 +906,7 @@ export default function ModelFieldsEditor({
     let relationField = field.relationField || '';
 
     // Detectar si es relación
-    if (["many2one", "one2many", "many2many", "one2one"].includes(field.type)) {
+    if (["many2one", "one2many", "many2many"].includes(field.type)) {
       parsedType = "relation";
       relationSubtype = field.type;
     }

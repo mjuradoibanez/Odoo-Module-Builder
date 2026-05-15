@@ -13,8 +13,11 @@ if (!class_exists(Dotenv::class)) {
 if (is_array($env = @include dirname(__DIR__).'/.env.local.php') && (!isset($env['APP_ENV']) || ($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? $env['APP_ENV']) === $env['APP_ENV'])) {
     (new Dotenv(false))->populate($env);
 } else {
-    // load all the .env files
-    (new Dotenv(false))->loadEnv(dirname(__DIR__).'/.env');
+    // load all the .env files (if it exists; env vars may be provided by Docker)
+    $envFile = dirname(__DIR__).'/.env';
+    if (file_exists($envFile)) {
+        (new Dotenv(false))->loadEnv($envFile);
+    }
 }
 
 $_SERVER += $_ENV;
